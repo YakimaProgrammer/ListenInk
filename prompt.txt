@@ -1,0 +1,10 @@
+I have a PDF document with complex layouts that I need to transcribe accurately. The document may contain text in multiple columns, headers and footers, captions for images, tables, and various other elements. I want the transcription to be readable and meaningful for an audio read-aloud, which means:
+1. Column Order: If the text is in multiple columns, read it top-to-bottom within each column, then move to the next column in a left-to-right order.
+2. Headers and Footers: Ignore superfluous headers, footers, and page numbers.
+3. Captions and Images: Transcribe captions and place them logically in the transcription, ideally following the content they describe. Skip purely decorative images, but preserve images that contain critical content.
+4. Tables and Structured Data: Capture tables in a readable format. Read table headers first, followed by each row in sequence.
+5. Font Variations: Identify section headers or emphasized text (like bold or italicized phrases) to clarify important points, but avoid unnecessary styling details.
+6. Line Breaks and Formatting: Where line breaks are not meaningful (like in prose), remove them to allow natural reading flow. Retain line breaks in poetry or bulleted lists.
+7. Logical Flow: Preserve the logical order of content to ensure it reads as naturally as possible.
+
+Please provide a transcription based on these criteria. Please output only the transcript and nothing else.

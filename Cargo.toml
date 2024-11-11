@@ -1,0 +1,11 @@
+[package]
+name = "listenink"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+async-openai = "0.25.0"
+aws-sdk-s3 = "1.60.0"
+pdfium-render = { version = "0.8.26", features = ["static"] }
+serde_json = "1.0.132"
+tokio = { version = "1.41.1", features = ["full"] }
