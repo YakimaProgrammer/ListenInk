@@ -1,13 +1,10 @@
-mod openaiutils;
-mod pdfutils;
-mod s3utils;
+use listenink::Clients;
 
 use async_openai::Client as OpenAIClient;
 use openaiutils::ChatResponse;
 use pdfium_render::prelude::*;
 use std::error::Error;
 
-/// https://platform.openai.com/docs/guides/vision - quickstart
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
   let pdfium = Pdfium::new(Pdfium::bind_to_statically_linked_library().unwrap());
@@ -16,8 +13,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     .set_maximum_height(2000);
 
   let config = aws_config::load_from_env().await;
-  let client = aws_sdk_s3::Client::new(&config);
-  s3utils::purge_bucket(&client, "com.listenink").await?;
+  let s3client = aws_sdk_s3::Client::new(&config);
+  s3utils::purge_bucket(&s3client, "com.listenink").await?;
 
   for (i, img) in pdfutils::export_pdf_to_jpegs(
     "/home/magnus/Downloads/331_HW_6.pdf",
@@ -28,19 +25,20 @@ async fn main() -> Result<(), Box<dyn Error>> {
   .enumerate()
   {
     println!("Uploading {i}");
-    s3utils::upload_object(&client, "com.listenink", img.into(), &format!("{i}.jpg")).await?;
   }
 
+  let openaiclient = OpenAIClient::new();
   let resp = openaiutils::ocr_img(
-    OpenAIClient::new(),
+    &openaiclient,
     "http://s3.magnusfulton.com/com.listenink/0.jpg",
   )
   .await?;
 
-  match resp {
-    Some(ChatResponse::Refusal(r)) => eprintln!("Model refused! {r}"),
-    Some(ChatResponse::Content(c)) => println!("{c}"),
-    None => eprintln!("Got nothing!"),
+  if let Some(ChatResponse::Content(c)) = resp {
+    let bytes = openaiutils::tts(&openaiclient, &c).await?;
+    s3utils::upload_object(&s3client, "com.listenink", bytes.into(), &format!("1.mp3")).await?;
+  } else {
+    eprintln!("Error getting response!");
   }
 
   Ok(())

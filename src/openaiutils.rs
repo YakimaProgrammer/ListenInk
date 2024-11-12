@@ -4,7 +4,8 @@ use async_openai::{
   types::{
     ChatCompletionRequestMessageContentPartImageArgs,
     ChatCompletionRequestMessageContentPartTextArgs, ChatCompletionRequestUserMessageArgs,
-    CreateChatCompletionRequestArgs, ImageDetail, ImageUrlArgs,
+    CreateChatCompletionRequestArgs, CreateSpeechRequestArgs, ImageDetail, ImageUrlArgs,
+    SpeechModel, Voice,
   },
   Client,
 };
@@ -17,7 +18,7 @@ pub enum ChatResponse {
 }
 
 pub async fn ocr_img(
-  client: Client<OpenAIConfig>,
+  client: &Client<OpenAIConfig>,
   image_url: &str,
 ) -> Result<Option<ChatResponse>, OpenAIError> {
   let request = CreateChatCompletionRequestArgs::default()
@@ -57,4 +58,16 @@ pub async fn ocr_img(
   } else {
     Ok(None)
   }
+}
+
+pub async fn tts(client: &Client<OpenAIConfig>, msg: &str) -> Result<Vec<u8>, OpenAIError> {
+  let request = CreateSpeechRequestArgs::default()
+    .input(msg)
+    .voice(Voice::Alloy)
+    .model(SpeechModel::Tts1)
+    .build()?;
+
+  let response = client.audio().speech(request).await?;
+
+  Ok(response.bytes.to_vec())
 }
