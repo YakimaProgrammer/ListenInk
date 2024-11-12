@@ -10,15 +10,6 @@ use std::error::Error;
 /// https://platform.openai.com/docs/guides/vision - quickstart
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-  /*
-      let resp = openaiutils::ocr_img(OpenAIClient::new(), "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg").await?;
-
-    match resp {
-      Some(ChatResponse::Refusal(r)) => eprintln!("Model refused! {r}"),
-      Some(ChatResponse::Content(c)) => println!("{c}"),
-      None => eprintln!("Got nothing!"),
-  }
-     */
   let pdfium = Pdfium::new(Pdfium::bind_to_statically_linked_library().unwrap());
   let render_config = PdfRenderConfig::new()
     .set_target_width(2000)
@@ -29,7 +20,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
   s3utils::purge_bucket(&client, "com.listenink").await?;
 
   for (i, img) in pdfutils::export_pdf_to_jpegs(
-    "/home/magnus/Downloads/Hughes, The Wilderness and the West.pdf",
+    "/home/magnus/Downloads/331_HW_6.pdf",
     &pdfium,
     &render_config,
   )?
@@ -38,6 +29,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
   {
     println!("Uploading {i}");
     s3utils::upload_object(&client, "com.listenink", img.into(), &format!("{i}.jpg")).await?;
+  }
+
+  let resp = openaiutils::ocr_img(
+    OpenAIClient::new(),
+    "http://s3.magnusfulton.com/com.listenink/0.jpg",
+  )
+  .await?;
+
+  match resp {
+    Some(ChatResponse::Refusal(r)) => eprintln!("Model refused! {r}"),
+    Some(ChatResponse::Content(c)) => println!("{c}"),
+    None => eprintln!("Got nothing!"),
   }
 
   Ok(())
