@@ -1786,6 +1786,7 @@ dependencies = [
  "async-openai",
  "aws-config",
  "aws-sdk-s3",
+ "image",
  "pdfium-render",
  "serde_json",
  "tokio",
