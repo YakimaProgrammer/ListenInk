@@ -18,11 +18,7 @@ pub async fn purge_bucket(client: &Client, bucket: &str) -> Result<(), Error> {
       client
         .delete_objects()
         .bucket(bucket)
-        .delete(
-          aws_sdk_s3::types::Delete::builder()
-            .set_objects(Some(ids))
-            .build()?,
-        )
+        .delete(Delete::builder().set_objects(Some(ids)).build()?)
         .send()
         .await?;
     }

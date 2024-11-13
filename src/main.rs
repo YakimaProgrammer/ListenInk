@@ -1,8 +1,12 @@
-use listenink::Clients;
+mod openaiutils;
+mod pdfutils;
+mod s3utils;
 
 use async_openai::Client as OpenAIClient;
+use listenink::{process_pdf, Clients};
 use openaiutils::ChatResponse;
 use pdfium_render::prelude::*;
+use std::env;
 use std::error::Error;
 
 #[tokio::main]
@@ -14,31 +18,43 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
   let config = aws_config::load_from_env().await;
   let s3client = aws_sdk_s3::Client::new(&config);
-  s3utils::purge_bucket(&s3client, "com.listenink").await?;
-
-  for (i, img) in pdfutils::export_pdf_to_jpegs(
-    "/home/magnus/Downloads/331_HW_6.pdf",
-    &pdfium,
-    &render_config,
-  )?
-  .into_iter()
-  .enumerate()
-  {
-    println!("Uploading {i}");
-  }
 
   let openaiclient = OpenAIClient::new();
-  let resp = openaiutils::ocr_img(
-    &openaiclient,
-    "http://s3.magnusfulton.com/com.listenink/0.jpg",
-  )
-  .await?;
 
-  if let Some(ChatResponse::Content(c)) = resp {
-    let bytes = openaiutils::tts(&openaiclient, &c).await?;
-    s3utils::upload_object(&s3client, "com.listenink", bytes.into(), &format!("1.mp3")).await?;
-  } else {
-    eprintln!("Error getting response!");
+  let clients = Clients {
+    pdfium,
+    render_config,
+    s3client,
+    openaiclient,
+    bucket: env::var("BUCKET")?,
+    endpoint: env::var("AWS_ENDPOINT_URL")?,
+  };
+
+  s3utils::purge_bucket(&clients.s3client, &clients.bucket).await?;
+
+  let results = process_pdf(&clients, "/home/magnus/Downloads/test.pdf").await?;
+  println!(
+    "The following pages succeeded: {}",
+    results
+      .success_ids
+      .iter()
+      .map(|i| i.to_string())
+      .collect::<Vec<_>>()
+      .join(", ")
+  );
+
+  println!(
+    "The following pages failed: {}",
+    results
+      .failure_ids
+      .iter()
+      .map(|(i, _)| i.to_string())
+      .collect::<Vec<_>>()
+      .join(", ")
+  );
+
+  for (i, r) in results.failure_ids {
+    eprintln!("Page {i}: {r}");
   }
 
   Ok(())

@@ -10,7 +10,9 @@ aws-sdk-s3 = "1.60.0"
 data-encoding = "2.6.0"
 futures = "0.3.31"
 image = "0.25.5"
-pdfium-render = { version = "0.8.26", features = ["static", "sync", "thread_safe"] }
+itertools = "0.13.0"
+pdfium-render = { version = "0.8.26", features = ["static"] }
 ring = "0.17.8"
 serde_json = "1.0.132"
 tokio = { version = "1.41.1", features = ["full"] }
+url = "2.5.3"

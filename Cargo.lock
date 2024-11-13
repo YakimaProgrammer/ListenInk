@@ -1795,10 +1795,12 @@ dependencies = [
  "data-encoding",
  "futures",
  "image",
+ "itertools 0.13.0",
  "pdfium-render",
  "ring",
  "serde_json",
  "tokio",
+ "url",
 ]
 
 [[package]]

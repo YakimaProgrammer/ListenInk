@@ -6,13 +6,15 @@ use async_openai::error::OpenAIError;
 use async_openai::{config::OpenAIConfig, Client as OpenAIClient};
 use aws_sdk_s3::{Client as S3Client, Error as S3Error};
 use data_encoding::HEXLOWER;
+use itertools::Itertools;
 use openaiutils::ChatResponse;
 use pdfium_render::prelude::*;
 use ring::digest::{Context, Digest, SHA256};
+use std::fmt::Display;
 use std::fs::File;
 use std::io::{Error as IOError, Read};
 use std::path::Path;
-use std::sync::Arc;
+use url::{ParseError as UrlParseError, Url};
 
 fn sha256_digest<R: Read>(mut reader: R) -> Result<Digest, IOError> {
   let mut context = Context::new(&SHA256);
@@ -30,27 +32,47 @@ fn sha256_digest<R: Read>(mut reader: R) -> Result<Digest, IOError> {
 }
 
 pub struct UploadResult {
-  success_ids: Vec<usize>,
-  failure_ids: Vec<usize>,
+  pub success_ids: Vec<usize>,
+  pub failure_ids: Vec<(usize, Error)>,
 }
 
 pub struct Clients {
-  pdfium: Pdfium,
-  render_config: PdfRenderConfig,
-  s3client: S3Client,
-  openaiclient: OpenAIClient<OpenAIConfig>,
-  bucket: String,
-  endpoint: String,
+  pub pdfium: Pdfium,
+  pub render_config: PdfRenderConfig,
+  pub s3client: S3Client,
+  pub openaiclient: OpenAIClient<OpenAIConfig>,
+  pub bucket: String,
+  pub endpoint: String,
 }
 
+#[derive(Debug)]
 pub enum Error {
   PdfiumError(PdfiumError),
   IOError(IOError),
   S3Error(S3Error),
   OpenAIError(OpenAIError),
+  UrlParseError(UrlParseError),
   Refusal(String),
   NoResponse,
+  BaseUrlError,
 }
+
+impl std::fmt::Display for Error {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    match self {
+      Error::PdfiumError(e) => e.fmt(f),
+      Error::IOError(e) => e.fmt(f),
+      Error::S3Error(e) => e.fmt(f),
+      Error::OpenAIError(e) => e.fmt(f),
+      Error::UrlParseError(e) => e.fmt(f),
+      Error::Refusal(s) => write!(f, "{s}"),
+      Error::NoResponse => write!(f, "The ChatGPT API did not return a response in choices!"),
+      Error::BaseUrlError => write!(f, "There was an error parsing that URL"), // Because UrlParseError isn't enough apparently
+    }
+  }
+}
+
+impl std::error::Error for Error {}
 
 impl From<PdfiumError> for Error {
   fn from(val: PdfiumError) -> Error {
@@ -76,36 +98,46 @@ impl From<OpenAIError> for Error {
   }
 }
 
-/** UNSAFE: `Clients` is not safe to send across thread boundaries
- * See: https://crates.io/crates/pdfium-render#user-content-multi-threading
- */
-pub async unsafe fn process_pdf<P: AsRef<Path>>(
-  clients: Arc<Clients>,
-  pdf: P,
-) -> Result<UploadResult, Error> {
+impl From<UrlParseError> for Error {
+  fn from(val: UrlParseError) -> Error {
+    Error::UrlParseError(val)
+  }
+}
+
+pub async fn process_pdf<P: AsRef<Path>>(clients: &Clients, pdf: P) -> Result<UploadResult, Error> {
+  // TODO: blocking
   let hash = {
     let file = File::open(&pdf)?;
     let digest = sha256_digest(file)?;
     HEXLOWER.encode(digest.as_ref())
   };
 
+  // TODO: not thread safe (hence concurrency)
   let pages = pdfutils::export_pdf_to_jpegs(&pdf, &clients.pdfium, &clients.render_config)?;
-  let futures = pages.into_iter().enumerate().map(|(i, page)| {
-    let clients = clients.clone();
-    let hash = hash.clone();
-    tokio::spawn(async move { process_page(clients, page, i, &hash).await })
-  });
+  let futures = pages
+    .into_iter()
+    .enumerate()
+    .map(|(i, page)| process_page(&clients, page, i, &hash));
 
   let results = futures::future::join_all(futures).await;
 
+  let (success_ids, failure_ids): (Vec<_>, Vec<_>) =
+    results
+      .into_iter()
+      .enumerate()
+      .partition_map(|(i, r)| match r {
+        Ok(_) => itertools::Either::Left(i),
+        Err(err) => itertools::Either::Right((i, err)),
+      });
+
   Ok(UploadResult {
-    success_ids: Vec::new(),
-    failure_ids: Vec::new(),
+    success_ids,
+    failure_ids,
   })
 }
 
 async fn process_page(
-  clients: Arc<Clients>,
+  clients: &Clients,
   page: Vec<u8>,
   page_num: usize,
   hash: &str,
@@ -118,14 +150,19 @@ async fn process_page(
   )
   .await?;
 
-  let resp = openaiutils::ocr_img(
-    &clients.openaiclient,
-    &format!(
-      "{}/{}/{hash}/{page_num}.jpg",
-      clients.endpoint, clients.bucket
-    ),
-  )
-  .await?;
+  let url: String = {
+    let mut url = Url::parse(&clients.endpoint)?;
+    url
+      .path_segments_mut()
+      .map_err(|_| Error::BaseUrlError)?
+      .pop_if_empty()
+      .push(&clients.bucket)
+      .push(hash)
+      .push(&format!("{page_num}.jpg"));
+    url.to_string()
+  };
+
+  let resp = openaiutils::ocr_img(&clients.openaiclient, &url).await?;
 
   match resp {
     Some(ChatResponse::Content(content)) => {
