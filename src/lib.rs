@@ -11,7 +11,7 @@ use openaiutils::ChatResponse;
 use pdfium_render::prelude::*;
 use ring::digest::{Context, Digest, SHA256};
 use std::fmt::Display;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::{Error as IOError, Read};
 use std::path::Path;
 use url::{ParseError as UrlParseError, Url};
@@ -111,6 +111,15 @@ pub async fn process_pdf<P: AsRef<Path>>(clients: &Clients, pdf: P) -> Result<Up
     let digest = sha256_digest(file)?;
     HEXLOWER.encode(digest.as_ref())
   };
+
+  // Can happen concurrently with the results futures
+  s3utils::upload_object(
+    &clients.s3client,
+    &clients.bucket,
+    fs::read(&pdf)?.into(),
+    &format!("{hash}/src.pdf"),
+  )
+  .await?;
 
   // TODO: not thread safe (hence concurrency)
   let pages = pdfutils::export_pdf_to_jpegs(&pdf, &clients.pdfium, &clients.render_config)?;
