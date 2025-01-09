@@ -41,3 +41,9 @@ router.get("/:docid", (_req: Request, res: Response<Document>) => { // `GET /api
     completed: true
   });
 });
+
+// `GET /api/v1/docs/<docid>/pages/<pagenum>/image`
+// for example: `http://localhost:8080/api/v1/docs/48723/pages/0/image`
+router.get("/:docid/pages/:pagenum/image", (_req: Request, res: Response<Document>) => {
+  res.status(200).sendFile("src/mocked/book.jpg", {root: "."});
+});
