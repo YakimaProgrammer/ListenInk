@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { DocId, Document, DocumentValidator, Err } from "./types";
 import { PrismaClient } from '@prisma/client';
-const { Readable } = require( "stream" );
+import { Readable } from "stream";
 
 const prisma = new PrismaClient();
 
