@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.709.0",
+    "@prisma/client": "^6.2.1",
     "express": "^4.21.2",
     "pdf2image": "^1.2.3",
     "tmp-promise": "^3.0.3"
