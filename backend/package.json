@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc --build tsconfig.json",
     "test": "ts-mocha -p tsconfig.json src/**/*_test.ts",
-    "start": "tsc-watch -p tsconfig.json --onSuccess \"node .\""
+    "start": "./init-dev-database.sh --if-missing && tsc-watch -p tsconfig.json --onSuccess \"node .\""
   },
   "repository": {
     "type": "git",
