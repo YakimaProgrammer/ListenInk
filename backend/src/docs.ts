@@ -142,7 +142,11 @@ router.get("/:docid/pages/:pagenum/image", async (req: Request, res: Response) =
     const response = await fetch(`https://picsum.photos/id/${req.params.pagenum}/1080/1920`);
     res.setHeader('Content-Type', response.headers.get('content-type') ?? "image/jpeg");
     res.status(200);
-    Readable.fromWeb(response.body).pipe(res);
+    if (response.body === null) {
+      res.send();
+     } else {
+      Readable.fromWeb(response.body).pipe(res);
+     }
   }
 });
 

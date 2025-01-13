@@ -29,9 +29,15 @@ export interface Bookmark {
   documentId: string,
 }
 
-export interface Err  {
+export interface Err {
   err: string
 };
+
+export interface User {
+  name: string
+  id: string
+  email: string
+}
 
 // Validator for DocId
 export const DocIdValidator = z.object({
