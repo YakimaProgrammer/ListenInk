@@ -1,14 +1,18 @@
 #!/bin/bash
 
+set -e
+
 if [ ! -f "backend/prisma/dev.db" ]; then
-  . backend/init-dev-database.sh
+  cd backend
+  . init-dev-database.sh
+  cd ..
 fi
 
 # Start npm run start in both frontend and backend directories
-cd frontend/ && npm run start &
+( cd frontend/ && npm run start ) &
 FRONTEND_PID=$!
 
-cd ../backend/ && npm run start &
+( cd backend/ && npm run start ) &
 BACKEND_PID=$!
 
 # Function to clean up processes when script is interrupted
