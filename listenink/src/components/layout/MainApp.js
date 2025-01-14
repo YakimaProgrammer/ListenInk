@@ -39,15 +39,23 @@ function MainApp() {
           <li>Menu Item 1</li>
           <li>Menu Item 2</li>
           <li>Menu Item 3</li>
+
+          {/* call to sidebar component */}
         </ul>
       </aside>
 
       {/* Main Content Area */}
       <main className="main-content">
-        <div className = "top-view"> top view</div>
+        <div className = "top-view"> top view
+            {/* show profile center right */}
+        </div>
         <h1>Main Area</h1>
-        <p>Welcome to the main area. Add your content here!</p>
-        <div className = "bottom-view">bottom view</div>
+        <p>PDF READER GO HERE</p>
+
+        <div className = "bottom-view">bottom view
+        
+        {/* audio control */}
+        </div>
       </main>
 
       
