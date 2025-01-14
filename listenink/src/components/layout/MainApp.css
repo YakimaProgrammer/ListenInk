@@ -8,23 +8,24 @@
 
 .hstack {
   flex: 1;
-  display: 'flex';
-  justify-content: 'center';
-  align-items: 'center';
-  border: '1px solid #ccc';
+  display: flex;
+  justify-content: right;
+  align-items: center;
+  border: 1px solid #ccc;
 }
 
 .vstack {
   flex: 1;
-  border: '1px solid #ccc';
-  display: 'flex';
-  flex-direction: 'column';
+  border: 1px solid #ccc;
+  display: flex;
+  flex-direction: column;
 }
 
 .subView {
   flex: 1;
-  border-bottom: '1px solid #ccc';
-  display: 'flex';
-  justify-content: 'center';
-  align-items: 'center';
+  border-bottom: 1px solid #ccc;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
+

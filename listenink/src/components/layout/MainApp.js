@@ -1,25 +1,26 @@
 
 import React from 'react';
 import styles from './MainApp.css';
+import './MainApp.css';
 
 function MainApp() {
   return (
-    <div style={styles.container}>
+    <div className = "container">
       
       {/* Left View (HStack side 1) */}
-      <div style={styles.hstack}>
+      <div className = "hstack">
         <p>Left View</p>
       </div>
       
       {/* Right View (HStack side 2) with three vertical sub-views */}
-      <div style={styles.vstack}>
-        <div style={styles.subView}>
+      <div className = "vstack">
+        <div className = "subView">
           <p>Right Top</p>
         </div>
-        <div style={styles.subView}>
+        <div className = "subView">
           <p>Right Middle</p>
         </div>
-        <div style={styles.subView}>
+        <div className = "subView">
           <p>Right Bottom</p>
         </div>
       </div>
