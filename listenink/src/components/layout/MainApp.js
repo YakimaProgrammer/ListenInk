@@ -53,19 +53,13 @@ function MainApp() {
                 <h1>Main Area</h1>
                 <p>PDF READER GO HERE</p>
 
-                <div className="bottom-view">bottom view
+                <div className="bottom-view">
 
                     {/* audio control */}
 
                     <AudioControls
-                        onPlay={() => console.log("Play clicked")}
-                        onPause={() => console.log("Pause clicked")}
-                        onRewind={() => console.log("Rewind clicked")}
-                        onSkip={() => console.log("Skip clicked")}
-                        isPlaying={false}
-                        currentPosition={1385} // Example: 23:05
-                        totalLength={2310} // Example: 38:30
-                    />
+                        />
+                    
                 </div>
             </main>
 
