@@ -1,0 +1,30 @@
+/* .container {
+  display: 'flex';
+  flex-direction: 'row';
+  height: '100vh';
+  margin: '0';
+  padding: '0';
+} */
+
+.hstack {
+  flex: 1;
+  display: 'flex';
+  justify-content: 'center';
+  align-items: 'center';
+  border: '1px solid #ccc';
+}
+
+.vstack {
+  flex: 1;
+  border: '1px solid #ccc';
+  display: 'flex';
+  flex-direction: 'column';
+}
+
+.subView {
+  flex: 1;
+  border-bottom: '1px solid #ccc';
+  display: 'flex';
+  justify-content: 'center';
+  align-items: 'center';
+}
