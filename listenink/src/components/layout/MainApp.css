@@ -82,8 +82,18 @@ body {
 }
 
 .top-view {
-  flex: 0 0 auto;  
-  margin-bottom: 20px; 
+  /* flex: 0 0 auto;  
+  margin-bottom: 20px;  */
+
+  position: absolute;
+  top: 0;
+  width: 100%;
+  max-width: 100vh;
+  background-color: #ecf0f1; 
+  text-align: center;
+  
+  overflow: none;
+  
 }
 
 .bottom-view {
@@ -98,4 +108,6 @@ body {
   overflow: none;
   max-width: 100vh;
 }
+
+
 
