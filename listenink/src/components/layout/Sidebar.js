@@ -1,63 +1,60 @@
 import React from "react";
 import "./Sidebar.css";
-
-// Mock data
-const categories = [
-    {
-        name: "Finance",
-        color: "blue",
-        documents: [
-            { id: "Invoice_2023-01" },
-            { id: "Report_Q4_Annual_Very_Long_Title_Document" },
-        ],
-    },
-    {
-        name: "Human Resources",
-        color: "green",
-        documents: [
-            { id: "Employee_Handbook" },
-            { id: "Onboarding_Checklist_Extra_Long_Name" },
-        ],
-    },
-    {
-        name: "Engineering",
-        color: "orange",
-        documents: [
-            { id: "Architecture_Diagram" },
-            { id: "Development_Guide" },
-            { id: "Release_Notes_For_Version_2.0_Beta" },
-        ],
-    },
-];
+import 'bootstrap-icons/font/bootstrap-icons.css';
+import { useCategories } from '../../contexts/CategoriesContext';
 
 // Helper function to truncate text
 const truncateText = (text, maxLength = 5) => {
-    console.log(text.length);
     if (text.length <= maxLength) {
         return text;
     }
-    // Show as many characters as possible minus a few, then add "..."
     return text.slice(0, maxLength - 3) + "...";
 };
 
-export default function CategoryPage() {
+export default function Sidebar({ onToggleSidebar }) {
+    const { categories, curDocument, setCurDocument } = useCategories();
+
+
     return (
         <div style={{ margin: "20px" }}>
-            <h1>All Categories</h1>
+            <div className="hstack header">
+                <button onClick={onToggleSidebar}>
+                    <i className="bi bi-layout-sidebar"></i>
+                </button>
+                <div className="right-align">
+                    <div className="hstack">
+                        <button>
+                            <i class="bi bi-search"></i>
+                        </button>
+                        <button>
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             {categories.map((category, index) => (
                 <div key={index} style={{ marginBottom: "16px" }}>
-                    <div>
-                        <strong style={{ color: category.color }}>
-                            {category.name}
-                        </strong>
-                    </div>
+                    <strong style={{ color: category.color }}>
+                        {truncateText(category.name, 25)}
+                    </strong>
 
-                    <ul style={{ marginLeft: "20px" }}>
+                    <div style={{ marginLeft: "20px" }}>
                         {category.documents.map((doc, docIndex) => {
-                            const truncatedId = truncateText(doc.id, 25); // adjust length as needed
-                            return <li key={docIndex}>{truncatedId}</li>;
+                            const truncatedId = truncateText(doc.name, 22);
+                            const isActive = curDocument.id === doc.id; // Check if the current document is active
+
+                            return (
+                                <button
+                                    key={doc.id}
+                                    onClick={() => setCurDocument(doc)}
+                                    className={`doc-button ${isActive ? "active" : ""}`}
+                                >
+                                    {truncatedId}
+                                </button>
+                            );
                         })}
-                    </ul>
+                    </div>
                 </div>
             ))}
         </div>

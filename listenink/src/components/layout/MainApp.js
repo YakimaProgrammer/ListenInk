@@ -1,31 +1,46 @@
+import React, { useState } from "react";
+import "./MainApp.css";
+import Sidebar from "./Sidebar";
+import 'bootstrap-icons/font/bootstrap-icons.css';
 
-import React from 'react';
-import styles from './MainApp.css';
-import './MainApp.css';
-import Sidebar from './Sidebar';
+
+import { useCategories } from '../../contexts/CategoriesContext';
 
 function MainApp() {
+    const { categories, curDocument, setCurDocument } = useCategories();
+
+    const [isSidebarVisible, setIsSidebarVisible] = useState(true);
+
+    const toggleSidebar = () => {
+        setIsSidebarVisible(!isSidebarVisible);
+    };
+
     return (
-
-        <div className="app-container">
+        <div className={`app-container ${!isSidebarVisible ? "sidebar-hidden" : ""}`}>
             {/* Sidebar */}
-
-
-
-            <aside className="sidebar">
-                <Sidebar></Sidebar>
+            <aside className={`sidebar ${!isSidebarVisible ? "hidden" : ""}`}>
+                <Sidebar onToggleSidebar={toggleSidebar} />
             </aside>
 
             {/* Main Content Area */}
             <main className="main-content">
-                <div className="top-view"> top view</div>
-                <h1>Main Area</h1>
-                <p>Welcome to the main area. Add your content here!</p>
-                <div className="bottom-view">bottom view</div>
+                <div className="top-view">
+                    <div className="hstack">
+                        <button className={`toggle ${!isSidebarVisible ? "sidebar-hidden" : ""}`} onClick={toggleSidebar}>
+                            <i className="bi bi-layout-sidebar"></i>
+                        </button>
+                        <p className="left-align title-text">
+                            {curDocument.name}
+                        </p>
+                    </div>
+                </div>
+                <p style={{ whiteSpace: 'pre-line' }}>{curDocument.text}</p>
+                <div className="bottom-view">Bottom View</div>
             </main>
-
-
         </div>
+
+
+
     );
 }
 
