@@ -1,0 +1,45 @@
+.audio-controls {
+    width: 90%;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+  }
+  
+  .time-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .progress-bar {
+    flex-grow: 1;
+    height: 10px;
+    background: #ddd;
+    margin: 0 10px;
+    position: relative;
+  }
+  
+  .progress {
+    height: 100%;
+    background: #007bff;
+    width: 0;
+  }
+  
+  .control-panel {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .control-button,
+  .play-pause-button {
+    padding: 10px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  
+  .playback-speed {
+    padding: 5px;
+  }
+  
