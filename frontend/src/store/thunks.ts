@@ -16,7 +16,9 @@ export const fetchData = createAsyncThunk(
       const resp = await req.json();
       dispatch(setCreds(resp));
     } catch (e) {
-      dispatch(authFail(e));
+      if (typeof e === "string") {
+	dispatch(authFail(e));
+      }
       return;
     }
 
@@ -24,7 +26,9 @@ export const fetchData = createAsyncThunk(
       const req = await fetch(`${BASE}/categories`);
       const resp = await req.json();
     } catch (e) {
-      dispatch(docsFail(e));
+      if (typeof e === "string") {
+	dispatch(docsFail(e));
+      }
     }
   }
 );
