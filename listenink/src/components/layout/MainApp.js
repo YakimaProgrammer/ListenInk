@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import "./MainApp.css";
 import Sidebar from "./Sidebar";
+import AudioControls from "./AudioControls";
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
 
@@ -35,7 +36,9 @@ function MainApp() {
                     </div>
                 </div>
                 <p style={{ whiteSpace: 'pre-line' }}>{curDocument.text}</p>
-                <div className="bottom-view">Bottom View</div>
+                <div className="bottom-view">
+                    <AudioControls></AudioControls>
+                </div>
             </main>
         </div>
 
