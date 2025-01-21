@@ -43,8 +43,6 @@ const initialDocuments = [
     },
 ];
 
-let lastDocumentId = initialDocuments.reduce((maxId, doc) => Math.max(maxId, doc.id), -1) + 1;
-
 const categoriesSlice = createSlice({
     name: 'categories',
     initialState: { categories: initialCategories, documents: initialDocuments },
@@ -52,8 +50,7 @@ const categoriesSlice = createSlice({
         addDocument: (state, action) => {
             const { document } = action.payload;
             console.log(document.id);
-            const newDocument = { ...document, id: lastDocumentId };
-            lastDocumentId++;
+            const newDocument = { ...document };
             state.documents.push(newDocument);
             const uncategorizedCategory = state.categories.find(cat => cat.name === "Uncategorized");
             if (uncategorizedCategory) {

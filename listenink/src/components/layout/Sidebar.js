@@ -15,9 +15,11 @@ export default function Sidebar({ onToggleSidebar }) {
     const { categories, documents, curDocument, setCurDocument, addNewDocument } = useCategories();
 
     const handleAddDocument = () => {
+        let newId = documents.reduce((maxId, doc) => Math.max(maxId, doc.id), -1) + 1;
         const newDocument = {
-            name: "New Document",
-            text: "This is a new document"
+            name: "New Document " + newId,
+            text: "This is a new document " + newId,
+            id: newId
         };
         addNewDocument(newDocument);
     };
@@ -40,37 +42,43 @@ export default function Sidebar({ onToggleSidebar }) {
                 </div>
             </div>
 
-            {categories.map((category, index) => {
-                const isUncategorized = category.name === "Uncategorized";
+            {[...categories]
+                .sort((a, b) => {
+                    if (a.name === "Uncategorized") return 1;
+                    if (b.name === "Uncategorized") return -1;
+                    return 0;
+                })
+                .map((category, index) => {
+                    const isUncategorized = category.name === "Uncategorized";
 
-                return (
-                    <div key={index} style={{ marginBottom: "16px" }}>
-                        {!isUncategorized && (
-                            <strong style={{ color: category.color }}>
-                                {truncateText(category.name, 25)}
-                            </strong>
-                        )}
-                        < div style={{ marginLeft: isUncategorized ? "0px" : "20px" }}>
-                            {category.documents.map((docId) => {
-                                const doc = documents.find((d) => d.id === docId);
-                                if (!doc) return null;
-                                const truncatedName = truncateText(doc.name, 22);
-                                const isActive = curDocument?.id === doc.id;
+                    return (
+                        <div key={index} style={{ marginBottom: "16px" }}>
+                            {!isUncategorized && (
+                                <strong style={{ color: category.color }}>
+                                    {truncateText(category.name, 25)}
+                                </strong>
+                            )}
+                            <div style={{ marginLeft: isUncategorized ? "0px" : "20px" }}>
+                                {category.documents.map((docId) => {
+                                    const doc = documents.find((d) => d.id === docId);
+                                    if (!doc) return null;
+                                    const truncatedName = truncateText(doc.name, 22);
+                                    const isActive = curDocument?.id === doc.id;
 
-                                return (
-                                    <button
-                                        key={doc.id}
-                                        onClick={() => setCurDocument(doc)}
-                                        className={`doc-button ${isActive ? "active" : ""}`}
-                                    >
-                                        {truncatedName}
-                                    </button>
-                                );
-                            })}
+                                    return (
+                                        <button
+                                            key={doc.id}
+                                            onClick={() => setCurDocument(doc)}
+                                            className={`doc-button ${isActive ? "active" : ""}`}
+                                        >
+                                            {truncatedName}
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
-                    </div>
-                );
-            })}
+                    );
+                })}
         </div >
     );
 }

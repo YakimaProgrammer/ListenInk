@@ -29,11 +29,11 @@ button::before {
     content: "";
     /* Empty content for the pseudo-element */
     position: absolute;
-    top: -5px;
+    top: 0px;
     /* Expand the background beyond the button's boundaries */
-    left: -5px;
-    right: -5px;
-    bottom: -5px;
+    left: 0px;
+    right: 0px;
+    bottom: 0px;
     background-color: #ececec;
     z-index: -1;
     /* Place the background behind the button */

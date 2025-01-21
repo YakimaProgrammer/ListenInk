@@ -12,6 +12,8 @@ export const CategoriesProvider = ({ children }) => {
 
     const addNewDocument = (newDoc) => {
         store.dispatch(addDocument({ document: newDoc }));
+        const newDocument = { ...newDoc };
+        setCurDocument(newDocument);
     };
 
     return (
