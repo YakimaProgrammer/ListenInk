@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { selectCategories } from './categoriesSlice';
+import store from './store';
+import { selectCategories, addDocument } from './categoriesSlice';
 
 const CategoriesContext = createContext();
 
@@ -9,8 +10,8 @@ export const CategoriesProvider = ({ children }) => {
     const documents = useSelector((state) => state.categories.documents || []);
     const [curDocument, setCurDocument] = useState(null);
 
-    const addNewDocument = (categoryId, newDoc) => {
-        // Logic to add a new document
+    const addNewDocument = (newDoc) => {
+        store.dispatch(addDocument({ document: newDoc }));
     };
 
     return (

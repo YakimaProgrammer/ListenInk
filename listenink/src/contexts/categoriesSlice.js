@@ -43,34 +43,28 @@ const initialDocuments = [
     },
 ];
 
+let lastDocumentId = initialDocuments.reduce((maxId, doc) => Math.max(maxId, doc.id), -1) + 1;
+
 const categoriesSlice = createSlice({
     name: 'categories',
     initialState: { categories: initialCategories, documents: initialDocuments },
     reducers: {
         addDocument: (state, action) => {
-            const { categoryId, document } = action.payload;
-            const uncategorizedCategory = state.categories.find(
-                (cat) => cat.name === "Uncategorized"
-            );
-
-            const targetCategoryId = categoryId ?? uncategorizedCategory?.id ?? 0; // Default to "Uncategorized" or first category
-            const newDocument = { ...document, categoryId: targetCategoryId, id: Date.now() };
-
+            const { document } = action.payload;
+            console.log(document.id);
+            const newDocument = { ...document, id: lastDocumentId };
+            lastDocumentId++;
             state.documents.push(newDocument);
-
-            // Add the document ID to the category's document list
-            const category = state.categories.find((cat) => cat.id === targetCategoryId);
-            if (category) {
-                category.documents.push(newDocument.id);
+            const uncategorizedCategory = state.categories.find(cat => cat.name === "Uncategorized");
+            if (uncategorizedCategory) {
+                uncategorizedCategory.documents.push(newDocument.id);
             }
-        }
+        },
     },
 });
 
 export const { addDocument } = categoriesSlice.actions;
-
 export const selectCategories = (state) => state.categories.categories;
 export const selectDocumentsByCategory = (state, categoryId) =>
     state.categories.documents.filter((doc) => doc.categoryId === categoryId);
-
 export default categoriesSlice.reducer;
