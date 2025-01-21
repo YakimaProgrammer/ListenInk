@@ -17,17 +17,17 @@ function MainApp() {
     };
 
     return (
-        <div className={`app-container`}>
+        <div className={`app-container ${!isSidebarVisible ? "sidebar-hidden" : ""}`}>
             {/* Sidebar */}
-            <aside className={`sidebar`}>
-                <Sidebar />
+            <aside className={`sidebar ${!isSidebarVisible ? "hidden" : ""}`}>
+                <Sidebar onToggleSidebar={toggleSidebar} />
             </aside>
 
             {/* Main Content Area */}
             <main className="main-content">
                 <div className="top-view">
                     <div className="hstack">
-                        <button className="toggle">
+                        <button className={`toggle ${!isSidebarVisible ? "sidebar-hidden" : ""}`} onClick={toggleSidebar}>
                             <i className="bi bi-layout-sidebar"></i>
                         </button>
                         <p className="left-align title-text">
