@@ -110,3 +110,47 @@ button:hover::before {
     margin-left: auto;
     /* Push this element to the far right */
 }
+
+/*SEARCH FORMATTING
+
+
+/* Popup overlay background */
+.search-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+/* Popup content */
+.search-popup-content {
+    background: white;
+    width: 60%;
+    max-width: 800px;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    position: relative;
+}
+
+/* Close button */
+.close-popup {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #333;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.close-popup:hover {
+    color: #e74c3c;
+}
