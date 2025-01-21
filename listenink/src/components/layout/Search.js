@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import "./Search.css";
 import { useCategories } from "../../contexts/CategoriesContext";
-
+// not fully functional yet, but does search
+// like it will get the document based on word that u type, 
+// whether that word is in the title or in the document itself
 export default function Search() {
     const { documents, curDocument, setCurDocument } = useCategories();
     const [searchQuery, setSearchQuery] = useState("");
