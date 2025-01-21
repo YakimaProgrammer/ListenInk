@@ -1,4 +1,8 @@
 /* List Item Styling */
+* {
+    z-index: 1000
+}
+
 li {
     width: 200px;
     white-space: nowrap;

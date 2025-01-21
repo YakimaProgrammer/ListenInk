@@ -13,19 +13,9 @@ const truncateText = (text = "", maxLength = 5) => {
     return text.slice(0, maxLength - 3) + "...";
 };
 
-export default function Sidebar({ onToggleSidebar }) {
+export default function Sidebar({ onToggleSidebar, handleAddDocument }) {
     const dispatch = useDispatch();
     const { categories, documents, curDocument, setCurDocument, addNewDocument } = useCategories();
-
-    const handleAddDocument = () => {
-        let newId = documents.reduce((maxId, doc) => Math.max(maxId, doc.id), -1) + 1;
-        const newDocument = {
-            name: "New Document " + newId,
-            text: "This is a new document " + newId,
-            id: newId
-        };
-        addNewDocument(newDocument);
-    };
 
     const handleDragStart = (e, docId, sourceCategoryId) => {
         // Store the dragged docId and the source category in the DataTransfer
