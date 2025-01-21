@@ -17,33 +17,40 @@ function MainApp() {
     };
 
     return (
-        <div className={`app-container ${!isSidebarVisible ? "sidebar-hidden" : ""}`}>
+        <div className={`app-container`}>
             {/* Sidebar */}
-            <aside className={`sidebar ${!isSidebarVisible ? "hidden" : ""}`}>
-                <Sidebar onToggleSidebar={toggleSidebar} />
+            <aside className={`sidebar`}>
+                <Sidebar />
             </aside>
 
             {/* Main Content Area */}
             <main className="main-content">
                 <div className="top-view">
                     <div className="hstack">
-                        <button className={`toggle ${!isSidebarVisible ? "sidebar-hidden" : ""}`} onClick={toggleSidebar}>
+                        <button className="toggle">
                             <i className="bi bi-layout-sidebar"></i>
                         </button>
                         <p className="left-align title-text">
-                            {curDocument.name}
+                            {curDocument ? curDocument.name : "No Document Selected"}
                         </p>
                     </div>
                 </div>
-                <p style={{ whiteSpace: 'pre-line' }}>{curDocument.text}</p>
-                <div className="bottom-view">
-                    <AudioControls></AudioControls>
+                <div style={{ whiteSpace: 'pre-line', display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    {curDocument ? (
+                        <>
+                            <div style={{ flex: 1, overflow: 'auto' }}>
+                                <p>{curDocument.text}</p>
+                            </div>
+                            <div className="bottom-view" style={{ flexShrink: 0 }}>
+                                <AudioControls />
+                            </div>
+                        </>
+                    ) : (
+                        <p style={{ margin: 'auto' }}>Please select a document to view its contents.</p>
+                    )}
                 </div>
-            </main>
-        </div>
-
-
-
+            </main >
+        </div >
     );
 }
 

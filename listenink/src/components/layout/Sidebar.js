@@ -12,8 +12,16 @@ const truncateText = (text, maxLength = 5) => {
 };
 
 export default function Sidebar({ onToggleSidebar }) {
-    const { categories, curDocument, setCurDocument } = useCategories();
+    const { categories, documents, curDocument, setCurDocument, addNewDocument } = useCategories();
 
+    const handleAddDocument = () => {
+        const defaultCategoryId = categories[0]?.id || 0; // Add to the first category by default
+        const newDocument = {
+            name: "New Document",
+            text: "This is a new document",
+        };
+        addNewDocument(defaultCategoryId, newDocument);
+    };
 
     return (
         <div style={{ margin: "20px" }}>
@@ -24,39 +32,50 @@ export default function Sidebar({ onToggleSidebar }) {
                 <div className="right-align">
                     <div className="hstack">
                         <button>
-                            <i class="bi bi-search"></i>
+                            <i className="bi bi-search" />
+                            {/* search */}
                         </button>
-                        <button>
-                            <i class="bi bi-pencil-square"></i>
+                        <button onClick={handleAddDocument}>
+                            <i className="bi bi-pencil-square" />
+                            {/* edit */}
                         </button>
                     </div>
                 </div>
             </div>
 
-            {categories.map((category, index) => (
-                <div key={index} style={{ marginBottom: "16px" }}>
-                    <strong style={{ color: category.color }}>
-                        {truncateText(category.name, 25)}
-                    </strong>
+            {categories.map((category, index) => {
+                // Skip rendering the title for "Uncategorized"
+                const isUncategorized = category.name === "Uncategorized";
 
-                    <div style={{ marginLeft: "20px" }}>
-                        {category.documents.map((doc, docIndex) => {
-                            const truncatedId = truncateText(doc.name, 22);
-                            const isActive = curDocument.id === doc.id; // Check if the current document is active
+                return (
+                    <div key={index} style={{ marginBottom: "16px" }}>
+                        {!isUncategorized && (
+                            <strong style={{ color: category.color }}>
+                                {truncateText(category.name, 25)}
+                            </strong>
+                        )}
 
-                            return (
-                                <button
-                                    key={doc.id}
-                                    onClick={() => setCurDocument(doc)}
-                                    className={`doc-button ${isActive ? "active" : ""}`}
-                                >
-                                    {truncatedId}
-                                </button>
-                            );
-                        })}
+                        <div style={{ marginLeft: isUncategorized ? "0px" : "20px" }}>
+                            {category.documents.map((docId) => {
+                                const doc = documents.find((d) => d.id === docId);
+                                if (!doc) return null; // Skip if the document is not found
+                                const truncatedName = truncateText(doc.name, 22);
+                                const isActive = curDocument?.id === doc.id; // Check if the current document is active
+
+                                return (
+                                    <button
+                                        key={doc.id}
+                                        onClick={() => setCurDocument(doc)}
+                                        className={`doc-button ${isActive ? "active" : ""}`}
+                                    >
+                                        {truncatedName}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
-                </div>
-            ))}
+                );
+            })}
         </div>
     );
 }
