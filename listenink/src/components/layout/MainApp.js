@@ -3,23 +3,29 @@ import "./MainApp.css";
 import Sidebar from "./Sidebar";
 import AudioControls from "./AudioControls";
 import "bootstrap-icons/font/bootstrap-icons.css";
-import PDFDropModal from "./PDFDropModal"; // import the modal component
+import PDFDropModal from "./PDFDropModal";
 import MainPdf from "../pdfViewer/MainPdf.js";
 
 import { useCategories } from "../../contexts/CategoriesContext";
 
 function MainApp() {
   const {
-    categories,
+    // categories,
     documents,
     curDocument,
     setCurDocument,
     addNewDocument,
+    // updateDocumentName,
     pdfByDocId,
+    renameDocument // assume you have that too
   } = useCategories();
 
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+
+  // 1) Add local state for editing
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [tempName, setTempName] = useState("");
 
   const toggleSidebar = () => {
     setIsSidebarVisible(!isSidebarVisible);
@@ -83,6 +89,33 @@ function MainApp() {
     addNewDocument(newDocument);
   };
 
+  // 2) Double-click to start editing
+  const handleTitleDoubleClick = () => {
+    if (curDocument) {
+      setTempName(curDocument.name || "");
+      setEditingTitle(true);
+    }
+  };
+
+  // 3) Handle blur (or "Enter") to save
+  const handleTitleBlur = () => {
+    if (curDocument && tempName.trim() !== "") {
+      // This calls the context's function, which dispatches the Redux action
+      renameDocument(curDocument.id, tempName.trim());
+
+      // ALSO update your local "curDocument" so it matches instantly
+      setCurDocument({ ...curDocument, name: tempName.trim() });
+    }
+    setEditingTitle(false);
+  };
+
+  // Optional: Handle "Enter" key to finish editing
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.target.blur();
+    }
+  };
+
   const docHasPdf = curDocument && pdfByDocId[curDocument.id];
 
   return (
@@ -113,9 +146,28 @@ function MainApp() {
             >
               <i className="bi bi-pencil-square" />
             </button>
-            <p className="left-align title-text">
-              {curDocument ? curDocument.name : "No Document Selected"}
-            </p>
+
+            {/* 4) Conditionally render either a <p> or an <input> */}
+            {editingTitle ? (
+              <input
+                className="left-align title-text"
+                value={tempName}
+                onChange={(e) => setTempName(e.target.value)}
+                onBlur={handleTitleBlur}
+                onKeyDown={handleKeyDown}
+                autoFocus
+
+                style={{ width: `${Math.max(tempName.length, 1) + 2}ch` }}
+              />
+            ) : (
+              <p
+                className="left-align title-text"
+                onDoubleClick={handleTitleDoubleClick}
+                onClick={handleTitleDoubleClick}
+              >
+                {curDocument ? curDocument.name : "No Document Selected"}
+              </p>
+            )}
           </div>
         </div>
 

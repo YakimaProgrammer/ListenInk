@@ -82,10 +82,16 @@ const categoriesSlice = createSlice({
                 targetCategory.documents.push(parseInt(docId));
             }
         },
+
+        updateDocumentName: (state, action) => {
+            const { docId, newName } = action.payload;
+            const doc = state.documents.find((d) => d.id === docId);
+            if (doc) doc.name = newName;
+        },
     },
 });
 
-export const { addDocument, moveDocument } = categoriesSlice.actions;
+export const { addDocument, moveDocument, updateDocumentName } = categoriesSlice.actions;
 // export const selectCategories = (state) => state.categories.categories;
 // export const selectDocumentsByCategory = (state, categoryId) => state.categories.documents.filter((doc) => doc.categoryId === categoryId);
 export default categoriesSlice.reducer;

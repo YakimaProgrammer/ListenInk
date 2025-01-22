@@ -1,19 +1,24 @@
 // CategoriesContext.js
 import React, { createContext, useContext, useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import store from './store';
-import { addDocument } from './categoriesSlice';
+import { addDocument, updateDocumentName } from './categoriesSlice';
 
 const CategoriesContext = createContext();
 
 export const CategoriesProvider = ({ children }) => {
+    const dispatch = useDispatch();
+
     const categories = useSelector((state) => state.categories.categories || []);
+
+    // 2) Keep using Redux for official "documents"
+    //    (If you remove this, your page may crash because other parts rely on it.)
     const documents = useSelector((state) => state.categories.documents || []);
+
+    // 3) The "current" document you are viewing
     const [curDocument, setCurDocument] = useState(null);
 
-    // 1) A map from docId -> PDF File object (or you could store base64, Blob URL, etc.)
     const [pdfByDocId, setPdfByDocId] = useState({});
-
     const addNewDocument = (newDoc) => {
         store.dispatch(addDocument({ document: newDoc }));
         const newDocument = { ...newDoc };
@@ -28,6 +33,12 @@ export const CategoriesProvider = ({ children }) => {
         }));
     };
 
+    // 5) Example: rename a document
+    const renameDocument = (docId, newName) => {
+        // This calls the *Redux action*, not itself
+        dispatch(updateDocumentName({ docId, newName }));
+    };
+
     return (
         <CategoriesContext.Provider
             value={{
@@ -38,7 +49,8 @@ export const CategoriesProvider = ({ children }) => {
                 addNewDocument,
                 // expose new state & function
                 pdfByDocId,
-                attachPdfToDocument
+                attachPdfToDocument,
+                renameDocument,
             }}
         >
             {children}
