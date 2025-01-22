@@ -1,7 +1,6 @@
 // ORIGINAL
 
 // // Sidebar.js
-import React from "react";
 // import "./Sidebar.css";
 // import 'bootstrap-icons/font/bootstrap-icons.css';
 // import { useCategories } from '../../contexts/CategoriesContext';
@@ -163,46 +162,51 @@ export default function Sidebar({ onToggleSidebar, handleAddDocument }) {
             )}
 
             {/* Categories and documents */}
-            {categories.map((category, index) => {
-                const isUncategorized = category.name === "Uncategorized";
+            {[...categories]
+                .sort((a, b) => {
+                    if (a.name === "Uncategorized") return 1;
+                    if (b.name === "Uncategorized") return -1;
+                    return 0;
+                }).map((category, index) => {
+                    const isUncategorized = category.name === "Uncategorized";
 
-                return (
-                    // Container for category
-                    <div
-                        key={index}
-                        style={{ marginBottom: "16px" }}
-                        onDragOver={handleDragOver}
-                        onDrop={(e) => handleDrop(e, category.id)}
-                    >
-                        {!isUncategorized && (
-                            <strong style={{ color: category.color }}>
-                                {truncateText(category.name, 25)}
-                            </strong>
-                        )}
-                        <div style={{ marginLeft: isUncategorized ? "0px" : "20px" }}>
-                            {/* Documents */}
-                            {category.documents.map((docId) => {
-                                const doc = documents.find((d) => d.id === docId);
-                                if (!doc) return null;
-                                const truncatedName = truncateText(doc.name, 22);
-                                const isActive = curDocument?.id === doc.id;
+                    return (
+                        // Container for category
+                        <div
+                            key={index}
+                            style={{ marginBottom: "16px" }}
+                            onDragOver={handleDragOver}
+                            onDrop={(e) => handleDrop(e, category.id)}
+                        >
+                            {!isUncategorized && (
+                                <strong style={{ color: category.color }}>
+                                    {truncateText(category.name, 25)}
+                                </strong>
+                            )}
+                            <div style={{ marginLeft: isUncategorized ? "0px" : "20px" }}>
+                                {/* Documents */}
+                                {category.documents.map((docId) => {
+                                    const doc = documents.find((d) => d.id === docId);
+                                    if (!doc) return null;
+                                    const truncatedName = truncateText(doc.name, 22);
+                                    const isActive = curDocument?.id === doc.id;
 
-                                return (
-                                    <button
-                                        key={doc.id}
-                                        onClick={() => setCurDocument(doc)}
-                                        className={`doc-button ${isActive ? "active" : ""}`}
-                                        draggable={true}
-                                        onDragStart={(e) => handleDragStart(e, doc.id, category.id)}
-                                    >
-                                        {truncatedName}
-                                    </button>
-                                );
-                            })}
+                                    return (
+                                        <button
+                                            key={doc.id}
+                                            onClick={() => setCurDocument(doc)}
+                                            className={`doc-button ${isActive ? "active" : ""}`}
+                                            draggable={true}
+                                            onDragStart={(e) => handleDragStart(e, doc.id, category.id)}
+                                        >
+                                            {truncatedName}
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
-                    </div>
-                );
-            })}
+                    );
+                })}
         </div>
     );
 }

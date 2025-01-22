@@ -42,7 +42,11 @@ p {
   width: 100%;
   height: 100vh;
   /* Full viewport height */
-  overflow: hidden;
+  /* overflow: hidden; */
+  position: relative;
+  /* Ensure proper stacking context */
+  overflow: visible;
+  /* Allow overflow for fixed elements like search */
 }
 
 /* Sidebar */
@@ -97,6 +101,9 @@ p {
   overflow-y: auto;
   /* Scrollable if content overflows */
   flex: 1 1 auto;
+
+  overflow: visible;
+  /* Prevent clipping of children */
 }
 
 .title-text {
