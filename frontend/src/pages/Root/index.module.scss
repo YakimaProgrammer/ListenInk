@@ -1,0 +1,16 @@
+$sidebar-width: 20%;
+$main-panel-width: 80%;
+
+.page {
+    display: grid;
+    grid-template-columns: $sidebar-width $main-panel-width;
+    height: 100vh;
+  
+    .sidebar {
+	background-color: #ececec;
+    }
+
+    .main {
+	background-color: #f9f9f9;
+    }
+}

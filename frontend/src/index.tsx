@@ -1,8 +1,11 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router";
-import { Root } from "./routes/Root";
-import { Auth } from "./routes/Auth";
+import { Root } from "./pages/Root";
+import { Auth } from "./pages/Auth";
+
+// A global css file, but we use css modules for this project for namespacing
+import "./index.css";
 
 let router = createBrowserRouter([
   {
