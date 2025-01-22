@@ -1,70 +1,55 @@
+import React, { useState } from "react";
+import "./MainApp.css";
+import Sidebar from "./Sidebar";
+import AudioControls from "./AudioControls";
+import 'bootstrap-icons/font/bootstrap-icons.css';
 
-import React from 'react';
-import styles from './MainApp.css';
-import './MainApp.css';
-import AudioControls from '../content/AudioControls';
+import { useCategories } from '../../contexts/CategoriesContext';
 
 function MainApp() {
+    const { categories, curDocument, setCurDocument } = useCategories();
+
+    const [isSidebarVisible, setIsSidebarVisible] = useState(true);
+
+    const toggleSidebar = () => {
+        setIsSidebarVisible(!isSidebarVisible);
+    };
+
     return (
-        // <div className = "container">
-
-        //   {/* Left View (HStack side 1) */}
-        //   <div className = "hstack">
-        //     <p>Left View</p>
-        //   </div>
-
-        //   {/* Right View (HStack side 2) with three vertical sub-views */}
-        //   <div className = "vstack">
-        //     <div className = "subView">
-        //       <p>Right Top</p>
-        //     </div>
-        //     <div className = "subView">
-        //       <p>Right Middle</p>
-        //     </div>
-        //     <div className = "subView">
-        //       <p>Right Bottom</p>
-        //     </div>
-        //   </div>
-
-        // </div>
-
-
-        <div className="app-container">
+        <div className={`app-container ${!isSidebarVisible ? "sidebar-hidden" : ""}`}>
             {/* Sidebar */}
-
-
-
-            <aside className="sidebar">
-                <h2>Sidebar</h2>
-                <ul>
-                    <li>Menu Item 1</li>
-                    <li>Menu Item 2</li>
-                    <li>Menu Item 3</li>
-
-                    {/* call to sidebar component */}
-                </ul>
+            <aside className={`sidebar ${!isSidebarVisible ? "hidden" : ""}`}>
+                <Sidebar onToggleSidebar={toggleSidebar} />
             </aside>
 
             {/* Main Content Area */}
             <main className="main-content">
-                <div className="top-view"> top view
-                    {/* show profile center right */}
+                <div className="top-view">
+                    <div className="hstack">
+                        <button className={`toggle ${!isSidebarVisible ? "sidebar-hidden" : ""}`} onClick={toggleSidebar}>
+                            <i className="bi bi-layout-sidebar"></i>
+                        </button>
+                        <p className="left-align title-text">
+                            {curDocument ? curDocument.name : "No Document Selected"}
+                        </p>
+                    </div>
                 </div>
-                <h1>Main Area</h1>
-                <p>PDF READER GO HERE</p>
-
-                <div className="bottom-view">
-
-                    {/* audio control */}
-
-                    <AudioControls
-                        />
-                    
+                <div style={{ whiteSpace: 'pre-line', display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    {curDocument ? (
+                        <>
+                            <div style={{ flex: 1, overflow: 'auto' }}>
+                                <p>{curDocument.text}</p>
+                            </div>
+                            <div className="bottom-view" style={{ flexShrink: 0 }}>
+                                <AudioControls />
+                            </div>
+                        </>
+                    ) : (
+                        <p style={{ margin: 'auto' }}>Please select a document to view its contents.</p>
+                    )}
                 </div>
-            </main>
-
-
-        </div>
+            </main >
+        </div >
     );
 }
 
