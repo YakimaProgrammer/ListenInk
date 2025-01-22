@@ -49,19 +49,49 @@ const categoriesSlice = createSlice({
     reducers: {
         addDocument: (state, action) => {
             const { document } = action.payload;
-            console.log(document.id);
-            const newDocument = { ...document };
-            state.documents.push(newDocument);
+            state.documents.push(document);
+
+            // console.log(document.id);
+            // const newDocument = { ...document };
+            // state.documents.push(newDocument);
             const uncategorizedCategory = state.categories.find(cat => cat.name === "Uncategorized");
             if (uncategorizedCategory) {
-                uncategorizedCategory.documents.push(newDocument.id);
+                // uncategorizedCategory.documents.push(newDocument.id);
+                uncategorizedCategory.documents.push(document.id);
             }
+        },
+
+        // NEW REDUCER
+        moveDocument: (state, action) => {
+            const { docId, sourceCategoryId, targetCategoryId } = action.payload;
+
+            // Do nothing if user drops onto the same category
+            if (sourceCategoryId === targetCategoryId) return;
+
+            // Find source category
+            const sourceCategory = state.categories.find(cat => cat.id === parseInt(sourceCategoryId));
+            // Remove doc from source
+            if (sourceCategory) {
+                sourceCategory.documents = sourceCategory.documents.filter(id => id !== parseInt(docId));
+            }
+
+            // Find target category
+            const targetCategory = state.categories.find(cat => cat.id === parseInt(targetCategoryId));
+            // Add doc to target
+            if (targetCategory) {
+                targetCategory.documents.push(parseInt(docId));
+            }
+        },
+
+        updateDocumentName: (state, action) => {
+            const { docId, newName } = action.payload;
+            const doc = state.documents.find((d) => d.id === docId);
+            if (doc) doc.name = newName;
         },
     },
 });
 
-export const { addDocument } = categoriesSlice.actions;
-export const selectCategories = (state) => state.categories.categories;
-export const selectDocumentsByCategory = (state, categoryId) =>
-    state.categories.documents.filter((doc) => doc.categoryId === categoryId);
+export const { addDocument, moveDocument, updateDocumentName } = categoriesSlice.actions;
+// export const selectCategories = (state) => state.categories.categories;
+// export const selectDocumentsByCategory = (state, categoryId) => state.categories.documents.filter((doc) => doc.categoryId === categoryId);
 export default categoriesSlice.reducer;
