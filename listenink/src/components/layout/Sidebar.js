@@ -1,98 +1,10 @@
-// ORIGINAL
-
-// // Sidebar.js
-// import "./Sidebar.css";
-// import 'bootstrap-icons/font/bootstrap-icons.css';
-// import { useCategories } from '../../contexts/CategoriesContext';
-// import Search from "./Search.js";
-
-// // Helper function to truncate text
-// const truncateText = (text, maxLength = 5) => {
-//     if (text.length <= maxLength) {
-//         return text;
-//     }
-//     return text.slice(0, maxLength - 3) + "...";
-// };
-
-// export default function Sidebar({ onToggleSidebar }) {
-//     const { categories, documents, curDocument, setCurDocument, addNewDocument } = useCategories();
-
-//     const handleAddDocument = () => {
-//         const defaultCategoryId = categories[0]?.id || 0; // Add to the first category by default
-//         const newDocument = {
-//             name: "New Document",
-//             text: "This is a new document",
-//         };
-//         addNewDocument(defaultCategoryId, newDocument);
-//     };
-
-//     return (
-//         <div style={{ margin: "20px" }}>
-//             <div className="hstack header">
-//                 <button onClick={onToggleSidebar}>
-//                     <i className="bi bi-layout-sidebar"></i>
-//                 </button>
-//                 <div className="right-align">
-//                     <div className="hstack">
-//                         <button>
-//                             <i className="bi bi-search" />
-//                             <Search />
-//                         </button>
-//                         <button onClick={handleAddDocument}>
-//                             <i className="bi bi-pencil-square" />
-//                             {/* edit */}
-//                         </button>
-//                     </div>
-//                 </div>
-//             </div>
-
-//             {categories.map((category, index) => {
-//                 // Skip rendering the title for "Uncategorized"
-//                 const isUncategorized = category.name === "Uncategorized";
-
-//                 return (
-//                     <div key={index} style={{ marginBottom: "16px" }}>
-//                         {!isUncategorized && (
-//                             <strong style={{ color: category.color }}>
-//                                 {truncateText(category.name, 25)}
-//                             </strong>
-//                         )}
-
-//                         <div style={{ marginLeft: isUncategorized ? "0px" : "20px" }}>
-//                             {category.documents.map((docId) => {
-//                                 const doc = documents.find((d) => d.id === docId);
-//                                 if (!doc) return null; // Skip if the document is not found
-//                                 const truncatedName = truncateText(doc.name, 22);
-//                                 const isActive = curDocument?.id === doc.id; // Check if the current document is active
-
-//                                 return (
-//                                     <button
-//                                         key={doc.id}
-//                                         onClick={() => setCurDocument(doc)}
-//                                         className={`doc-button ${isActive ? "active" : ""}`}
-//                                     >
-//                                         {truncatedName}
-//                                     </button>
-//                                 );
-//                             })}
-//                         </div>
-//                     </div>
-//                 );
-//             })}
-//         </div>
-//     );
-// }
-
-
-// WORKING SEARCH BUT NEED TO IMPLEMENT HOW WE WANT FORMATTING
-
 import React, { useState } from "react";
 import "./Sidebar.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import { useDispatch } from "react-redux";
 import { useCategories } from "../../contexts/CategoriesContext";
 import Search from "./Search.js";
-import { moveDocument } from '../../contexts/categoriesSlice';
+import { moveDocument, addCategory } from '../../contexts/categoriesSlice'; // <--- Add your 'addCategory' import here
 
 const truncateText = (text = "", maxLength = 5) => {
     if (text.length <= maxLength) {
@@ -101,13 +13,30 @@ const truncateText = (text = "", maxLength = 5) => {
     return text.slice(0, maxLength - 3) + "...";
 };
 
-export default function Sidebar({ onToggleSidebar, handleAddDocument }) {
+export default function Sidebar({ onToggleSidebar, handleAddDocument, handleAddCategory }) {
     const dispatch = useDispatch();
-    const { categories, documents, curDocument, setCurDocument, addNewDocument } = useCategories();
-    const [showSearch, setShowSearch] = useState(false); // State to control search visibility
+    const { categories, documents, curDocument, setCurDocument } = useCategories();
+    const [showSearch, setShowSearch] = useState(false);
+    // For the "Add New" dropdown:
+    const [showAddDropdown, setShowAddDropdown] = useState(false);
 
     const toggleSearch = () => setShowSearch((prev) => !prev);
+    const toggleAddDropdown = () => setShowAddDropdown((prev) => !prev);
 
+    // If you have a Redux or context function for adding a category, call it here.
+    const handleAddCategoryAction = () => {
+        // Example: dispatch(addCategory({ name: 'New Category' }));
+        handleAddCategory();
+        setShowAddDropdown(false); // close menu after adding
+    };
+
+    // If you want to close the dropdown after adding a document, do it here:
+    const handleAddDocAndClose = () => {
+        handleAddDocument();
+        setShowAddDropdown(false);
+    };
+
+    // Drag/Drop logic remains the same
     const handleDragStart = (e, docId, sourceCategoryId) => {
         // Store the dragged docId and the source category in the DataTransfer
         e.dataTransfer.setData("docId", docId);
@@ -141,10 +70,29 @@ export default function Sidebar({ onToggleSidebar, handleAddDocument }) {
                             <i className="bi bi-search" />
                         </button>
 
+                        {/* Add New (Dropdown) */}
+                        <div className="add-new-dropdown-container">
+                            <button onClick={toggleAddDropdown}>
+                                <i className="bi bi-pencil-square" />
+                                {/* Or some other icon/text */}
+                            </button>
+
+                            {showAddDropdown && (
+                                <div className="add-new-dropdown-menu">
+                                    <button onClick={handleAddDocAndClose}>
+                                        Create New Document
+                                    </button>
+                                    <button onClick={handleAddCategoryAction}>
+                                        Create New Category
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
                         {/* Add new document button */}
-                        <button onClick={handleAddDocument}>
+                        {/* <button onClick={handleAddDocument}>
                             <i className="bi bi-pencil-square" />
-                        </button>
+                        </button> */}
                     </div>
                 </div>
             </div>

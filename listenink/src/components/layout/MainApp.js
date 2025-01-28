@@ -10,14 +10,15 @@ import { useCategories } from "../../contexts/CategoriesContext";
 
 function MainApp() {
   const {
-    // categories,
+    categories,
     documents,
     curDocument,
     setCurDocument,
     addNewDocument,
     // updateDocumentName,
     pdfByDocId,
-    renameDocument // assume you have that too
+    renameDocument, // assume you have that too
+    addNewCategory,
   } = useCategories();
 
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
@@ -89,6 +90,16 @@ function MainApp() {
     addNewDocument(newDocument);
   };
 
+  const handleAddCategory = () => {
+    let newId =
+      categories.reduce((maxId, doc) => Math.max(maxId, doc.id), -1) + 1;
+    const newCategory = {
+      name: "New Category " + newId,
+      id: newId,
+    };
+    addNewCategory(newCategory)
+  }
+
   // 2) Double-click to start editing
   const handleTitleDoubleClick = () => {
     if (curDocument) {
@@ -127,6 +138,7 @@ function MainApp() {
         <Sidebar
           onToggleSidebar={toggleSidebar}
           handleAddDocument={handleAddDocument}
+          handleAddCategory={handleAddCategory}
         />
       </aside>
 

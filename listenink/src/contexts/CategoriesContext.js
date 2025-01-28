@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import store from './store';
-import { addDocument, updateDocumentName } from './categoriesSlice';
+import { addDocument, updateDocumentName, addCategory } from './categoriesSlice';
 
 const CategoriesContext = createContext();
 
@@ -24,6 +24,10 @@ export const CategoriesProvider = ({ children }) => {
         const newDocument = { ...newDoc };
         setCurDocument(newDocument);
     };
+
+    const addNewCategory = (cat) => {
+        store.dispatch(addCategory(cat));
+    }
 
     // 2) Function to store PDF in state
     const attachPdfToDocument = (docId, file) => {
@@ -51,6 +55,7 @@ export const CategoriesProvider = ({ children }) => {
                 pdfByDocId,
                 attachPdfToDocument,
                 renameDocument,
+                addNewCategory,
             }}
         >
             {children}
