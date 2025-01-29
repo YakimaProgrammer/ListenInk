@@ -1,0 +1,1777 @@
+File: src/components/auth/Register.js
+```
+Content:
+import React from "react";
+
+export function Register() {
+    return (
+        <div>
+        </div>
+    );
+}
+
+```
+File: src/components/auth/Login.js
+```
+Content:
+import React from "react";
+
+export function Login() {
+    return (
+        <div>
+        </div>
+    );
+}
+
+```
+File: src/components/layout/Search.css
+```
+Content:
+.search-container {
+    position: relative;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 200px;
+    /* Adjust as needed */
+    z-index: 10000;
+    padding: 8px;
+}
+
+.search-popup {
+    z-index: 10001;
+    /* Higher than other components */
+}
+
+.search-input {
+    width: 100%;
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.search-results {
+    max-height: 150px;
+    overflow-y: auto;
+    margin-top: 8px;
+    border-top: 1px solid #ddd;
+    padding-top: 5px;
+}
+
+.search-result {
+    padding: 5px;
+    border: none;
+    background: none;
+    text-align: left;
+    width: 100%;
+    cursor: pointer;
+}
+
+.search-result:hover {
+    background-color: #f0f0f0;
+}
+
+.no-results {
+    font-size: 0.9em;
+    color: gray;
+    text-align: center;
+}
+
+```
+File: src/components/layout/poo.js
+```
+Content:
+import React, { useState } from "react";
+import "./Sidebar.css";
+import "bootstrap-icons/font/bootstrap-icons.css";
+import { useDispatch } from "react-redux";
+import { useCategories } from "../../contexts/CategoriesContext";
+import Search from "./Search.js";
+import { moveDocument, addCategory } from '../../contexts/categoriesSlice'; // <--- Add your 'addCategory' import here
+
+const truncateText = (text = "", maxLength = 5) => {
+    if (text.length <= maxLength) {
+        return text;
+    }
+    return text.slice(0, maxLength - 3) + "...";
+};
+
+export default function Sidebar({ onToggleSidebar, handleAddDocument }) {
+    const dispatch = useDispatch();
+    const { categories, documents, curDocument, setCurDocument } = useCategories();
+    const [showSearch, setShowSearch] = useState(false);
+    // For the "Add New" dropdown:
+    const [showAddDropdown, setShowAddDropdown] = useState(false);
+
+    const toggleSearch = () => setShowSearch((prev) => !prev);
+    const toggleAddDropdown = () => setShowAddDropdown((prev) => !prev);
+
+    // If you have a Redux or context function for adding a category, call it here.
+    const handleAddCategory = () => {
+        // Example: dispatch(addCategory({ name: 'New Category' }));
+        dispatch(addCategory({ name: "New Category" }));
+        setShowAddDropdown(false); // close menu after adding
+    };
+
+    // If you want to close the dropdown after adding a document, do it here:
+    const handleAddDocAndClose = () => {
+        handleAddDocument();
+        setShowAddDropdown(false);
+    };
+
+    // Drag/Drop logic remains the same
+    const handleDragStart = (e, docId, sourceCategoryId) => {
+        e.dataTransfer.setData("docId", docId);
+        e.dataTransfer.setData("sourceCategoryId", sourceCategoryId);
+    };
+    const handleDragOver = (e) => {
+        e.preventDefault();
+    };
+    const handleDrop = (e, targetCategoryId) => {
+        e.preventDefault();
+        const docId = e.dataTransfer.getData("docId");
+        const sourceCategoryId = e.dataTransfer.getData("sourceCategoryId");
+        dispatch(moveDocument({ docId, sourceCategoryId, targetCategoryId }));
+    };
+
+    return (
+        <div style={{ margin: "20px" }}>
+            {/* Header buttons */}
+            <div className="hstack header">
+                <button onClick={onToggleSidebar}>
+                    <i className="bi bi-layout-sidebar"></i>
+                </button>
+                <div className="right-align">
+                    <div className="hstack">
+                        {/* Search button */}
+                        <button onClick={toggleSearch}>
+                            <i className="bi bi-search" />
+                        </button>
+
+                        {/* Add New (Dropdown) */}
+                        <div className="add-new-dropdown-container">
+                            <button onClick={toggleAddDropdown}>
+                                <i className="bi bi-plus-lg" />
+                                {/* Or some other icon/text */}
+                            </button>
+
+                            {showAddDropdown && (
+                                <div className="add-new-dropdown-menu">
+                                    <button onClick={handleAddDocAndClose}>
+                                        Create New Document
+                                    </button>
+                                    <button onClick={handleAddCategory}>
+                                        Create New Category
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Search Popup */}
+            {showSearch && (
+                <div className="search-popup">
+                    <div className="search-popup-content">
+                        <button className="close-popup" onClick={toggleSearch}>
+                            <i className="bi bi-x"></i>
+                        </button>
+                        <Search />
+                    </div>
+                </div>
+            )}
+
+            {/* Categories and documents */}
+            {[...categories]
+                .sort((a, b) => {
+                    if (a.name === "Uncategorized") return 1;
+                    if (b.name === "Uncategorized") return -1;
+                    return 0;
+                })
+                .map((category, index) => {
+                    const isUncategorized = category.name === "Uncategorized";
+                    return (
+                        <div
+                            key={index}
+                            style={{ marginBottom: "16px" }}
+                            onDragOver={handleDragOver}
+                            onDrop={(e) => handleDrop(e, category.id)}
+                        >
+                            {!isUncategorized && (
+                                <strong style={{ color: category.color }}>
+                                    {truncateText(category.name, 25)}
+                                </strong>
+                            )}
+                            <div style={{ marginLeft: isUncategorized ? "0px" : "20px" }}>
+                                {category.documents.map((docId) => {
+                                    const doc = documents.find((d) => d.id === docId);
+                                    if (!doc) return null;
+                                    const truncatedName = truncateText(doc.name, 22);
+                                    const isActive = curDocument?.id === doc.id;
+                                    return (
+                                        <button
+                                            key={doc.id}
+                                            onClick={() => setCurDocument(doc)}
+                                            className={`doc-button ${isActive ? "active" : ""}`}
+                                            draggable={true}
+                                            onDragStart={(e) => handleDragStart(e, doc.id, category.id)}
+                                        >
+                                            {truncatedName}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    );
+                })}
+        </div>
+    );
+}
+
+
+```
+File: src/components/layout/AudioControls.css
+```
+Content:
+.audio-controls {
+  width: 80%;
+  margin-left: 10%;
+  margin-right: 10%;
+  /* padding: 20px; */
+  font-family: Arial, sans-serif;
+}
+
+.time-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.progress-bar {
+  flex-grow: 1;
+  height: 10px;
+  background: #ddd;
+  margin: 0 10px;
+  position: relative;
+}
+
+.progress {
+  height: 100%;
+  background: #007bff;
+  width: 0;
+}
+
+.control-panel {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.control-button,
+.play-pause-button {
+  padding: 10px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.playback-speed {
+  padding: 5px;
+}
+
+
+/* audioslider */
+.volume-slider {
+    width: 100px;
+    margin-left: 10px;
+    appearance: none;
+    height: 4px;
+    background: #ddd;
+    border-radius: 5px;
+    outline: none;
+    cursor: pointer;
+  }
+  
+  .volume-slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    background: #007bff;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  
+  .volume-slider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: #007bff;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  
+  .volume-slider::-ms-thumb {
+    width: 12px;
+    height: 12px;
+    background: #007bff;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  
+  
+
+```
+File: src/components/layout/Sidebar.js
+```
+Content:
+// ORIGINAL
+
+// // Sidebar.js
+// import "./Sidebar.css";
+// import 'bootstrap-icons/font/bootstrap-icons.css';
+// import { useCategories } from '../../contexts/CategoriesContext';
+// import Search from "./Search.js";
+
+// // Helper function to truncate text
+// const truncateText = (text, maxLength = 5) => {
+//     if (text.length <= maxLength) {
+//         return text;
+//     }
+//     return text.slice(0, maxLength - 3) + "...";
+// };
+
+// export default function Sidebar({ onToggleSidebar }) {
+//     const { categories, documents, curDocument, setCurDocument, addNewDocument } = useCategories();
+
+//     const handleAddDocument = () => {
+//         const defaultCategoryId = categories[0]?.id || 0; // Add to the first category by default
+//         const newDocument = {
+//             name: "New Document",
+//             text: "This is a new document",
+//         };
+//         addNewDocument(defaultCategoryId, newDocument);
+//     };
+
+//     return (
+//         <div style={{ margin: "20px" }}>
+//             <div className="hstack header">
+//                 <button onClick={onToggleSidebar}>
+//                     <i className="bi bi-layout-sidebar"></i>
+//                 </button>
+//                 <div className="right-align">
+//                     <div className="hstack">
+//                         <button>
+//                             <i className="bi bi-search" />
+//                             <Search />
+//                         </button>
+//                         <button onClick={handleAddDocument}>
+//                             <i className="bi bi-pencil-square" />
+//                             {/* edit */}
+//                         </button>
+//                     </div>
+//                 </div>
+//             </div>
+
+//             {categories.map((category, index) => {
+//                 // Skip rendering the title for "Uncategorized"
+//                 const isUncategorized = category.name === "Uncategorized";
+
+//                 return (
+//                     <div key={index} style={{ marginBottom: "16px" }}>
+//                         {!isUncategorized && (
+//                             <strong style={{ color: category.color }}>
+//                                 {truncateText(category.name, 25)}
+//                             </strong>
+//                         )}
+
+//                         <div style={{ marginLeft: isUncategorized ? "0px" : "20px" }}>
+//                             {category.documents.map((docId) => {
+//                                 const doc = documents.find((d) => d.id === docId);
+//                                 if (!doc) return null; // Skip if the document is not found
+//                                 const truncatedName = truncateText(doc.name, 22);
+//                                 const isActive = curDocument?.id === doc.id; // Check if the current document is active
+
+//                                 return (
+//                                     <button
+//                                         key={doc.id}
+//                                         onClick={() => setCurDocument(doc)}
+//                                         className={`doc-button ${isActive ? "active" : ""}`}
+//                                     >
+//                                         {truncatedName}
+//                                     </button>
+//                                 );
+//                             })}
+//                         </div>
+//                     </div>
+//                 );
+//             })}
+//         </div>
+//     );
+// }
+
+
+// WORKING SEARCH BUT NEED TO IMPLEMENT HOW WE WANT FORMATTING
+
+import React, { useState } from "react";
+import "./Sidebar.css";
+import "bootstrap-icons/font/bootstrap-icons.css";
+import { useDispatch } from "react-redux";
+import { useCategories } from "../../contexts/CategoriesContext";
+import Search from "./Search.js";
+import { moveDocument, addCategory } from '../../contexts/categoriesSlice'; // <--- Add your 'addCategory' import here
+
+const truncateText = (text = "", maxLength = 5) => {
+    if (text.length <= maxLength) {
+        return text;
+    }
+    return text.slice(0, maxLength - 3) + "...";
+};
+
+export default function Sidebar({ onToggleSidebar, handleAddDocument, handleAddCategory }) {
+    const dispatch = useDispatch();
+    const { categories, documents, curDocument, setCurDocument } = useCategories();
+    const [showSearch, setShowSearch] = useState(false);
+    // For the "Add New" dropdown:
+    const [showAddDropdown, setShowAddDropdown] = useState(false);
+
+    const toggleSearch = () => setShowSearch((prev) => !prev);
+    const toggleAddDropdown = () => setShowAddDropdown((prev) => !prev);
+
+    // If you have a Redux or context function for adding a category, call it here.
+    const handleAddCategoryAction = () => {
+        // Example: dispatch(addCategory({ name: 'New Category' }));
+        handleAddCategory();
+        setShowAddDropdown(false); // close menu after adding
+    };
+
+    // If you want to close the dropdown after adding a document, do it here:
+    const handleAddDocAndClose = () => {
+        handleAddDocument();
+        setShowAddDropdown(false);
+    };
+
+    // Drag/Drop logic remains the same
+    const handleDragStart = (e, docId, sourceCategoryId) => {
+        // Store the dragged docId and the source category in the DataTransfer
+        e.dataTransfer.setData("docId", docId);
+        e.dataTransfer.setData("sourceCategoryId", sourceCategoryId);
+    };
+
+    const handleDragOver = (e) => {
+        // Needed to allow dropping
+        e.preventDefault();
+    };
+
+    const handleDrop = (e, targetCategoryId) => {
+        e.preventDefault();
+        const docId = e.dataTransfer.getData("docId");
+        const sourceCategoryId = e.dataTransfer.getData("sourceCategoryId");
+
+        dispatch(moveDocument({ docId, sourceCategoryId, targetCategoryId }));
+    };
+
+    return (
+        <div style={{ margin: "20px" }}>
+            {/* Header buttons */}
+            <div className="hstack header">
+                <button onClick={onToggleSidebar}>
+                    <i className="bi bi-layout-sidebar"></i>
+                </button>
+                <div className="right-align">
+                    <div className="hstack">
+                        {/* Search button */}
+                        <button onClick={toggleSearch}>
+                            <i className="bi bi-search" />
+                        </button>
+
+                        {/* Add New (Dropdown) */}
+                        <div className="add-new-dropdown-container">
+                            <button onClick={toggleAddDropdown}>
+                                <i className="bi bi-pencil-square" />
+                                {/* Or some other icon/text */}
+                            </button>
+
+                            {showAddDropdown && (
+                                <div className="add-new-dropdown-menu">
+                                    <button onClick={handleAddDocAndClose}>
+                                        Create New Document
+                                    </button>
+                                    <button onClick={handleAddCategoryAction}>
+                                        Create New Category
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Add new document button */}
+                        {/* <button onClick={handleAddDocument}>
+                            <i className="bi bi-pencil-square" />
+                        </button> */}
+                    </div>
+                </div>
+            </div>
+
+            {/* Search Popup */}
+            {showSearch && (
+                <div className="search-popup">
+                    <div className="search-popup-content">
+                        <button className="close-popup" onClick={toggleSearch}>
+                            <i className="bi bi-x"></i>
+                        </button>
+                        <Search />
+                    </div>
+                </div>
+            )}
+
+            {/* Categories and documents */}
+            {[...categories]
+                .sort((a, b) => {
+                    if (a.name === "Uncategorized") return 1;
+                    if (b.name === "Uncategorized") return -1;
+                    return 0;
+                }).map((category, index) => {
+                    const isUncategorized = category.name === "Uncategorized";
+
+                    return (
+                        // Container for category
+                        <div
+                            key={index}
+                            style={{ marginBottom: "16px" }}
+                            onDragOver={handleDragOver}
+                            onDrop={(e) => handleDrop(e, category.id)}
+                        >
+                            {!isUncategorized && (
+                                <strong style={{ color: category.color }}>
+                                    {truncateText(category.name, 25)}
+                                </strong>
+                            )}
+                            <div style={{ marginLeft: isUncategorized ? "0px" : "20px" }}>
+                                {/* Documents */}
+                                {category.documents.map((docId) => {
+                                    const doc = documents.find((d) => d.id === docId);
+                                    if (!doc) return null;
+                                    const truncatedName = truncateText(doc.name, 22);
+                                    const isActive = curDocument?.id === doc.id;
+
+                                    return (
+                                        <button
+                                            key={doc.id}
+                                            onClick={() => setCurDocument(doc)}
+                                            className={`doc-button ${isActive ? "active" : ""}`}
+                                            draggable={true}
+                                            onDragStart={(e) => handleDragStart(e, doc.id, category.id)}
+                                        >
+                                            {truncatedName}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    );
+                })}
+        </div>
+    );
+}
+
+
+```
+File: src/components/layout/MainApp.js
+```
+Content:
+import React, { useState, useEffect } from "react";
+import "./MainApp.css";
+import Sidebar from "./Sidebar";
+import AudioControls from "./AudioControls";
+import "bootstrap-icons/font/bootstrap-icons.css";
+import PDFDropModal from "./PDFDropModal";
+import MainPdf from "../pdfViewer/MainPdf.js";
+
+import { useCategories } from "../../contexts/CategoriesContext";
+
+function MainApp() {
+  const {
+    categories,
+    documents,
+    curDocument,
+    setCurDocument,
+    addNewDocument,
+    // updateDocumentName,
+    pdfByDocId,
+    renameDocument, // assume you have that too
+    addNewCategory,
+  } = useCategories();
+
+  const [isSidebarVisible, setIsSidebarVisible] = useState(true);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+
+  // 1) Add local state for editing
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [tempName, setTempName] = useState("");
+
+  const toggleSidebar = () => {
+    setIsSidebarVisible(!isSidebarVisible);
+  };
+
+  useEffect(() => {
+    let dragCounter = 0;
+
+    // Fired when a dragged item enters the browser window
+    const handleDragEnter = (e) => {
+      // Only show modal if we are dragging "Files" (not text or links)
+      if ([...e.dataTransfer.types].includes("Files")) {
+        dragCounter++;
+        setIsPdfModalOpen(true);
+      }
+    };
+
+    // Fired when a dragged item leaves an element within the window
+    // (can happen many times as the user moves over child elements)
+    const handleDragLeave = () => {
+      dragCounter--;
+      if (dragCounter <= 0) {
+        dragCounter = 0;
+        setIsPdfModalOpen(false);
+      }
+    };
+
+    // Needed to allow dropping by preventing the default
+    const handleDragOver = (e) => {
+      e.preventDefault();
+    };
+
+    // If user drops anywhere outside your modal, close the modal
+    // (Because they've either dropped on the page or left the window)
+    const handleDrop = () => {
+      dragCounter = 0;
+      setIsPdfModalOpen(false);
+    };
+
+    window.addEventListener("dragenter", handleDragEnter);
+    window.addEventListener("dragleave", handleDragLeave);
+    window.addEventListener("dragover", handleDragOver);
+    window.addEventListener("drop", handleDrop);
+
+    return () => {
+      window.removeEventListener("dragenter", handleDragEnter);
+      window.removeEventListener("dragleave", handleDragLeave);
+      window.removeEventListener("dragover", handleDragOver);
+      window.removeEventListener("drop", handleDrop);
+    };
+  }, []);
+
+  const handleAddDocument = () => {
+    let newId =
+      documents.reduce((maxId, doc) => Math.max(maxId, doc.id), -1) + 1;
+    const newDocument = {
+      name: "New Document " + newId,
+      text: "This is a new document " + newId,
+      id: newId,
+    };
+    addNewDocument(newDocument);
+  };
+
+  const handleAddCategory = () => {
+    let newId =
+      categories.reduce((maxId, doc) => Math.max(maxId, doc.id), -1) + 1;
+    const newCategory = {
+      name: "New Category " + newId,
+      id: newId,
+    };
+    addNewCategory(newCategory)
+  }
+
+  // 2) Double-click to start editing
+  const handleTitleDoubleClick = () => {
+    if (curDocument) {
+      setTempName(curDocument.name || "");
+      setEditingTitle(true);
+    }
+  };
+
+  // 3) Handle blur (or "Enter") to save
+  const handleTitleBlur = () => {
+    if (curDocument && tempName.trim() !== "") {
+      // This calls the context's function, which dispatches the Redux action
+      renameDocument(curDocument.id, tempName.trim());
+
+      // ALSO update your local "curDocument" so it matches instantly
+      setCurDocument({ ...curDocument, name: tempName.trim() });
+    }
+    setEditingTitle(false);
+  };
+
+  // Optional: Handle "Enter" key to finish editing
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.target.blur();
+    }
+  };
+
+  const docHasPdf = curDocument && pdfByDocId[curDocument.id];
+
+  return (
+    <div
+      className={`app-container ${!isSidebarVisible ? "sidebar-hidden" : ""}`}
+    >
+      {/* Sidebar */}
+      <aside className={`sidebar ${!isSidebarVisible ? "hidden" : ""}`}>
+        <Sidebar
+          onToggleSidebar={toggleSidebar}
+          handleAddDocument={handleAddDocument}
+          handleAddCategory={handleAddCategory}
+        />
+      </aside>
+
+      {/* Main Content Area */}
+      <main className="main-content">
+        <div className="top-view">
+          <div className="hstack">
+            <button
+              className={`toggle ${!isSidebarVisible ? "sidebar-hidden" : ""}`}
+              onClick={toggleSidebar}
+            >
+              <i className="bi bi-layout-sidebar"></i>
+            </button>
+            <button
+              className={`toggle ${!isSidebarVisible ? "sidebar-hidden" : ""}`}
+              onClick={handleAddDocument}
+            >
+              <i className="bi bi-pencil-square" />
+            </button>
+
+            {/* 4) Conditionally render either a <p> or an <input> */}
+            {editingTitle ? (
+              <input
+                className="left-align title-text"
+                value={tempName}
+                onChange={(e) => setTempName(e.target.value)}
+                onBlur={handleTitleBlur}
+                onKeyDown={handleKeyDown}
+                autoFocus
+
+                style={{ width: `${Math.max(tempName.length, 1) + 2}ch` }}
+              />
+            ) : (
+              <p
+                className="left-align title-text"
+                onDoubleClick={handleTitleDoubleClick}
+                onClick={handleTitleDoubleClick}
+              >
+                {curDocument ? curDocument.name : "No Document Selected"}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <MainPdf />
+
+        <div
+          style={{
+            whiteSpace: "pre-line",
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+          }}
+        >
+          {curDocument ? (
+            <>
+              {/* <div style={{ flex: 1, overflow: 'auto' }}>
+                                <p>{curDocument.text}</p>
+                            </div> */}
+
+              {docHasPdf ? (
+                <div className="bottom-view" style={{ flexShrink: 0 }}>
+                  <AudioControls />
+                </div>
+              ) : (
+                <></>
+                // <button
+                //     onClick={() => setIsPdfModalOpen(true)}
+                //     style={{ margin: 'auto' }}
+                // >
+                //     Attach PDF
+                // </button>
+              )}
+            </>
+          ) : (
+            <>
+              {/* <p style={{ margin: 'auto', marginBottom: '0' }}>Please select a document to view its contents.</p> */}
+            </>
+          )}
+        </div>
+
+        <PDFDropModal
+          isOpen={isPdfModalOpen}
+          onClose={() => setIsPdfModalOpen(false)}
+        />
+      </main>
+    </div>
+  );
+}
+
+export default MainApp;
+
+
+```
+File: src/components/layout/PDFDropModal.css
+```
+Content:
+/* PDFDropModal.css */
+.pdf-drop-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: calc(100% - 350px);
+    /* Adjust width to exclude sidebar */
+    margin-left: 350px;
+    /* Start after sidebar width */
+    height: 100%;
+    background: rgba(255, 255, 255, 0.5);
+    /* semi-opaque backdrop */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+    /* ensure on top of everything */
+}
+
+.pdf-drop-modal {
+    background: rgba(255, 255, 255, 0.2);
+    /* padding: 20px; */
+    width: 100%;
+    height: 100%;
+    /* min-width: 400px; */
+    /* min-height: 200px; */
+    /* border-radius: 8px; */
+    position: relative;
+}
+
+.pdf-drop-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.dropzone {
+    width: 90%;
+    height: 90%;
+    /* border: 2px dashed #aaa; */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 30px;
+}
+
+```
+File: src/components/layout/Sidebar.css
+```
+Content:
+/* List Item Styling */
+/* * {
+    z-index: 1000
+} */
+
+li {
+    width: 200px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    display: inline-block;
+}
+
+.header {
+    margin-bottom: 20px;
+}
+
+button {
+    position: relative;
+    /* Establish a reference point for the pseudo-element */
+    background-color: transparent;
+    border: none;
+    padding: 2px;
+    /* Initial padding for the button */
+    outline: none;
+    cursor: pointer;
+    z-index: 1;
+    /* Ensure the button stays above the pseudo-element */
+    transition: all 0.3s ease;
+    /* Smooth transition for any button properties */
+}
+
+button::before {
+    content: "";
+    /* Empty content for the pseudo-element */
+    position: absolute;
+    top: 0px;
+    /* Expand the background beyond the button's boundaries */
+    left: 0px;
+    right: 0px;
+    bottom: 0px;
+    background-color: #ececec;
+    z-index: -1;
+    /* Place the background behind the button */
+    border-radius: 4px;
+    /* Optional: add rounded corners if needed */
+    opacity: 0;
+    /* Start fully transparent */
+    transition: all 0.3s ease;
+    /* Smooth transition for hover effect */
+}
+
+button:hover::before {
+    opacity: 1;
+    /* Make the pseudo-element visible on hover */
+}
+
+
+/* Default styles for doc-button */
+.doc-button {
+    cursor: pointer;
+    padding: 5px 10px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    text-align: left;
+    /* width: 100%; */
+}
+
+.doc-button {
+    width: 100%;
+}
+
+.doc-button.active {
+    background-color: #ececec;
+}
+
+/* HStack (Horizontal Stack) */
+.hstack {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 20px;
+    width: 100%;
+}
+
+/* VStack (Vertical Stack) */
+.vstack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+}
+
+/* Ensure child elements have no margin or padding */
+.hstack>*,
+.vstack>* {
+    margin: 0;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+
+
+/* Remove border and shadow globally */
+.hstack,
+.vstack,
+.hstack>*,
+.vstack>* {
+    border: none;
+    box-shadow: none;
+}
+
+/* Right Align Specific Elements */
+.right-align {
+    margin-left: auto;
+    /* Push this element to the far right */
+}
+
+/*SEARCH FORMATTING
+
+
+/* Popup overlay background */
+.search-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+/* Popup content */
+.search-popup-content {
+    background: white;
+    width: 60%;
+    max-width: 800px;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    position: relative;
+}
+
+/* Close button */
+.close-popup {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #333;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.close-popup:hover {
+    color: #e74c3c;
+}
+
+/* Container that wraps the "Add New" button and dropdown */
+.add-new-dropdown-container {
+    position: relative;
+    display: inline-block;
+}
+
+/* The dropdown menu itself */
+.add-new-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    /* Placed just below the button */
+    left: 0;
+    background-color: #ffffff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 4px 0;
+    min-width: 150px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 9999;
+    /* Ensure it appears above other elements */
+}
+
+.add-new-dropdown-menu button {
+    display: block;
+    width: 100%;
+    background: transparent;
+    border: none;
+    text-align: left;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.add-new-dropdown-menu button:hover {
+    background-color: #f0f0f0;
+}
+
+```
+File: src/components/layout/MainAppContainer.js
+```
+Content:
+// MainApp.js
+import React from 'react';
+import { Provider } from 'react-redux';
+import store from '../../contexts/store';
+import { CategoriesProvider } from '../../contexts/CategoriesContext';
+
+import MainAppContent from './MainApp';
+
+function App() {
+    return (
+        <Provider store={store}>
+            <CategoriesProvider>
+                <MainAppContent />
+            </CategoriesProvider>
+        </Provider>
+    );
+}
+
+export default App;
+
+
+```
+File: src/components/layout/AudioControls.js
+```
+Content:
+
+import React, { useState, useEffect } from "react";
+import "./AudioControls.css";
+
+function AudioControls() {
+  const [isPlaying, setIsPlaying] = useState(false); // Play/Pause state
+  const [playbackSpeed, setPlaybackSpeed] = useState(1.0); // Playback speed
+  const [currentPosition, setCurrentPosition] = useState(0); // the current time
+  const [volume, setVolume] = useState(50); // Volume state (0-100)
+  const totalLength = 300; // Example total length
+
+  // Time formatting
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  // Handle Play/Pause
+  const handlePlayPause = () => {
+    setIsPlaying((prevState) => !prevState);
+  };
+
+  // Handle Rewind
+  const handleRewind = () => {
+    setCurrentPosition((prev) => Math.max(0, prev - 10));
+  };
+
+  // Handle Skip
+  const handleSkip = () => {
+    setCurrentPosition((prev) => Math.min(totalLength, prev + 10));
+  };
+
+  // Update the position while playing
+  useEffect(() => {
+    let interval;
+    if (isPlaying) {
+      interval = setInterval(() => {
+        setCurrentPosition((prev) => Math.min(prev + 1, totalLength));
+      }, 1000 / playbackSpeed);
+    } else {
+      clearInterval(interval);
+    }
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [isPlaying, playbackSpeed]);
+
+  // Handle Volume Change
+  const handleVolumeChange = (e) => {
+    setVolume(Number(e.target.value));
+  };
+
+  // Calculate time remaining
+  const timePlayed = currentPosition;
+  const timeRemaining = totalLength - currentPosition;
+
+  return (
+    <div className="audio-controls">
+      {/* Controls Section */}
+      <div className="control-panel">
+        <button onClick={handleRewind} className="control-button">
+          ⏪ 10
+        </button>
+        <button onClick={handlePlayPause} className="play-pause-button">
+          {isPlaying ? "⏸" : "▶️"}
+        </button>
+        <button onClick={handleSkip} className="control-button">
+          10 ⏩
+        </button>
+        <select
+          className="playback-speed"
+          value={playbackSpeed}
+          onChange={(e) => setPlaybackSpeed(Number(e.target.value))}
+        >
+          <option value={0.5}>0.5x</option>
+          <option value={1.0}>1x</option>
+          <option value={1.25}>1.25x</option>
+          <option value={1.5}>1.5x</option>
+          <option value={2.0}>2x</option>
+        </select>
+        {/* Volume Slider */}
+        <input
+          type="range"
+          min="0"
+          max="100"
+          value={volume}
+          onChange={handleVolumeChange}
+          className="volume-slider"
+        />
+      </div>
+
+      {/* Progress Bar Section */}
+      <div className="time-display">
+        <span className="time-played">{formatTime(timePlayed)}</span>
+        <div className="progress-bar">
+          <div
+            className="progress"
+            style={{ width: `${(timePlayed / totalLength) * 100}%` }}
+          ></div>
+        </div>
+        <span className="time-remaining">{formatTime(timeRemaining)}</span>
+      </div>
+    </div>
+  );
+}
+
+export default AudioControls;
+
+
+```
+File: src/components/layout/PDFDropModal.js
+```
+Content:
+import React from 'react';
+import './PDFDropModal.css';
+import { useCategories } from '../../contexts/CategoriesContext';
+
+export default function PDFDropModal({ isOpen, onClose }) {
+    const { curDocument, pdfByDocId, attachPdfToDocument } = useCategories();
+
+    if (!isOpen) return null; // Do not render anything if modal is closed.
+
+    // The user can only attach a PDF if there's a selected doc
+    // and if that doc does NOT already have a PDF
+    const canDrop = !!(curDocument && !pdfByDocId[curDocument.id]);
+
+    const handleDragOver = (e) => {
+        // Only prevent default if we can drop (there's no PDF yet)
+        if (canDrop) {
+            e.preventDefault();
+        }
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        if (!canDrop) {
+            return;
+        }
+
+        const file = e.dataTransfer.files && e.dataTransfer.files[0];
+        if (!file) return;
+
+        if (file.type !== 'application/pdf') {
+            alert("Only PDF files are allowed.");
+            return;
+        }
+
+        // Attach PDF to the doc in the context
+        attachPdfToDocument(curDocument.id, file);
+
+        alert(`Successfully attached PDF to "${curDocument.name}"`);
+
+        // Optionally close the modal
+        onClose();
+    };
+
+    return (
+        <div className="pdf-drop-overlay" onClick={onClose}>
+            <div
+                className="pdf-drop-modal"
+                onClick={(e) => e.stopPropagation()}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+            >
+                {/* Close button */}
+                {/* <button className="pdf-drop-close" onClick={onClose}>
+                    &times;
+                </button> */}
+
+                {!curDocument && (
+                    <p style={{ margin: 'auto' }}>No document selected. Please select a document first.</p>
+                )}
+
+                {curDocument && pdfByDocId[curDocument.id] && (
+                    <p>
+                        Document <strong>{curDocument.name}</strong> already has a PDF attached!
+                    </p>
+                )}
+
+                {canDrop && (
+                    <div className="dropzone">
+                        <p>
+                            Attach a PDF
+                        </p>
+                    </div>
+                )}
+            </div>
+        </div >
+    );
+}
+
+
+```
+File: src/components/layout/Search.js
+```
+Content:
+import React, { useState } from "react";
+import "./Search.css";
+import { useCategories } from "../../contexts/CategoriesContext";
+// not fully functional yet, but does search
+// like it will get the document based on word that u type, 
+// whether that word is in the title or in the document itself
+export default function Search() {
+    const { documents, curDocument, setCurDocument } = useCategories();
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchResults, setSearchResults] = useState([]);
+
+    const handleSearch = (query) => {
+        setSearchQuery(query);
+        const results = documents.filter(
+            (doc) =>
+                doc.name.toLowerCase().includes(query.toLowerCase()) ||
+                doc.text.toLowerCase().includes(query.toLowerCase())
+        );
+        setSearchResults(results);
+    };
+
+    return (
+        <div className="search-container">
+            <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                placeholder="Search documents..."
+                className="search-input"
+            />
+
+            {searchQuery && (
+                <div className="search-results">
+                    {searchResults.length > 0 ? (
+                        searchResults.map((doc) => (
+                            <button
+                                key={doc.id}
+                                onClick={() => setCurDocument(doc)}
+                                className={`search-result ${
+                                    curDocument?.id === doc.id ? "active" : ""
+                                }`}
+                            >
+                                {doc.name}
+                            </button>
+                        ))
+                    ) : (
+                        <p className="no-results">No documents found</p>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
+
+```
+File: src/components/layout/MainApp.css
+```
+Content:
+/* Reset and Base Styles */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+  background-color: #ffffff;
+  /* Background for main content */
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+/* Flex Utilities */
+.hstack {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+}
+
+.vstack {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.subView {
+  flex: 1;
+  border-bottom: 1px solid #ccc;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* App Container */
+.app-container {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 100vh;
+  /* Full viewport height */
+  /* overflow: hidden; */
+  position: relative;
+  /* Ensure proper stacking context */
+  overflow: visible;
+  /* Allow overflow for fixed elements like search */
+}
+
+/* Sidebar */
+.sidebar {
+  width: 300px;
+  /* Adjust width as needed */
+  background-color: #f9f9f9;
+  padding: 20px;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  transform: translateX(0);
+  /* Visible state */
+  opacity: 1;
+  transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+  flex-shrink: 0;
+}
+
+.sidebar.hidden {
+  transform: translateX(-100%);
+  /* Hidden state */
+  opacity: 0;
+}
+
+.sidebar h2 {
+  margin-top: 0;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar li {
+  margin: 10px 0;
+  cursor: pointer;
+}
+
+.sidebar li:hover {
+  text-decoration: underline;
+}
+
+/* Main Content */
+.main-content {
+  /* Instead of relying on flex, we’ll give it a margin when sidebar is visible */
+  display: flex;
+  flex-direction: column;
+  margin-left: 0px;
+  margin-left: 30px;
+  transition: margin-left 0.3s ease-in-out;
+  /* Smooth animation */
+  padding: 20px;
+  background-color: #ffffff;
+  overflow-y: auto;
+  /* Scrollable if content overflows */
+  flex: 1 1 auto;
+
+  overflow: visible;
+  /* Prevent clipping of children */
+}
+
+.title-text {
+  font-weight: bold;
+  font-size: 1.5em;
+}
+
+/* When Sidebar is Hidden */
+.sidebar-hidden .sidebar {
+  transform: translateX(-100%);
+  /* Sidebar slides out */
+  opacity: 0;
+  /* Sidebar fades out */
+}
+
+.sidebar-hidden .main-content {
+  flex: 1 1 100%;
+  /* transition: flex-grow 0.3s ease-in-out; */
+  margin-left: 0;
+  margin-left: -320px;
+  /* width: 100%; */
+}
+
+/* Top and Bottom Views */
+.top-view,
+.bottom-view {
+  flex: 0 0 auto;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.bottom-view {
+  margin-top: auto;
+}
+
+
+/* Debug Borders (Optional - Remove for Production) */
+/* .hstack,
+.vstack,
+.subView {
+  border: 1px solid #ccc;
+} */
+
+.toggle {
+  display: none;
+  /* Hide by default */
+}
+
+.left-align {
+  margin-right: auto;
+  /* Push this element to the far right */
+}
+
+.toggle.sidebar-hidden {
+  display: block;
+  /* Show when the sidebar is hidden */
+}
+
+```
+File: src/components/pdfViewer/MainPdf.css
+```
+Content:
+.MainPdf {
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* Ensure it occupies space */
+}
+
+
+```
+File: src/components/pdfViewer/PdfTopView.css
+```
+Content:
+/* general pdf top view style */
+.pdfTopView {
+  /*general pdf top view style */
+  width: 1000px;
+  height: 40px;
+  background-color: #dee7eb;
+  border-radius: 16px 16px 0px 0px;
+  box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.3);
+
+  /*content layout inside pdf top view*/
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  position: relative;
+}
+
+/* ----top view content layout section --- */
+/* top view content padding */
+.pdfTopView .topbar-search {
+  padding-left: 10px;
+  padding-right: 15px;
+}
+
+.pdfTopView .page-display {
+  padding-left: 5px;
+  padding-right: 5px;
+  & > * {
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+}
+
+.pdfTopView .zoom-control {
+  & > * {
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+}
+
+/* svg button icons style */
+.pdfTopView i {
+  font-size: 14px;
+}
+
+/* input page indicator style */
+.pdfTopView input {
+  width: 30px;
+  height: 20px;
+  border-radius: 5px;
+  border: 1px solid black;
+  text-align: center;
+}
+
+/* zoom control position style */
+.zoom-control {
+  position: absolute;
+  left: 45%;
+}
+
+/* ----button style section---- */
+/* button box style */
+button {
+  background-color: transparent;
+  box-shadow: none;
+}
+
+button:hover {
+  background-color: transparent;
+  opacity: 1;
+}
+
+
+```
+File: src/components/pdfViewer/PdfTopView.js
+```
+Content:
+import React from "react";
+import "./PdfTopView.css";
+import "bootstrap-icons/font/bootstrap-icons.css";
+
+const PdfTopView = () => {
+  return (
+    <div className="pdfTopView">
+      <button className="topbar-search">
+        <i className="bi bi-search"></i>
+      </button>
+
+      {/* page display section */}
+      <div className="page-display">
+        {/* previous page button */}
+        <button>
+          <i className="bi bi-caret-up"></i>
+        </button>
+        {/* page number display and jump*/}
+        <input type="text" value="2" pattern="\d*" />
+        <span>/</span>
+        <span>20</span>
+
+        {/* next page button */}
+        <button>
+          <i className="bi bi-caret-down"></i>
+        </button>
+      </div>
+
+      <div className="zoom-control">
+        {/* zoom out button */}
+        <button>
+          <i className="bi bi-zoom-out"></i>
+        </button>
+        {/* display zoom ratio */}
+        <span>100%</span>
+        {/* zoom in button */}
+        <button>
+          <i className="bi bi-zoom-in"></i>
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default PdfTopView;
+
+
+```
+File: src/components/pdfViewer/MainPdf.js
+```
+Content:
+import React from "react";
+import PdfTopView from "./PdfTopView";
+import PdfViewer from "./PdfViewer";
+
+function MainPdf() {
+  return (
+    <div className="MainPdf">
+      <PdfTopView />
+      <PdfViewer />
+    </div>
+  );
+}
+
+export default MainPdf;
+
+
+```
+File: src/components/pdfViewer/PdfViewer.js
+```
+Content:
+import React from "react";
+import "./PdfViewer.css";
+import "bootstrap-icons/font/bootstrap-icons.css";
+import pdfExample from "./pdfPageTest/pdfExample.png";
+import verticalExample from "./pdfPageTest/verticalExample.jpg";
+
+const PdfViewer = () => {
+  return (
+    <div className="pdfViewer">
+      <div className="pdfLeftSideView">
+        <button className="sideMenu-toggle">
+          <i className="bi bi-layout-text-sidebar"></i>
+        </button>
+      </div>
+      {/* <div className="pdfContent">
+        <h1>This is PDF Content.</h1>
+      </div> */}
+      <div className="pdfExample">
+        <img src={verticalExample} alt="pdfExample" />
+      </div>
+    </div>
+  );
+};
+
+export default PdfViewer;
+
+
+```
+File: src/components/pdfViewer/PdfViewer.css
+```
+Content:
+/* general pdf viewer style */
+.pdfViewer {
+  /*general pdf viewer style */
+  width: 1000px;
+  height: 460px;
+  background-color: transparent;
+  border-radius: 0px 0px 0px 0px;
+
+  /*content layout inside pdf viewer*/
+  display: flex;
+  flex-direction: row;
+}
+
+/* pdf left side view style */
+.pdfLeftSideView {
+  /*general pdf top view style */
+  width: 40px;
+  height: 460px;
+  background-color: #dee7eb;
+  border-radius: 0px 0px 0px 0px;
+
+  /*content layout inside pdf top view*/
+  display: flex;
+  flex-direction: column;
+
+  box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.3);
+}
+
+.sideMenu-toggle {
+  position: relative;
+  top: 10px;
+}
+
+.pdfExample {
+  width: 960px;
+  height: 460px;
+  background-color: transparent;
+
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: auto;
+
+  box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.3);
+}
+
+.pdfContent {
+  width: 960px;
+  height: 460px;
+  background-color: pink;
+  box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.3);
+}
+
+
+```
+File: src/components/pdfViewer/pdfPageTest/verticalExample.jpg
+```
+```
+File: src/components/pdfViewer/pdfPageTest/pdfExample.png
+```
+```

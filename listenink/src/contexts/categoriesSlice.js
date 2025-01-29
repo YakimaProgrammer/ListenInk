@@ -88,10 +88,19 @@ const categoriesSlice = createSlice({
             const doc = state.documents.find((d) => d.id === docId);
             if (doc) doc.name = newName;
         },
+
+        addCategory: (state, action) => {
+            const newCategory = action.payload;
+            state.categories.push({
+                ...newCategory,
+                documents: [],
+                color: "#000000"
+            });
+        },
     },
 });
 
-export const { addDocument, moveDocument, updateDocumentName } = categoriesSlice.actions;
+export const { addDocument, moveDocument, updateDocumentName, addCategory } = categoriesSlice.actions;
 // export const selectCategories = (state) => state.categories.categories;
 // export const selectDocumentsByCategory = (state, categoryId) => state.categories.documents.filter((doc) => doc.categoryId === categoryId);
 export default categoriesSlice.reducer;
