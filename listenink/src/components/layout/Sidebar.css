@@ -244,3 +244,40 @@ button:hover::before {
 .add-new-popup-content button:hover {
     background-color: #ececec;
 }
+
+/* Right-click context menu reusing the .add-new-popup style */
+.context-menu {
+    /* .add-new-popup styles are included in the className,
+       so you only need position overrides if desired */
+    position: absolute;
+    /* top and left assigned inline */
+    z-index: 9999;
+}
+
+/* Delete Confirmation Modal (Grey background + White box) */
+.delete-confirm-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    /* dim the page */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.delete-confirm-modal {
+    background: white;
+    width: 300px;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.delete-confirm-modal button {
+    margin: 10px;
+    padding: 8px 16px;
+}

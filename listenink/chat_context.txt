@@ -1,3 +1,6 @@
+File: src/components/.DS_Store
+```
+```
 File: src/components/auth/Register.js
 ```
 Content:
@@ -78,157 +81,64 @@ Content:
 }
 
 ```
-File: src/components/layout/poo.js
+File: src/components/layout/poo.css
 ```
 Content:
-import React, { useState } from "react";
-import "./Sidebar.css";
-import "bootstrap-icons/font/bootstrap-icons.css";
-import { useDispatch } from "react-redux";
-import { useCategories } from "../../contexts/CategoriesContext";
-import Search from "./Search.js";
-import { moveDocument, addCategory } from '../../contexts/categoriesSlice'; // <--- Add your 'addCategory' import here
-
-const truncateText = (text = "", maxLength = 5) => {
-    if (text.length <= maxLength) {
-        return text;
-    }
-    return text.slice(0, maxLength - 3) + "...";
-};
-
-export default function Sidebar({ onToggleSidebar, handleAddDocument }) {
-    const dispatch = useDispatch();
-    const { categories, documents, curDocument, setCurDocument } = useCategories();
-    const [showSearch, setShowSearch] = useState(false);
-    // For the "Add New" dropdown:
-    const [showAddDropdown, setShowAddDropdown] = useState(false);
-
-    const toggleSearch = () => setShowSearch((prev) => !prev);
-    const toggleAddDropdown = () => setShowAddDropdown((prev) => !prev);
-
-    // If you have a Redux or context function for adding a category, call it here.
-    const handleAddCategory = () => {
-        // Example: dispatch(addCategory({ name: 'New Category' }));
-        dispatch(addCategory({ name: "New Category" }));
-        setShowAddDropdown(false); // close menu after adding
-    };
-
-    // If you want to close the dropdown after adding a document, do it here:
-    const handleAddDocAndClose = () => {
-        handleAddDocument();
-        setShowAddDropdown(false);
-    };
-
-    // Drag/Drop logic remains the same
-    const handleDragStart = (e, docId, sourceCategoryId) => {
-        e.dataTransfer.setData("docId", docId);
-        e.dataTransfer.setData("sourceCategoryId", sourceCategoryId);
-    };
-    const handleDragOver = (e) => {
-        e.preventDefault();
-    };
-    const handleDrop = (e, targetCategoryId) => {
-        e.preventDefault();
-        const docId = e.dataTransfer.getData("docId");
-        const sourceCategoryId = e.dataTransfer.getData("sourceCategoryId");
-        dispatch(moveDocument({ docId, sourceCategoryId, targetCategoryId }));
-    };
-
-    return (
-        <div style={{ margin: "20px" }}>
-            {/* Header buttons */}
-            <div className="hstack header">
-                <button onClick={onToggleSidebar}>
-                    <i className="bi bi-layout-sidebar"></i>
-                </button>
-                <div className="right-align">
-                    <div className="hstack">
-                        {/* Search button */}
-                        <button onClick={toggleSearch}>
-                            <i className="bi bi-search" />
-                        </button>
-
-                        {/* Add New (Dropdown) */}
-                        <div className="add-new-dropdown-container">
-                            <button onClick={toggleAddDropdown}>
-                                <i className="bi bi-plus-lg" />
-                                {/* Or some other icon/text */}
-                            </button>
-
-                            {showAddDropdown && (
-                                <div className="add-new-dropdown-menu">
-                                    <button onClick={handleAddDocAndClose}>
-                                        Create New Document
-                                    </button>
-                                    <button onClick={handleAddCategory}>
-                                        Create New Category
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Search Popup */}
-            {showSearch && (
-                <div className="search-popup">
-                    <div className="search-popup-content">
-                        <button className="close-popup" onClick={toggleSearch}>
-                            <i className="bi bi-x"></i>
-                        </button>
-                        <Search />
-                    </div>
-                </div>
-            )}
-
-            {/* Categories and documents */}
-            {[...categories]
-                .sort((a, b) => {
-                    if (a.name === "Uncategorized") return 1;
-                    if (b.name === "Uncategorized") return -1;
-                    return 0;
-                })
-                .map((category, index) => {
-                    const isUncategorized = category.name === "Uncategorized";
-                    return (
-                        <div
-                            key={index}
-                            style={{ marginBottom: "16px" }}
-                            onDragOver={handleDragOver}
-                            onDrop={(e) => handleDrop(e, category.id)}
-                        >
-                            {!isUncategorized && (
-                                <strong style={{ color: category.color }}>
-                                    {truncateText(category.name, 25)}
-                                </strong>
-                            )}
-                            <div style={{ marginLeft: isUncategorized ? "0px" : "20px" }}>
-                                {category.documents.map((docId) => {
-                                    const doc = documents.find((d) => d.id === docId);
-                                    if (!doc) return null;
-                                    const truncatedName = truncateText(doc.name, 22);
-                                    const isActive = curDocument?.id === doc.id;
-                                    return (
-                                        <button
-                                            key={doc.id}
-                                            onClick={() => setCurDocument(doc)}
-                                            className={`doc-button ${isActive ? "active" : ""}`}
-                                            draggable={true}
-                                            onDragStart={(e) => handleDragStart(e, doc.id, category.id)}
-                                        >
-                                            {truncatedName}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    );
-                })}
-        </div>
-    );
+/* Container that keeps the popup positioned under the button */
+.add-new-button-container {
+  position: relative;
+  /* So the popup is absolute to this container */
+  display: inline-block;
 }
 
+/* The popup itself */
+.add-new-popup {
+  position: absolute;
+  top: 100%;
+  /* directly below the button */
+  left: 0;
+  z-index: 9999;
+  min-width: 180px;
+  /* wide enough so text doesn't wrap */
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  /* more rounded corners */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  margin-top: 4px;
+  /* small gap below the button */
+  overflow: hidden;
+  /* ensures corners are fully rounded */
+}
+
+/* Some inner padding if desired */
+.add-new-popup-content {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0;
+  /* vertical spacing inside */
+}
+
+/* Each button in the popup */
+.add-new-popup-content button {
+  background: transparent;
+  border: none;
+  outline: none;
+  width: 100%;
+  text-align: left;
+  padding: 8px 16px;
+  cursor: pointer;
+  white-space: nowrap;
+  /* text stays on one line */
+  transition: background-color 0.2s ease-in-out;
+  font-size: 14px;
+  /* optional: adjust font size */
+}
+
+/* Hover effect to 'deepen' the background */
+.add-new-popup-content button:hover {
+  background-color: #ececec;
+}
 
 ```
 File: src/components/layout/AudioControls.css
@@ -325,94 +235,6 @@ Content:
 File: src/components/layout/Sidebar.js
 ```
 Content:
-// ORIGINAL
-
-// // Sidebar.js
-// import "./Sidebar.css";
-// import 'bootstrap-icons/font/bootstrap-icons.css';
-// import { useCategories } from '../../contexts/CategoriesContext';
-// import Search from "./Search.js";
-
-// // Helper function to truncate text
-// const truncateText = (text, maxLength = 5) => {
-//     if (text.length <= maxLength) {
-//         return text;
-//     }
-//     return text.slice(0, maxLength - 3) + "...";
-// };
-
-// export default function Sidebar({ onToggleSidebar }) {
-//     const { categories, documents, curDocument, setCurDocument, addNewDocument } = useCategories();
-
-//     const handleAddDocument = () => {
-//         const defaultCategoryId = categories[0]?.id || 0; // Add to the first category by default
-//         const newDocument = {
-//             name: "New Document",
-//             text: "This is a new document",
-//         };
-//         addNewDocument(defaultCategoryId, newDocument);
-//     };
-
-//     return (
-//         <div style={{ margin: "20px" }}>
-//             <div className="hstack header">
-//                 <button onClick={onToggleSidebar}>
-//                     <i className="bi bi-layout-sidebar"></i>
-//                 </button>
-//                 <div className="right-align">
-//                     <div className="hstack">
-//                         <button>
-//                             <i className="bi bi-search" />
-//                             <Search />
-//                         </button>
-//                         <button onClick={handleAddDocument}>
-//                             <i className="bi bi-pencil-square" />
-//                             {/* edit */}
-//                         </button>
-//                     </div>
-//                 </div>
-//             </div>
-
-//             {categories.map((category, index) => {
-//                 // Skip rendering the title for "Uncategorized"
-//                 const isUncategorized = category.name === "Uncategorized";
-
-//                 return (
-//                     <div key={index} style={{ marginBottom: "16px" }}>
-//                         {!isUncategorized && (
-//                             <strong style={{ color: category.color }}>
-//                                 {truncateText(category.name, 25)}
-//                             </strong>
-//                         )}
-
-//                         <div style={{ marginLeft: isUncategorized ? "0px" : "20px" }}>
-//                             {category.documents.map((docId) => {
-//                                 const doc = documents.find((d) => d.id === docId);
-//                                 if (!doc) return null; // Skip if the document is not found
-//                                 const truncatedName = truncateText(doc.name, 22);
-//                                 const isActive = curDocument?.id === doc.id; // Check if the current document is active
-
-//                                 return (
-//                                     <button
-//                                         key={doc.id}
-//                                         onClick={() => setCurDocument(doc)}
-//                                         className={`doc-button ${isActive ? "active" : ""}`}
-//                                     >
-//                                         {truncatedName}
-//                                     </button>
-//                                 );
-//                             })}
-//                         </div>
-//                     </div>
-//                 );
-//             })}
-//         </div>
-//     );
-// }
-
-
-// WORKING SEARCH BUT NEED TO IMPLEMENT HOW WE WANT FORMATTING
-
 import React, { useState } from "react";
 import "./Sidebar.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
@@ -493,13 +315,15 @@ export default function Sidebar({ onToggleSidebar, handleAddDocument, handleAddC
                             </button>
 
                             {showAddDropdown && (
-                                <div className="add-new-dropdown-menu">
-                                    <button onClick={handleAddDocAndClose}>
-                                        Create New Document
-                                    </button>
-                                    <button onClick={handleAddCategoryAction}>
-                                        Create New Category
-                                    </button>
+                                <div className="add-new-popup">
+                                    <div className="add-new-popup-content">
+                                        <button onClick={handleAddDocAndClose}>
+                                            Create New Document
+                                        </button>
+                                        <button onClick={handleAddCategoryAction}>
+                                            Create New Category
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -601,6 +425,13 @@ function MainApp() {
     renameDocument, // assume you have that too
     addNewCategory,
   } = useCategories();
+
+  const [showAddDropdownMain, setShowAddDropdownMain] = useState(false);
+
+  const toggleAddDropdownMain = () => setShowAddDropdownMain((prev) => !prev);
+
+  // Popup state for the “Add New” button
+  const [showAddPopup, setShowAddPopup] = useState(false);
 
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
@@ -727,18 +558,43 @@ function MainApp() {
       <main className="main-content">
         <div className="top-view">
           <div className="hstack">
+
+            {/* Toggle Sidebar */}
             <button
               className={`toggle ${!isSidebarVisible ? "sidebar-hidden" : ""}`}
               onClick={toggleSidebar}
             >
               <i className="bi bi-layout-sidebar"></i>
             </button>
-            <button
-              className={`toggle ${!isSidebarVisible ? "sidebar-hidden" : ""}`}
-              onClick={handleAddDocument}
-            >
-              <i className="bi bi-pencil-square" />
-            </button>
+
+            {/* Our new Add New button + popup */}
+            <div className="add-new-button-container">
+              <button
+                className="add-new-toggle" onClick={() => setShowAddPopup((prev) => !prev)}
+              >
+                <i className="bi bi-pencil-square" />
+              </button>
+
+              {/* The popup that appears below the button */}
+              {showAddPopup && (
+                <div className="add-new-popup">
+                  <div className="add-new-popup-content">
+                    <button onClick={() => {
+                      handleAddDocument()
+                      setShowAddPopup((prev) => !prev)
+                    }}>
+                      Create New Document
+                    </button>
+                    <button onClick={() => {
+                      handleAddCategory()
+                      setShowAddPopup((prev) => !prev)
+                    }}>
+                      Create New Category
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* 4) Conditionally render either a <p> or an <input> */}
             {editingTitle ? (
@@ -805,8 +661,8 @@ function MainApp() {
           isOpen={isPdfModalOpen}
           onClose={() => setIsPdfModalOpen(false)}
         />
-      </main>
-    </div>
+      </main >
+    </div >
   );
 }
 
@@ -1067,6 +923,55 @@ button:hover::before {
 
 .add-new-dropdown-menu button:hover {
     background-color: #f0f0f0;
+}
+
+/* The popup itself */
+.add-new-popup {
+    position: absolute;
+    top: 100%;
+    /* directly below the button */
+    left: 0;
+    z-index: 9999;
+    min-width: 180px;
+    /* wide enough so text doesn't wrap */
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    /* more rounded corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-top: 4px;
+    /* small gap below the button */
+    /* overflow: hidden; */
+    /* ensures corners are fully rounded */
+}
+
+/* Some inner padding if desired */
+.add-new-popup-content {
+    display: flex;
+    flex-direction: column;
+    padding: 4px 0;
+    /* vertical spacing inside */
+}
+
+/* Each button in the popup */
+.add-new-popup-content button {
+    background: transparent;
+    border: none;
+    outline: none;
+    width: 100%;
+    text-align: left;
+    padding: 8px 16px;
+    cursor: pointer;
+    white-space: nowrap;
+    /* text stays on one line */
+    transition: background-color 0.2s ease-in-out;
+    font-size: 14px;
+    /* optional: adjust font size */
+}
+
+/* Hover effect to 'deepen' the background */
+.add-new-popup-content button:hover {
+    background-color: #ececec;
 }
 
 ```
@@ -1517,6 +1422,81 @@ p {
 .toggle.sidebar-hidden {
   display: block;
   /* Show when the sidebar is hidden */
+}
+
+/* Container that keeps the popup positioned under the button */
+.add-new-button-container {
+  position: relative;
+  /* So the popup is absolute to this container */
+  display: inline-block;
+}
+
+/* The popup itself */
+.add-new-popup {
+  position: absolute;
+  top: 100%;
+  /* directly below the button */
+  left: 0;
+  z-index: 9999;
+  min-width: 180px;
+  /* wide enough so text doesn't wrap */
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  /* more rounded corners */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  margin-top: 4px;
+  /* small gap below the button */
+  /* overflow: hidden; */
+  /* ensures corners are fully rounded */
+}
+
+/* Some inner padding if desired */
+.add-new-popup-content {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0;
+  /* vertical spacing inside */
+}
+
+/* Each button in the popup */
+.add-new-popup-content button {
+  background: transparent;
+  border: none;
+  outline: none;
+  width: 100%;
+  text-align: left;
+  padding: 8px 16px;
+  cursor: pointer;
+  white-space: nowrap;
+  /* text stays on one line */
+  transition: background-color 0.2s ease-in-out;
+  font-size: 14px;
+  /* optional: adjust font size */
+}
+
+/* Hover effect to 'deepen' the background */
+.add-new-popup-content button:hover {
+  background-color: #ececec;
+}
+
+.toggle {
+  display: none;
+}
+
+.toggle.sidebar-hidden {
+  display: block;
+}
+
+/* Hide the Add New button by default */
+.add-new-toggle {
+  display: none;
+}
+
+/* When sidebar is hidden, show the Add New button */
+.sidebar-hidden .add-new-toggle {
+  display: inline-block;
+  /* or block, or whatever style you prefer */
 }
 
 ```

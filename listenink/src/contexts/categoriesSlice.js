@@ -47,6 +47,46 @@ const categoriesSlice = createSlice({
     name: 'categories',
     initialState: { categories: initialCategories, documents: initialDocuments },
     reducers: {
+
+        renameCategory: (state, action) => {
+            const { categoryId, newName } = action.payload;
+            const cat = state.categories.find((c) => c.id === categoryId);
+            if (cat) {
+                cat.name = newName;
+            }
+        },
+        deleteCategory: (state, action) => {
+            const categoryId = action.payload;
+            // Remove the category
+            state.categories = state.categories.filter((c) => c.id !== categoryId);
+            // Optionally, also handle any documents that belonged to that category
+            // e.g. move them to "Uncategorized" or remove them entirely
+            // up to you
+        },
+
+        renameDocument: (state, action) => {
+            const { docId, newName } = action.payload;
+            const doc = state.documents.find((d) => d.id === docId);
+            if (doc) doc.name = newName;
+        },
+
+        updateDocumentName: (state, action) => {
+            const { docId, newName } = action.payload;
+            const doc = state.documents.find((d) => d.id === docId);
+            if (doc) doc.name = newName;
+        },
+
+        deleteDocument: (state, action) => {
+            const docId = action.payload;
+            // Remove from state.documents
+            state.documents = state.documents.filter((d) => d.id !== docId);
+            // Also remove from whichever category’s documents array
+            state.categories.forEach((cat) => {
+                cat.documents = cat.documents.filter((id) => id !== docId);
+            });
+        },
+
+
         addDocument: (state, action) => {
             const { document } = action.payload;
             state.documents.push(document);
@@ -83,11 +123,7 @@ const categoriesSlice = createSlice({
             }
         },
 
-        updateDocumentName: (state, action) => {
-            const { docId, newName } = action.payload;
-            const doc = state.documents.find((d) => d.id === docId);
-            if (doc) doc.name = newName;
-        },
+
 
         addCategory: (state, action) => {
             const newCategory = action.payload;
@@ -100,7 +136,16 @@ const categoriesSlice = createSlice({
     },
 });
 
-export const { addDocument, moveDocument, updateDocumentName, addCategory } = categoriesSlice.actions;
+export const {
+    addDocument,
+    moveDocument,
+    updateDocumentName,
+    addCategory,
+    renameCategory,
+    deleteCategory,
+    renameDocument,
+    deleteDocument,
+} = categoriesSlice.actions;
 // export const selectCategories = (state) => state.categories.categories;
 // export const selectDocumentsByCategory = (state, categoryId) => state.categories.documents.filter((doc) => doc.categoryId === categoryId);
 export default categoriesSlice.reducer;

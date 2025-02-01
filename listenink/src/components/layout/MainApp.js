@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./MainApp.css";
 import Sidebar from "./Sidebar";
 import AudioControls from "./AudioControls";
@@ -39,6 +39,9 @@ function MainApp() {
     setIsSidebarVisible(!isSidebarVisible);
   };
 
+  // [NEW CODE] Ref to the “Add New” popup container
+  const addPopupRef = useRef(null);
+
   useEffect(() => {
     let dragCounter = 0;
 
@@ -60,14 +63,7 @@ function MainApp() {
         setIsPdfModalOpen(false);
       }
     };
-
-    // Needed to allow dropping by preventing the default
-    const handleDragOver = (e) => {
-      e.preventDefault();
-    };
-
-    // If user drops anywhere outside your modal, close the modal
-    // (Because they've either dropped on the page or left the window)
+    const handleDragOver = (e) => e.preventDefault();
     const handleDrop = () => {
       dragCounter = 0;
       setIsPdfModalOpen(false);
@@ -85,6 +81,35 @@ function MainApp() {
       window.removeEventListener("drop", handleDrop);
     };
   }, []);
+
+  // [NEW CODE] Close the Add New popup if user clicks away or presses ESC
+  useEffect(() => {
+    const handleGlobalClick = (e) => {
+      // If the popup is open and the click is outside the popup, close it
+      if (showAddPopup) {
+        if (addPopupRef.current && !addPopupRef.current.contains(e.target)) {
+          setShowAddPopup(false);
+        }
+      }
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        // If open, close the popup
+        if (showAddPopup) {
+          setShowAddPopup(false);
+        }
+      }
+    };
+
+    document.addEventListener("mousedown", handleGlobalClick);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handleGlobalClick);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showAddPopup]);
 
   const handleAddDocument = () => {
     let newId =
@@ -104,8 +129,8 @@ function MainApp() {
       name: "New Category " + newId,
       id: newId,
     };
-    addNewCategory(newCategory)
-  }
+    addNewCategory(newCategory);
+  };
 
   // 2) Double-click to start editing
   const handleTitleDoubleClick = () => {
@@ -153,7 +178,6 @@ function MainApp() {
       <main className="main-content">
         <div className="top-view">
           <div className="hstack">
-
             {/* Toggle Sidebar */}
             <button
               className={`toggle ${!isSidebarVisible ? "sidebar-hidden" : ""}`}
@@ -172,7 +196,7 @@ function MainApp() {
 
               {/* The popup that appears below the button */}
               {showAddPopup && (
-                <div className="add-new-popup">
+                <div className="add-new-popup" ref={addPopupRef}>
                   <div className="add-new-popup-content">
                     <button onClick={() => {
                       handleAddDocument()

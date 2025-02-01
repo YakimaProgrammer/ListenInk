@@ -1,10 +1,17 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import "./Sidebar.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import { useDispatch } from "react-redux";
 import { useCategories } from "../../contexts/CategoriesContext";
 import Search from "./Search.js";
-import { moveDocument, addCategory } from '../../contexts/categoriesSlice'; // <--- Add your 'addCategory' import here
+import {
+    moveDocument,
+    addCategory, // from your existing code
+    renameCategory,
+    deleteCategory,
+    renameDocument,
+    deleteDocument,
+} from "../../contexts/categoriesSlice";
 
 const truncateText = (text = "", maxLength = 5) => {
     if (text.length <= maxLength) {
@@ -13,30 +20,202 @@ const truncateText = (text = "", maxLength = 5) => {
     return text.slice(0, maxLength - 3) + "...";
 };
 
-export default function Sidebar({ onToggleSidebar, handleAddDocument, handleAddCategory }) {
+export default function Sidebar({
+    onToggleSidebar,
+    handleAddDocument,
+    handleAddCategory,
+}) {
     const dispatch = useDispatch();
     const { categories, documents, curDocument, setCurDocument } = useCategories();
     const [showSearch, setShowSearch] = useState(false);
-    // For the "Add New" dropdown:
+
+    // "Add New" popup
     const [showAddDropdown, setShowAddDropdown] = useState(false);
+    const addDropdownRef = useRef(null); // Ref to the "Add New" popup container
+
+    // Right-click context menu
+    const [contextMenu, setContextMenu] = useState({
+        visible: false,
+        x: 0,
+        y: 0,
+        itemType: null, // 'category' or 'document'
+        itemId: null,
+    });
+    const contextMenuRef = useRef(null); // Ref to the context menu container
+
+    // Confirm delete modal
+    const [confirmDelete, setConfirmDelete] = useState({
+        open: false,
+        itemType: null,
+        itemId: null,
+    });
+
+    const confirmDeleteRef = useRef(null); // Ref to the white box in the modal
+
+    // Inline rename states for category/document
+    const [editingCatId, setEditingCatId] = useState(null);
+    const [tempCatName, setTempCatName] = useState("");
+    const [editingDocId, setEditingDocId] = useState(null);
+    const [tempDocName, setTempDocName] = useState("");
+
+    // Click / KeyDown handlers to close popups if user clicks away or presses ESC
+    useEffect(() => {
+        const handleGlobalClick = (e) => {
+            // If the context menu is open and the click is outside it, close it
+            if (contextMenu.visible) {
+                if (
+                    contextMenuRef.current &&
+                    !contextMenuRef.current.contains(e.target)
+                ) {
+                    setContextMenu({ ...contextMenu, visible: false });
+                }
+            }
+
+            // If the add new dropdown is open and the click is outside it, close it
+            if (showAddDropdown) {
+                if (
+                    addDropdownRef.current &&
+                    !addDropdownRef.current.contains(e.target)
+                ) {
+                    setShowAddDropdown(false);
+                }
+            }
+
+            // If delete modal is open and click is **outside** the modal box, close it
+            if (confirmDelete.open) {
+                if (
+                    confirmDeleteRef.current &&
+                    !confirmDeleteRef.current.contains(e.target)
+                ) {
+                    setConfirmDelete({ open: false, itemType: null, itemId: null });
+                }
+            }
+        };
+
+        const handleKeyDown = (e) => {
+            if (e.key === "Escape") {
+                // Close everything
+                setContextMenu({ ...contextMenu, visible: false });
+                setShowAddDropdown(false);
+                setConfirmDelete({ open: false, itemType: null, itemId: null });
+            }
+        };
+
+        document.addEventListener("mousedown", handleGlobalClick);
+        document.addEventListener("keydown", handleKeyDown);
+
+        return () => {
+            document.removeEventListener("mousedown", handleGlobalClick);
+            document.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [contextMenu, showAddDropdown, confirmDelete]);
+
+    // Refs to automatically focus rename input
+    // const catInputRef = useRef(null);
+    // const docInputRef = useRef(null);
 
     const toggleSearch = () => setShowSearch((prev) => !prev);
     const toggleAddDropdown = () => setShowAddDropdown((prev) => !prev);
 
-    // If you have a Redux or context function for adding a category, call it here.
-    const handleAddCategoryAction = () => {
-        // Example: dispatch(addCategory({ name: 'New Category' }));
-        handleAddCategory();
-        setShowAddDropdown(false); // close menu after adding
+    // Right-click handler
+    const handleRightClick = (e, itemType, itemId) => {
+        e.preventDefault();
+        // Show context menu at mouse location
+        setContextMenu({
+            visible: true,
+            x: e.pageX,
+            y: e.pageY,
+            itemType,
+            itemId,
+        });
     };
 
-    // If you want to close the dropdown after adding a document, do it here:
-    const handleAddDocAndClose = () => {
-        handleAddDocument();
-        setShowAddDropdown(false);
+    // // Hide the context menu if user left-clicks anywhere
+    // const handleClickAway = () => {
+    //     if (contextMenu.visible) {
+    //         setContextMenu({ ...contextMenu, visible: false });
+    //     }
+    // };
+
+    // Context menu actions
+    const handleContextRename = () => {
+        const { itemType, itemId } = contextMenu;
+        setContextMenu({ ...contextMenu, visible: false });
+
+        if (itemType === "category") {
+            // Find the category name
+            const cat = categories.find((c) => c.id === itemId);
+            if (cat) {
+                setEditingCatId(itemId);
+                setTempCatName(cat.name);
+            }
+        } else if (itemType === "document") {
+            const doc = documents.find((d) => d.id === itemId);
+            if (doc) {
+                setEditingDocId(itemId);
+                setTempDocName(doc.name);
+            }
+        }
     };
 
-    // Drag/Drop logic remains the same
+    const handleContextDelete = () => {
+        const { itemType, itemId } = contextMenu;
+        setContextMenu({ ...contextMenu, visible: false });
+
+        // Open a confirmation popup
+        setConfirmDelete({
+            open: true,
+            itemType,
+            itemId,
+        });
+    };
+
+    // Inline rename - Category
+    const handleCategoryBlur = (catId) => {
+        if (tempCatName.trim() !== "") {
+            dispatch(renameCategory({ categoryId: catId, newName: tempCatName }));
+        }
+        setEditingCatId(null);
+    };
+
+    const handleCatKeyDown = (e, catId) => {
+        if (e.key === "Enter") {
+            e.target.blur();
+        }
+    };
+
+    // Inline rename - Document
+    const handleDocumentBlur = (docId) => {
+        if (tempDocName.trim() !== "") {
+            dispatch(renameDocument({ docId, newName: tempDocName }));
+        }
+        setEditingDocId(null);
+    };
+
+    const handleDocKeyDown = (e, docId) => {
+        if (e.key === "Enter") {
+            e.target.blur();
+        }
+    };
+
+    // Confirm delete
+    const handleConfirmDelete = () => {
+        const { itemType, itemId } = confirmDelete;
+
+        if (itemType === "category") {
+            dispatch(deleteCategory(itemId));
+        } else if (itemType === "document") {
+            dispatch(deleteDocument(itemId));
+        }
+
+        setConfirmDelete({ open: false, itemType: null, itemId: null });
+    };
+
+    const handleCancelDelete = () => {
+        setConfirmDelete({ open: false, itemType: null, itemId: null });
+    };
+
+    // Drag & Drop
     const handleDragStart = (e, docId, sourceCategoryId) => {
         // Store the dragged docId and the source category in the DataTransfer
         e.dataTransfer.setData("docId", docId);
@@ -71,30 +250,33 @@ export default function Sidebar({ onToggleSidebar, handleAddDocument, handleAddC
                         </button>
 
                         {/* Add New (Dropdown) */}
-                        <div className="add-new-dropdown-container">
+                        <div className="add-new-dropdown-container" ref={addDropdownRef}>
                             <button onClick={toggleAddDropdown}>
                                 <i className="bi bi-pencil-square" />
-                                {/* Or some other icon/text */}
                             </button>
-
                             {showAddDropdown && (
                                 <div className="add-new-popup">
                                     <div className="add-new-popup-content">
-                                        <button onClick={handleAddDocAndClose}>
+                                        <button
+                                            onClick={() => {
+                                                handleAddDocument();
+                                                setShowAddDropdown(false);
+                                            }}
+                                        >
                                             Create New Document
                                         </button>
-                                        <button onClick={handleAddCategoryAction}>
+                                        <button
+                                            onClick={() => {
+                                                handleAddCategory();
+                                                setShowAddDropdown(false);
+                                            }}
+                                        >
                                             Create New Category
                                         </button>
                                     </div>
                                 </div>
                             )}
                         </div>
-
-                        {/* Add new document button */}
-                        {/* <button onClick={handleAddDocument}>
-                            <i className="bi bi-pencil-square" />
-                        </button> */}
                     </div>
                 </div>
             </div>
@@ -111,52 +293,121 @@ export default function Sidebar({ onToggleSidebar, handleAddDocument, handleAddC
                 </div>
             )}
 
-            {/* Categories and documents */}
+            {/* Categories + Documents */}
             {[...categories]
                 .sort((a, b) => {
                     if (a.name === "Uncategorized") return 1;
                     if (b.name === "Uncategorized") return -1;
                     return 0;
-                }).map((category, index) => {
+                })
+                .map((category, index) => {
                     const isUncategorized = category.name === "Uncategorized";
 
                     return (
-                        // Container for category
                         <div
                             key={index}
                             style={{ marginBottom: "16px" }}
                             onDragOver={handleDragOver}
                             onDrop={(e) => handleDrop(e, category.id)}
                         >
+                            {/* CATEGORY TITLE */}
                             {!isUncategorized && (
-                                <strong style={{ color: category.color }}>
-                                    {truncateText(category.name, 25)}
-                                </strong>
+                                <div
+                                    onContextMenu={(e) => handleRightClick(e, "category", category.id)}
+                                    style={{ fontWeight: "bold", color: category.color }}
+                                >
+                                    {/* If editing this category, show input. Otherwise, show text. */}
+                                    {editingCatId === category.id ? (
+                                        <input
+                                            // ref={catInputRef}
+                                            type="text"
+                                            value={tempCatName}
+                                            onChange={(e) => setTempCatName(e.target.value)}
+                                            onBlur={() => handleCategoryBlur(category.id)}
+                                            onKeyDown={(e) => handleCatKeyDown(e, category.id)}
+                                            autoFocus
+                                        />
+                                    ) : (
+                                        truncateText(category.name, 25)
+                                    )}
+                                </div>
                             )}
+
+                            {/* DOCUMENTS for this category */}
                             <div style={{ marginLeft: isUncategorized ? "0px" : "20px" }}>
-                                {/* Documents */}
                                 {category.documents.map((docId) => {
                                     const doc = documents.find((d) => d.id === docId);
                                     if (!doc) return null;
-                                    const truncatedName = truncateText(doc.name, 22);
                                     const isActive = curDocument?.id === doc.id;
 
                                     return (
-                                        <button
+                                        <div
                                             key={doc.id}
-                                            onClick={() => setCurDocument(doc)}
-                                            className={`doc-button ${isActive ? "active" : ""}`}
-                                            draggable={true}
-                                            onDragStart={(e) => handleDragStart(e, doc.id, category.id)}
+                                            style={{ display: "flex", alignItems: "center" }}
+                                            onContextMenu={(e) => handleRightClick(e, "document", doc.id)}
                                         >
-                                            {truncatedName}
-                                        </button>
+                                            {editingDocId === doc.id ? (
+                                                <input
+                                                    // ref={docInputRef}
+                                                    type="text"
+                                                    value={tempDocName}
+                                                    onChange={(e) => setTempDocName(e.target.value)}
+                                                    onBlur={() => handleDocumentBlur(doc.id)}
+                                                    onKeyDown={(e) => handleDocKeyDown(e, doc.id)}
+                                                    autoFocus
+                                                    style={{ marginRight: 10 }}
+                                                />
+                                            ) : (
+                                                <button
+                                                    onClick={() => setCurDocument(doc)}
+                                                    className={`doc-button ${isActive ? "active" : ""}`}
+                                                    draggable={true}
+                                                    onDragStart={(e) =>
+                                                        handleDragStart(e, doc.id, category.id)
+                                                    }
+                                                >
+                                                    {truncateText(doc.name, 22)}
+                                                </button>
+                                            )}
+                                        </div>
                                     );
                                 })}
                             </div>
                         </div>
                     );
                 })}
+
+            {/* CONTEXT MENU */}
+            {contextMenu.visible && (
+                <div
+                    className="context-menu add-new-popup"
+                    ref={contextMenuRef}
+                    style={{
+                        position: "absolute",
+                        top: contextMenu.y,
+                        left: contextMenu.x,
+                        zIndex: 9999,
+                    }}
+                >
+                    <div className="add-new-popup-content">
+                        <button onClick={handleContextRename}>Rename</button>
+                        <button onClick={handleContextDelete}>Delete</button>
+                    </div>
+                </div>
+            )}
+
+            {/* DELETE CONFIRMATION MODAL */}
+            {confirmDelete.open && (
+                <div className="delete-confirm-overlay">
+                    {/* If you click the overlay, it closes.
+              The white box has its own ref to stop clicks. */}
+                    <div className="delete-confirm-modal" ref={confirmDeleteRef}>
+                        <p>Are you sure you want to delete this?</p>
+                        <button onClick={handleConfirmDelete}>OK</button>
+                        <button onClick={handleCancelDelete}>Cancel</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
