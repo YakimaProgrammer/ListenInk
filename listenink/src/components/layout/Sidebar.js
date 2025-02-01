@@ -11,7 +11,21 @@ import {
     deleteCategory,
     renameDocument,
     deleteDocument,
+    changeCategoryColor, // <---- import our new action
 } from "../../contexts/categoriesSlice";
+
+const categoryColors = [
+    "#001219",
+    "#005f73",
+    "#0a9396",
+    "#94d2bd",
+    "#e9d8a6",
+    "#ee9b00",
+    "#ca6702",
+    "#bb3e03",
+    "#ae2012",
+    "#9b2226",
+];
 
 const truncateText = (text = "", maxLength = 5) => {
     if (text.length <= maxLength) {
@@ -40,6 +54,7 @@ export default function Sidebar({
         y: 0,
         itemType: null, // 'category' or 'document'
         itemId: null,
+        showColorPicker: false, // <---- new flag to show color grid
     });
     const contextMenuRef = useRef(null); // Ref to the context menu container
 
@@ -67,7 +82,7 @@ export default function Sidebar({
                     contextMenuRef.current &&
                     !contextMenuRef.current.contains(e.target)
                 ) {
-                    setContextMenu({ ...contextMenu, visible: false });
+                    setContextMenu({ ...contextMenu, visible: false, showColorPicker: false });
                 }
             }
 
@@ -94,8 +109,11 @@ export default function Sidebar({
 
         const handleKeyDown = (e) => {
             if (e.key === "Escape") {
-                // Close everything
-                setContextMenu({ ...contextMenu, visible: false });
+                setContextMenu({
+                    ...contextMenu,
+                    visible: false,
+                    showColorPicker: false,
+                });
                 setShowAddDropdown(false);
                 setConfirmDelete({ open: false, itemType: null, itemId: null });
             }
@@ -127,6 +145,7 @@ export default function Sidebar({
             y: e.pageY,
             itemType,
             itemId,
+            showColorPicker: false, // reset any sub-menu
         });
     };
 
@@ -167,6 +186,27 @@ export default function Sidebar({
             open: true,
             itemType,
             itemId,
+        });
+
+
+    };
+
+    // [NEW] Show color picker sub-menu (for categories only)
+    const handleContextChangeColor = () => {
+        setContextMenu({
+            ...contextMenu,
+            showColorPicker: true,
+        });
+    };
+
+    // [NEW] Called when user picks a color
+    const handlePickColor = (color) => {
+        dispatch(changeCategoryColor({ categoryId: contextMenu.itemId, color }));
+        // Close the menu
+        setContextMenu({
+            ...contextMenu,
+            visible: false,
+            showColorPicker: false,
         });
     };
 
@@ -389,10 +429,36 @@ export default function Sidebar({
                         zIndex: 9999,
                     }}
                 >
-                    <div className="add-new-popup-content">
-                        <button onClick={handleContextRename}>Rename</button>
-                        <button onClick={handleContextDelete}>Delete</button>
-                    </div>
+                    {/* If user is picking colors, show color grid. Otherwise, show rename/delete. */}
+                    {contextMenu.itemType === "category" && contextMenu.showColorPicker ? (
+                        <div className="color-grid">
+                            {categoryColors.map((color) => {
+                                // Get the current category to see its color
+                                const cat = categories.find((c) => c.id === contextMenu.itemId);
+                                const isSelected = cat && cat.color === color;
+
+                                return (
+                                    <div
+                                        key={color}
+                                        className="color-circle"
+                                        style={{
+                                            backgroundColor: color,
+                                            outline: isSelected ? "2px solid black" : "2px solid transparent",
+                                        }}
+                                        onClick={() => handlePickColor(color)}
+                                    />
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div className="add-new-popup-content">
+                            <button onClick={handleContextRename}>Rename</button>
+                            <button onClick={handleContextDelete}>Delete</button>
+                            {contextMenu.itemType === "category" && (
+                                <button onClick={handleContextChangeColor}>Change Color</button>
+                            )}
+                        </div>
+                    )}
                 </div>
             )}
 

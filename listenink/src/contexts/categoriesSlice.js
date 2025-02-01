@@ -123,8 +123,6 @@ const categoriesSlice = createSlice({
             }
         },
 
-
-
         addCategory: (state, action) => {
             const newCategory = action.payload;
             state.categories.push({
@@ -132,6 +130,14 @@ const categoriesSlice = createSlice({
                 documents: [],
                 color: "#000000"
             });
+        },
+
+        changeCategoryColor: (state, action) => {
+            const { categoryId, color } = action.payload;
+            const cat = state.categories.find((c) => c.id === categoryId);
+            if (cat) {
+                cat.color = color;
+            }
         },
     },
 });
@@ -145,7 +151,10 @@ export const {
     deleteCategory,
     renameDocument,
     deleteDocument,
+    changeCategoryColor
 } = categoriesSlice.actions;
+
 // export const selectCategories = (state) => state.categories.categories;
 // export const selectDocumentsByCategory = (state, categoryId) => state.categories.documents.filter((doc) => doc.categoryId === categoryId);
+
 export default categoriesSlice.reducer;

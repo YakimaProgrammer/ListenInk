@@ -281,3 +281,31 @@ button:hover::before {
     margin: 10px;
     padding: 8px 16px;
 }
+
+.color-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 30px);
+    /* 5 columns of 30px each */
+    grid-template-rows: repeat(2, 30px);
+    /* 2 rows */
+    gap: 8px;
+    padding: 8px;
+    justify-items: center;
+    align-items: center;
+    /* adjust as needed */
+}
+
+.color-circle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.2s ease-in-out;
+    outline-offset: -1px;
+    /* so it appears nicely around the circle if you do an outline */
+}
+
+.color-circle:hover {
+    transform: scale(1.1);
+    /* highlights the color on hover */
+}
