@@ -78,13 +78,15 @@ export default function Sidebar({ onToggleSidebar, handleAddDocument, handleAddC
                             </button>
 
                             {showAddDropdown && (
-                                <div className="add-new-dropdown-menu">
-                                    <button onClick={handleAddDocAndClose}>
-                                        Create New Document
-                                    </button>
-                                    <button onClick={handleAddCategoryAction}>
-                                        Create New Category
-                                    </button>
+                                <div className="add-new-popup">
+                                    <div className="add-new-popup-content">
+                                        <button onClick={handleAddDocAndClose}>
+                                            Create New Document
+                                        </button>
+                                        <button onClick={handleAddCategoryAction}>
+                                            Create New Category
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                         </div>

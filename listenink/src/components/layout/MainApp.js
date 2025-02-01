@@ -21,6 +21,13 @@ function MainApp() {
     addNewCategory,
   } = useCategories();
 
+  const [showAddDropdownMain, setShowAddDropdownMain] = useState(false);
+
+  const toggleAddDropdownMain = () => setShowAddDropdownMain((prev) => !prev);
+
+  // Popup state for the “Add New” button
+  const [showAddPopup, setShowAddPopup] = useState(false);
+
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
 
@@ -146,18 +153,43 @@ function MainApp() {
       <main className="main-content">
         <div className="top-view">
           <div className="hstack">
+
+            {/* Toggle Sidebar */}
             <button
               className={`toggle ${!isSidebarVisible ? "sidebar-hidden" : ""}`}
               onClick={toggleSidebar}
             >
               <i className="bi bi-layout-sidebar"></i>
             </button>
-            <button
-              className={`toggle ${!isSidebarVisible ? "sidebar-hidden" : ""}`}
-              onClick={handleAddDocument}
-            >
-              <i className="bi bi-pencil-square" />
-            </button>
+
+            {/* Our new Add New button + popup */}
+            <div className="add-new-button-container">
+              <button
+                className="add-new-toggle" onClick={() => setShowAddPopup((prev) => !prev)}
+              >
+                <i className="bi bi-pencil-square" />
+              </button>
+
+              {/* The popup that appears below the button */}
+              {showAddPopup && (
+                <div className="add-new-popup">
+                  <div className="add-new-popup-content">
+                    <button onClick={() => {
+                      handleAddDocument()
+                      setShowAddPopup((prev) => !prev)
+                    }}>
+                      Create New Document
+                    </button>
+                    <button onClick={() => {
+                      handleAddCategory()
+                      setShowAddPopup((prev) => !prev)
+                    }}>
+                      Create New Category
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* 4) Conditionally render either a <p> or an <input> */}
             {editingTitle ? (
@@ -224,8 +256,8 @@ function MainApp() {
           isOpen={isPdfModalOpen}
           onClose={() => setIsPdfModalOpen(false)}
         />
-      </main>
-    </div>
+      </main >
+    </div >
   );
 }
 
