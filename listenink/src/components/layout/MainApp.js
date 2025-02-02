@@ -49,21 +49,38 @@ function MainApp() {
   // Handle file input change (uploading a file via the file selector)
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    // Reset the file input so the same file can be re-selected if needed
+    // Reset the input so that the same file can be re-selected if needed.
     e.target.value = "";
     if (!file) return;
-    if (!curDocument) {
-      alert("No document selected. Please select a document first.");
-      return;
-    }
+
     if (file.type !== "application/pdf") {
       alert("Only PDF files are allowed.");
       return;
     }
-    // Attach PDF to the current document via context
-    attachPdfToDocument(curDocument.id, file);
-    alert(`Successfully attached PDF to "${curDocument.name}"`);
+
+    if (curDocument) {
+      if (pdfByDocId[curDocument.id]) {
+        alert(`Document "${curDocument.name}" already has a PDF attached!`);
+        return;
+      }
+      attachPdfToDocument(curDocument.id, file);
+      // alert(`Successfully attached PDF to "${curDocument.name}"`);
+    } else {
+      // Create a new document automatically.
+      const newDocName = file.name.replace(/\.pdf$/i, '');
+      const newId = documents.reduce((maxId, doc) => Math.max(maxId, doc.id), -1) + 1;
+      const newDocument = {
+        name: newDocName,
+        text: "",
+        id: newId,
+      };
+      addNewDocument(newDocument);
+      setCurDocument(newDocument);
+      attachPdfToDocument(newDocument.id, file);
+      // alert(`Successfully created document "${newDocument.name}" and attached PDF.`);
+    }
   };
+
 
   useEffect(() => {
     let dragCounter = 0;
