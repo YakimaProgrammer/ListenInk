@@ -1,5 +1,5 @@
-import { Drawer, IconButton, Divider, List, ListItem, ListItemText, ListItemButton, ListItemIcon } from '@mui/material';
-import { Inbox, Mail, ChevronLeft } from "@mui/icons-material";
+import { Drawer, IconButton, Divider, List, ListItem, ListItemText, ListItemButton, ListItemIcon, Box } from '@mui/material';
+import { Inbox, Mail, ChevronLeft, Search, Upload } from "@mui/icons-material";
 import { DrawerHeader } from "@/components/DrawerHeader";
 import styles from "./index.module.scss";
 
@@ -17,10 +17,23 @@ export function Sidebar({ sidebarOpen, setClosed }: SidebarProps) {
       classes={{ paper: styles.drawerPaper }}
     >
       <DrawerHeader>
-        <IconButton onClick={setClosed}>
+	{/* Left: search and upload */}
+	<IconButton>
+	  <Search />
+	</IconButton>
+	<IconButton>
+	  <Upload />
+	</IconButton>
+
+	{/* Spacer to push the menu button to the right */}
+        <Box sx={{ flexGrow: 1 }} />
+
+	{/* Right: menu button */}
+	<IconButton onClick={setClosed}>
           <ChevronLeft />
         </IconButton>
       </DrawerHeader>
+      
       <Divider />
       <List>
         {['Inbox', 'Starred', 'Send email', 'Drafts'].map((text, index) => (
