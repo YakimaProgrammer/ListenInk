@@ -1,5 +1,5 @@
 import { Typography } from "@mui/material";
-import { DrawerHeader } from "../../../components/DrawerHeader";
+import { DrawerHeader } from "@/components/DrawerHeader";
 import styles from "./index.module.scss";
 
 interface ContentProps {

@@ -1,6 +1,6 @@
 import { Drawer, IconButton, Divider, List, ListItem, ListItemText, ListItemButton, ListItemIcon } from '@mui/material';
 import { Inbox, Mail, ChevronLeft } from "@mui/icons-material";
-import { DrawerHeader } from "../../../components/DrawerHeader";
+import { DrawerHeader } from "@/components/DrawerHeader";
 import styles from "./index.module.scss";
 
 interface SidebarProps {
