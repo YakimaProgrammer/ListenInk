@@ -3,16 +3,16 @@ import os
 folder_path = "src/components/"
 
 include = []
-exclude = []
+exclude = ['Sidebar', 'poo', 'AudioControls', 'DS_Store']
 
 
 for root, _, files in os.walk(folder_path):
     for file_name in files:
         # any(i in file_name for i in include)
         blank = not include and not exclude
-        inc_exc = any(i in file_name for i in include) and not any(
-            i in file_name for i in exclude)
-        if blank or inc_exc:
+        inc = any(i in file_name for i in include)
+        exc = not any(i in file_name for i in exclude)
+        if blank or inc or exc:
             file_path = os.path.join(root, file_name)
             print(f"File: {file_path}\n```")
             try:

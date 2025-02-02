@@ -1,6 +1,7 @@
 import React from 'react';
 import './PDFDropModal.css';
 import { useCategories } from '../../contexts/CategoriesContext';
+import { ReactSVG } from 'react-svg';
 
 export default function PDFDropModal({ isOpen, onClose }) {
     const { curDocument, pdfByDocId, attachPdfToDocument } = useCategories();
@@ -65,10 +66,12 @@ export default function PDFDropModal({ isOpen, onClose }) {
                 )}
 
                 {canDrop && (
-                    <div className="dropzone">
+                    <div className="dropzone vstack">
                         <p>
-                            Attach a PDF
+                            Drag and Drop
                         </p>
+                        <br></br>
+                        <img src="import_icon.png" height="15%" width="auto" />
                     </div>
                 )}
             </div>

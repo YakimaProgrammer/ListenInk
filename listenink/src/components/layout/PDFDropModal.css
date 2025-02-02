@@ -8,7 +8,7 @@
     margin-left: 350px;
     /* Start after sidebar width */
     height: 100%;
-    background: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.7);
     /* semi-opaque backdrop */
     display: flex;
     align-items: center;
@@ -46,4 +46,10 @@
     justify-content: center;
     align-items: center;
     margin-top: 30px;
+}
+
+.small-svg svg {
+    width: 20%;
+    /* Scale to 1/5th */
+    height: auto;
 }

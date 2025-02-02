@@ -17,8 +17,9 @@ function MainApp() {
     addNewDocument,
     // updateDocumentName,
     pdfByDocId,
-    renameDocument, // assume you have that too
+    renameDocument,
     addNewCategory,
+    attachPdfToDocument,
   } = useCategories();
 
   const [showAddDropdownMain, setShowAddDropdownMain] = useState(false);
@@ -41,6 +42,28 @@ function MainApp() {
 
   // [NEW CODE] Ref to the “Add New” popup container
   const addPopupRef = useRef(null);
+
+  // **** NEW: Ref for file input ****
+  const fileInputRef = useRef(null);
+
+  // Handle file input change (uploading a file via the file selector)
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    // Reset the file input so the same file can be re-selected if needed
+    e.target.value = "";
+    if (!file) return;
+    if (!curDocument) {
+      alert("No document selected. Please select a document first.");
+      return;
+    }
+    if (file.type !== "application/pdf") {
+      alert("Only PDF files are allowed.");
+      return;
+    }
+    // Attach PDF to the current document via context
+    attachPdfToDocument(curDocument.id, file);
+    alert(`Successfully attached PDF to "${curDocument.name}"`);
+  };
 
   useEffect(() => {
     let dragCounter = 0;
@@ -94,11 +117,8 @@ function MainApp() {
     };
 
     const handleKeyDown = (e) => {
-      if (e.key === "Escape") {
-        // If open, close the popup
-        if (showAddPopup) {
-          setShowAddPopup(false);
-        }
+      if (e.key === "Escape" && showAddPopup) {
+        setShowAddPopup(false);
       }
     };
 
@@ -241,13 +261,42 @@ function MainApp() {
                 >
                   {curDocument ? curDocument.name : "No Document Selected"}
                 </p>
-                <i class="bi bi-pencil"></i>
+                {curDocument && <i class="bi bi-pencil"></i>}
               </div>
             )}
           </div>
         </div >
 
-        <MainPdf />
+        <div className="centered vstack">
+          {curDocument && pdfByDocId[curDocument.id] ?
+            (
+              <div>
+                <MainPdf />
+              </div>
+            ) : (
+              <>
+                <p>
+                  Drag and Drop
+                </p>
+                <br></br>
+                <img src="import_icon.png" height="15%" width="auto" />
+                <hr
+                  className="divider"
+                  style={{ width: "60%", margin: "16px auto" }}
+                />
+                {/* Added an Upload File button in the placeholder */}
+                <button
+                  className="upload-button"
+                  onClick={() =>
+                    fileInputRef.current && fileInputRef.current.click()
+                  }
+                >
+                  <i class="bi bi-paperclip"></i>
+                  Upload File
+                </button>
+              </>
+            )}
+        </div>
 
         <div
           style={{
@@ -284,12 +333,21 @@ function MainApp() {
           )}
         </div>
 
+        {/* Hidden file input element used by the Upload File buttons */}
+        <input
+          type="file"
+          accept="application/pdf"
+          ref={fileInputRef}
+          style={{ display: "none" }}
+          onChange={handleFileChange}
+        />
+
         <PDFDropModal
           isOpen={isPdfModalOpen}
           onClose={() => setIsPdfModalOpen(false)}
         />
-      </main >
-    </div >
+      </main>
+    </div>
   );
 }
 

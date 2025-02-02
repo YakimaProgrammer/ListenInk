@@ -236,3 +236,50 @@ p {
   display: inline-block;
   /* or block, or whatever style you prefer */
 }
+
+/* The line (divider) */
+.divider {
+  width: 60%;
+  margin: 16px auto;
+  border: none;
+  height: 2px;
+  background-color: #333;
+  border-radius: 2px;
+}
+
+/* Grayish background for the Upload File button */
+.upload-button {
+  height: 2em;
+  width: 8em;
+  background-color: #f0f0f0;
+  /* light gray */
+  color: #333;
+  border: 1px solid #ccc;
+  padding: 10px 18px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-top: 12px;
+  /* optional margin */
+  transition: background-color 0.2s ease-in-out;
+}
+
+.upload-button:hover {
+  background-color: #e0e0e0;
+  /* a bit darker gray on hover */
+}
+
+.flex {
+  flex: auto;
+  margin: auto;
+}
+
+.centered {
+  display: flex;
+  justify-content: center;
+  /* Centers horizontally */
+  align-items: center;
+  /* Centers vertically */
+  height: 70vh;
+  /* Full viewport height */
+}
