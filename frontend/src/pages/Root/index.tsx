@@ -20,6 +20,9 @@ import InboxIcon from '@mui/icons-material/MoveToInbox';
 import MailIcon from '@mui/icons-material/Mail';
 import styles from './index.module.scss';
 
+// Unfortunately, TypeScript kinda freaks out if you let in infer too much stuff at once
+// By pulling these props out, we can handhold the typechecker so it doesn't think that
+// these Redux-provided props are something other components need to worry about 
 const mapStateToProps = (state: RootState) => ({
   sidebarOpen: state.ui.sidebarOpen,
 });
@@ -33,95 +36,100 @@ const mapDispatchToProps = (dispatch: AppDispatch) => ({
 const connector = connect(mapStateToProps, mapDispatchToProps);
 type PropsFromRedux = ConnectedProps<typeof connector>;
 
-
-interface AppBarProps extends MuiAppBarProps {
-  open?: boolean;
+interface MenuProps {
+  sidebarOpen: boolean;
+  setOpen: () => void;
+}
+function Menu({ sidebarOpen, setOpen }: MenuProps) {
+  return (
+    <MuiAppBar position="fixed" className={`${styles.appBar} ${sidebarOpen ? styles.appBarOpen : ''}`}>
+      <Toolbar>
+        <IconButton
+          color="inherit"
+          aria-label="open drawer"
+          onClick={setOpen}
+          edge="start"
+          className={`${styles.menuButton} ${sidebarOpen ? styles.hidden : ''}`}
+        >
+          <MenuIcon />
+        </IconButton>
+        <Typography variant="h6" noWrap>
+          Persistent drawer
+        </Typography>
+      </Toolbar>
+    </MuiAppBar>
+  );
 }
 
-const AppBar = ({ open, ...props }: AppBarProps) => (
-  <MuiAppBar
-    {...props}
-    className={`${styles.appBar} ${open ? styles.appBarOpen : ''}`}
-  />
-);
+interface SidebarProps {
+  sidebarOpen: boolean;
+  setClosed: () => void;
+}
+function Sidebar({ sidebarOpen, setClosed }: SidebarProps) {
+  return (
+    <Drawer
+      className={styles.drawer}
+      variant="persistent"
+      anchor="left"
+      open={sidebarOpen}
+      classes={{ paper: styles.drawerPaper }}
+    >
+      <div className={styles.drawerHeader}>
+        <IconButton onClick={setClosed}>
+          <ChevronLeftIcon />
+        </IconButton>
+      </div>
+      <Divider />
+      <List>
+        {['Inbox', 'Starred', 'Send email', 'Drafts'].map((text, index) => (
+          <ListItem key={text} disablePadding>
+            <ListItemButton>
+              <ListItemIcon>
+                {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
+              </ListItemIcon>
+              <ListItemText primary={text} />
+            </ListItemButton>
+          </ListItem>
+        ))}
+      </List>
+      <Divider />
+      <List>
+        {['All mail', 'Trash', 'Spam'].map((text, index) => (
+          <ListItem key={text} disablePadding>
+            <ListItemButton>
+              <ListItemIcon>
+                {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
+              </ListItemIcon>
+              <ListItemText primary={text} />
+            </ListItemButton>
+          </ListItem>
+        ))}
+      </List>
+    </Drawer>
+  );
+}
 
-const DrawerHeader = styled('div')(({ theme }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  padding: theme.spacing(0, 1),
-  ...theme.mixins.toolbar,
-  justifyContent: 'flex-end',
-}));
+interface ContentProps {
+  sidebarOpen: boolean;
+}
+function Content({ sidebarOpen }: ContentProps) {
+  return (
+    <main className={`${styles.main} ${sidebarOpen ? styles.mainOpen : ''}`}>
+      <div className={styles.drawerHeader} />
+      <Typography>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit...
+      </Typography>
+    </main>
+  );
+}
 
-
-function RootComponent({ sidebarOpen, setOpen, setClosed }: PropsFromRedux) {
-  const theme = useTheme();
-  
+function RootComponent({ sidebarOpen, setOpen, setClosed }: PropsFromRedux) {  
   return (
     <Box className={styles.root}>
-      <CssBaseline />
-      <AppBar position="fixed" open={sidebarOpen}>
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            onClick={setOpen}
-            edge="start"
-            className={`${styles.menuButton} ${sidebarOpen ? styles.hidden : ''}`}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" noWrap>
-            Persistent drawer
-          </Typography>
-        </Toolbar>
-      </AppBar>
-      <Drawer
-        className={styles.drawer}
-        variant="persistent"
-        anchor="left"
-        open={sidebarOpen}
-        classes={{ paper: styles.drawerPaper }}
-      >
-        <DrawerHeader>
-          <IconButton onClick={setClosed}>
-            {theme.direction === 'ltr' ? <ChevronLeftIcon /> : <ChevronRightIcon />}
-          </IconButton>
-        </DrawerHeader>
-        <Divider />
-        <List>
-          {['Inbox', 'Starred', 'Send email', 'Drafts'].map((text, index) => (
-            <ListItem key={text} disablePadding>
-              <ListItemButton>
-                <ListItemIcon>
-                  {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
-                </ListItemIcon>
-                <ListItemText primary={text} />
-              </ListItemButton>
-            </ListItem>
-          ))}
-        </List>
-        <Divider />
-        <List>
-          {['All mail', 'Trash', 'Spam'].map((text, index) => (
-            <ListItem key={text} disablePadding>
-              <ListItemButton>
-                <ListItemIcon>
-                  {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
-                </ListItemIcon>
-                <ListItemText primary={text} />
-              </ListItemButton>
-            </ListItem>
-          ))}
-        </List>
-      </Drawer>
-      <main className={`${styles.main} ${sidebarOpen ? styles.mainOpen : ''}`}>
-        <DrawerHeader />
-        <Typography>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit...
-        </Typography>
-      </main>
-</Box>
+      <Menu sidebarOpen={sidebarOpen} setOpen={setOpen} />
+      <Sidebar sidebarOpen={sidebarOpen} setClosed={setClosed} />
+      <Content sidebarOpen={sidebarOpen} />
+    </Box>
   );
 }
 
