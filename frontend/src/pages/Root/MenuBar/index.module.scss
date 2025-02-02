@@ -1,0 +1,18 @@
+@use "../drawer";
+
+.appBar {
+  transition: margin 0.3s ease-out, width 0.3s ease-out;
+}
+
+.appBarOpen {
+  width: calc(100% - #{drawer.$drawer-width});
+  margin-left: drawer.$drawer-width;
+}
+
+.menuButton {
+  margin-right: 16px;
+}
+
+.hidden {
+  display: none;
+}

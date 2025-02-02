@@ -1,52 +1,5 @@
-$drawer-width: 240px;
-$drawer-height: 64px;
+@use "drawer";
 
 .root {
   display: flex;
-}
-
-.appBar {
-  transition: margin 0.3s ease-out, width 0.3s ease-out;
-}
-
-.appBarOpen {
-  width: calc(100% - #{$drawer-width});
-  margin-left: $drawer-width;
-}
-
-.menuButton {
-  margin-right: 16px;
-}
-
-.hidden {
-  display: none;
-}
-
-.drawer {
-  width: $drawer-width;
-  flex-shrink: 0;
-}
-
-.drawerPaper {
-  width: $drawer-width;
-  box-sizing: border-box;
-}
-
-.drawerHeader {
-  display: flex;
-  align-items: center;
-  padding: 0 8px;
-  justify-content: flex-end;
-  min-height: $drawer-height;
-}
-
-.main {
-  flex-grow: 1;
-  padding: 24px;
-  transition: margin 0.3s ease-out;
-  margin-left: -$drawer-width;
-}
-
-.mainOpen {
-  margin-left: 0;
 }

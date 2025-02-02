@@ -1,0 +1,12 @@
+@use "../drawer";
+
+.drawer {
+  width: drawer.$drawer-width;
+  flex-shrink: 0;
+}
+
+.drawerPaper {
+  width: drawer.$drawer-width;
+  box-sizing: border-box;
+}
+
