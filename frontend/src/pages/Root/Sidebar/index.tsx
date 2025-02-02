@@ -1,7 +1,7 @@
 import { Drawer, IconButton, Divider, List, ListItem, ListItemText, ListItemButton, ListItemIcon } from '@mui/material';
 import { Inbox, Mail, ChevronLeft } from "@mui/icons-material";
+import { DrawerHeader } from "../../../components/DrawerHeader";
 import styles from "./index.module.scss";
-import shared from "../shared.module.scss";
 
 interface SidebarProps {
   sidebarOpen: boolean;
@@ -16,11 +16,11 @@ export function Sidebar({ sidebarOpen, setClosed }: SidebarProps) {
       open={sidebarOpen}
       classes={{ paper: styles.drawerPaper }}
     >
-      <div className={shared.drawerHeader}>
+      <DrawerHeader>
         <IconButton onClick={setClosed}>
           <ChevronLeft />
         </IconButton>
-      </div>
+      </DrawerHeader>
       <Divider />
       <List>
         {['Inbox', 'Starred', 'Send email', 'Drafts'].map((text, index) => (

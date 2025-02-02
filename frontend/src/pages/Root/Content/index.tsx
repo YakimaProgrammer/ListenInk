@@ -1,6 +1,6 @@
 import { Typography } from "@mui/material";
+import { DrawerHeader } from "../../../components/DrawerHeader";
 import styles from "./index.module.scss";
-import shared from "../shared.module.scss";
 
 interface ContentProps {
   sidebarOpen: boolean;
@@ -8,7 +8,7 @@ interface ContentProps {
 export function Content({ sidebarOpen }: ContentProps) {
   return (
     <main className={`${styles.main} ${sidebarOpen ? styles.mainOpen : ''}`}>
-      <div className={shared.drawerHeader} />
+      <DrawerHeader />
       <Typography>
         Lorem ipsum dolor sit amet, consectetur adipiscing elit...
       </Typography>
