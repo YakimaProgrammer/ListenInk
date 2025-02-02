@@ -82,6 +82,14 @@ button:hover::before {
     width: 100%;
 }
 
+.hstack-left {
+    display: flex;
+    align-items: left;
+    justify-content: flex-start;
+    gap: 10px;
+    /* width: 100%; */
+}
+
 /* VStack (Vertical Stack) */
 .vstack {
     display: flex;
@@ -203,7 +211,7 @@ button:hover::before {
     /* directly below the button */
     left: 0;
     z-index: 9999;
-    min-width: 180px;
+    min-width: 90px;
     /* wide enough so text doesn't wrap */
     background-color: #fff;
     border: 1px solid #ccc;
@@ -308,4 +316,8 @@ button:hover::before {
 .color-circle:hover {
     transform: scale(1.1);
     /* highlights the color on hover */
+}
+
+.red {
+    color: crimson;
 }

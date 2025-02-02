@@ -452,11 +452,20 @@ export default function Sidebar({
                         </div>
                     ) : (
                         <div className="add-new-popup-content">
-                            <button onClick={handleContextRename}>Rename</button>
-                            <button onClick={handleContextDelete}>Delete</button>
+                            <button onClick={handleContextRename} className="hstack-left">
+                                <i class="bi bi-pencil"></i>
+                                <p>Rename</p>
+                            </button>
                             {contextMenu.itemType === "category" && (
-                                <button onClick={handleContextChangeColor}>Change Color</button>
+                                <button onClick={handleContextChangeColor} className="hstack-left">
+                                    <i class="bi bi-palette-fill"></i>
+                                    Change Color
+                                </button>
                             )}
+                            <button onClick={handleContextDelete} className="hstack-left">
+                                <i class="bi bi-trash3-fill red" ></i>
+                                <p className="red">Delete</p>
+                            </button>
                         </div>
                     )}
                 </div>
@@ -469,7 +478,7 @@ export default function Sidebar({
               The white box has its own ref to stop clicks. */}
                     <div className="delete-confirm-modal" ref={confirmDeleteRef}>
                         <p>Are you sure you want to delete this?</p>
-                        <button onClick={handleConfirmDelete}>OK</button>
+                        <button className="red" onClick={handleConfirmDelete}>Yes, delete</button>
                         <button onClick={handleCancelDelete}>Cancel</button>
                     </div>
                 </div>

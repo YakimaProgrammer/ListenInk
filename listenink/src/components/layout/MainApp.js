@@ -228,16 +228,20 @@ function MainApp() {
                 style={{ width: `${Math.max(tempName.length, 1) + 2}ch` }}
               />
             ) : (
-              <p
-                className="left-align title-text"
+              <div
                 onDoubleClick={handleTitleDoubleClick}
                 onClick={handleTitleDoubleClick}
-              >
-                {curDocument ? curDocument.name : "No Document Selected"}
-              </p>
+                className="left-align hstack-left">
+                < p
+                  className="title-text"
+                >
+                  {curDocument ? curDocument.name : "No Document Selected"}
+                </p>
+                <i class="bi bi-pencil"></i>
+              </div>
             )}
           </div>
-        </div>
+        </div >
 
         <MainPdf />
 

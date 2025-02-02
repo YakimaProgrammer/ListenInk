@@ -3,9 +3,9 @@ import { createSlice } from '@reduxjs/toolkit';
 // Separate lists for categories and documents
 const initialCategories = [
     { id: 0, name: "Uncategorized", documents: [] },
-    { id: 1, name: "Finance", color: "blue", documents: [0, 1] },
-    { id: 2, name: "Human Resources", color: "green", documents: [2, 3] },
-    { id: 3, name: "Engineering", color: "orange", documents: [4, 5] },
+    { id: 1, name: "Finance", color: "#005f73", documents: [0, 1] },
+    { id: 2, name: "Human Resources", color: "#0a9396", documents: [2, 3] },
+    { id: 3, name: "Engineering", color: "#94d2bd", documents: [4, 5] },
 ];
 
 const initialDocuments = [
