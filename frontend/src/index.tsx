@@ -6,6 +6,9 @@ import { Auth } from "./pages/Auth";
 
 // A global css file, but we use css modules for this project for namespacing
 import "./index.css";
+import "bootstrap-icons/font/bootstrap-icons.css";
+import { Provider } from "react-redux";
+import { store } from "./store";
 
 let router = createBrowserRouter([
   {
@@ -23,6 +26,8 @@ const root = ReactDOM.createRoot(
 );
 root.render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    <Provider store={store}>
+      <RouterProvider router={router} />
+    </Provider>
   </React.StrictMode>
 );

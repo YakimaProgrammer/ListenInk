@@ -15,7 +15,6 @@ router.get("/", async (req: Request, res: Response<Category[]>) => {
   res.status(200).send(categories);
 });
 
-
 router.post("/", async (req: Request, res: Response<Category>) => {
   const category: Category = await prisma.category.create({
     data: {

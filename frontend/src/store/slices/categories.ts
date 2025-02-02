@@ -3,16 +3,16 @@ import type { PayloadAction } from '@reduxjs/toolkit';
 import { Category } from '../../types';
 import { PromiseState } from '../helper-types';
 
-interface DocsSuccessState {
+interface CategoriesSuccessState {
   categories: Category[]
 }
 
-type DocsState = PromiseState<DocsSuccessState>;
+export type CategoriesState = PromiseState<CategoriesSuccessState>;
 
-const initialState = { status: "pending" } as DocsState;
+const initialState = { status: "pending" } as CategoriesState;
 
-export const docsSlice = createSlice({
-  name: 'docs',
+export const categoriesSlice = createSlice({
+  name: 'categories',
   initialState,
   reducers: {
     setCategories: (_, action: PayloadAction<Category[]>) => {
@@ -26,6 +26,6 @@ export const docsSlice = createSlice({
 })
 
 // Action creators are generated for each case reducer function
-export const { setCategories, fail } = docsSlice.actions
+export const { setCategories, fail } = categoriesSlice.actions
 
-export default docsSlice.reducer
+export default categoriesSlice.reducer

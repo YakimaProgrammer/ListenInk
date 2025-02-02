@@ -1,13 +1,27 @@
 $sidebar-width: 20%;
 $main-panel-width: 80%;
+$padding: 16px;
 
 .page {
     display: grid;
     grid-template-columns: $sidebar-width $main-panel-width;
     height: 100vh;
-  
+    transition: grid-template-columns 0.3s ease;
+
+    & .sidebarHidden {
+	grid-template-columns: 0 100%; // Set the side panel to zero width
+    }
+    
     .sidebar {
 	background-color: #ececec;
+	padding: $padding;
+	overflow: hidden; // Prevent content from overflowing when hidden
+	transition: opacity 0.3s ease;
+	opacity: 1;
+
+	.sidebarHidden & {
+	    opacity: 0; // Fade out when hidden
+	}
     }
 
     .main {

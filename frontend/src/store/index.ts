@@ -1,9 +1,13 @@
 import { configureStore } from '@reduxjs/toolkit'
-import docsReducer from './slices/docs';
+import categoriesReducer from "./slices/categories";
+import authReducer from "./slices/auth";
+import uiReducer from "./slices/ui";
 
 export const store = configureStore({
   reducer: {
-    docs: docsReducer,
+    categories: categoriesReducer,
+    auth: authReducer,
+    ui: uiReducer
   },
 })
 
@@ -13,4 +17,5 @@ export type RootState = ReturnType<typeof store.getState>
 export type AppDispatch = typeof store.dispatch
 
 export { setCreds, fail as authFail } from "./slices/auth";
-export { setCategories, fail as docsFail } from "./slices/docs";
+export { setCategories, fail as docsFail } from "./slices/categories";
+export { setSidebar } from "./slices/ui";
