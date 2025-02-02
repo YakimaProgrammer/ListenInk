@@ -1,30 +1,50 @@
-$sidebar-width: 20%;
-$main-panel-width: 80%;
-$padding: 16px;
+$drawer-width: 240px;
 
-.page {
-    display: grid;
-    grid-template-columns: $sidebar-width $main-panel-width;
-    height: 100vh;
-    transition: grid-template-columns 0.3s ease;
+.root {
+  display: flex;
+}
 
-    & .sidebarHidden {
-	grid-template-columns: 0 100%; // Set the side panel to zero width
-    }
-    
-    .sidebar {
-	background-color: #ececec;
-	padding: $padding;
-	overflow: hidden; // Prevent content from overflowing when hidden
-	transition: opacity 0.3s ease;
-	opacity: 1;
+.appBar {
+  transition: margin 0.3s ease-out, width 0.3s ease-out;
+}
 
-	.sidebarHidden & {
-	    opacity: 0; // Fade out when hidden
-	}
-    }
+.appBarOpen {
+  width: calc(100% - #{$drawer-width});
+  margin-left: $drawer-width;
+}
 
-    .main {
-	background-color: #f9f9f9;
-    }
+.menuButton {
+  margin-right: 16px;
+}
+
+.hidden {
+  display: none;
+}
+
+.drawer {
+  width: $drawer-width;
+  flex-shrink: 0;
+}
+
+.drawerPaper {
+  width: $drawer-width;
+  box-sizing: border-box;
+}
+
+.drawerHeader {
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  justify-content: flex-end;
+}
+
+.main {
+  flex-grow: 1;
+  padding: 24px;
+  transition: margin 0.3s ease-out;
+  margin-left: -$drawer-width;
+}
+
+.mainOpen {
+  margin-left: 0;
 }
