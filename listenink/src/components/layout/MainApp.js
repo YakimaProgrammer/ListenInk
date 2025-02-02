@@ -58,26 +58,41 @@ function MainApp() {
       return;
     }
 
+    const newName = file.name.replace(/\.pdf$/i, '');
+
     if (curDocument) {
       if (pdfByDocId[curDocument.id]) {
-        alert(`Document "${curDocument.name}" already has a PDF attached!`);
-        return;
+        // Current document already has a PDF attached: create a new document.
+        const newId = documents.reduce((maxId, doc) => Math.max(maxId, doc.id), -1) + 1;
+        const newDocument = {
+          name: newName,
+          text: "",
+          id: newId,
+        };
+        addNewDocument(newDocument);
+        setCurDocument(newDocument);
+        attachPdfToDocument(newDocument.id, file);
+        // alert(`Successfully created document "${newDocument.name}" and attached PDF.`);
+        alert(`Current document already has a PDF. Created new document "${newDocument.name}" and attached PDF.`);
+      } else {
+        // Attach the PDF to the current document and rename it.
+        attachPdfToDocument(curDocument.id, file);
+        renameDocument(curDocument.id, newName);
+        setCurDocument({ ...curDocument, name: newName });
+        alert(`Successfully attached PDF to "${newName}" and renamed document.`);
       }
-      attachPdfToDocument(curDocument.id, file);
-      // alert(`Successfully attached PDF to "${curDocument.name}"`);
     } else {
-      // Create a new document automatically.
-      const newDocName = file.name.replace(/\.pdf$/i, '');
+      // No current document: create one.
       const newId = documents.reduce((maxId, doc) => Math.max(maxId, doc.id), -1) + 1;
       const newDocument = {
-        name: newDocName,
+        name: newName,
         text: "",
         id: newId,
       };
       addNewDocument(newDocument);
       setCurDocument(newDocument);
       attachPdfToDocument(newDocument.id, file);
-      // alert(`Successfully created document "${newDocument.name}" and attached PDF.`);
+      alert(`Successfully created document "${newDocument.name}" and attached PDF.`);
     }
   };
 
