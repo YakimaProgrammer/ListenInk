@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import "./Sidebar.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
-import { useDispatch } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { useCategories } from "../../contexts/CategoriesContext";
 import Search from "./Search.js";
 import {
@@ -12,6 +12,7 @@ import {
     renameDocument,
     deleteDocument,
     changeCategoryColor, // <---- import our new action
+    reorderCategories
 } from "../../contexts/categoriesSlice";
 
 const categoryColors = [
@@ -354,11 +355,13 @@ export default function Sidebar({
                             onDragOver={handleDragOver}
                             onDrop={(e) => handleDrop(e, category.id)}
                         >
+
                             {/* CATEGORY TITLE */}
                             {!isUncategorized && (
                                 <div
                                     onContextMenu={(e) => handleRightClick(e, "category", category.id)}
                                     style={{ fontWeight: "bold", color: category.color }}
+                                    className="category-row"
                                 >
                                     {/* If editing this category, show input. Otherwise, show text. */}
                                     {editingCatId === category.id ? (
@@ -372,7 +375,48 @@ export default function Sidebar({
                                             autoFocus
                                         />
                                     ) : (
-                                        truncateText(category.name, 25)
+                                        truncateText(category.name, 14)
+                                    )}
+
+                                    {/* Move category buttons */}
+                                    {!isUncategorized && (
+                                        <div className="move-buttons">
+                                            {/* If not the first, show "move up" button */}
+                                            {index > 0 && (
+                                                <button
+                                                    style={{ marginLeft: '8px' }}
+                                                    onClick={() =>
+                                                        dispatch(
+                                                            reorderCategories({
+                                                                categoryId: category.id,
+                                                                referenceCategoryId: categories[index - 1].id,
+                                                                position: 'before'
+                                                            })
+                                                        )
+                                                    }
+                                                >
+                                                    <i class="bi bi-arrow-up-short"></i>
+                                                </button>
+                                            )}
+
+                                            {/* If not the last, show "move down" button */}
+                                            {index < categories.length - 2 && (
+                                                <button
+                                                    style={{ marginLeft: '4px' }}
+                                                    onClick={() =>
+                                                        dispatch(
+                                                            reorderCategories({
+                                                                categoryId: category.id,
+                                                                referenceCategoryId: categories[index + 1].id,
+                                                                position: 'after'
+                                                            })
+                                                        )
+                                                    }
+                                                >
+                                                    <i class="bi bi-arrow-down-short"></i>
+                                                </button>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             )}

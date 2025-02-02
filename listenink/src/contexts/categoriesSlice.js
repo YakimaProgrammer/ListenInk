@@ -139,6 +139,24 @@ const categoriesSlice = createSlice({
                 cat.color = color;
             }
         },
+
+        reorderCategories: (state, action) => {
+            const { categoryId, referenceCategoryId, position } = action.payload;
+            // position is either 'before' or 'after'
+            const arr = state.categories;
+            const fromIndex = arr.findIndex((c) => c.id === categoryId);
+            const toIndex = arr.findIndex((c) => c.id === referenceCategoryId);
+
+            // if either ID wasn't found, no-op
+            if (fromIndex === -1 || toIndex === -1) return;
+
+            // remove the "moved" category
+            const [moved] = arr.splice(fromIndex, 1);
+
+            // re-insert it before or after the reference
+            const insertIndex = position === 'before' ? toIndex : toIndex + 1;
+            arr.splice(insertIndex, 0, moved);
+        },
     },
 });
 
@@ -151,7 +169,8 @@ export const {
     deleteCategory,
     renameDocument,
     deleteDocument,
-    changeCategoryColor
+    changeCategoryColor,
+    reorderCategories
 } = categoriesSlice.actions;
 
 // export const selectCategories = (state) => state.categories.categories;
