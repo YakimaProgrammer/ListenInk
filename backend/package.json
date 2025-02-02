@@ -1,0 +1,40 @@
+{
+  "name": "listenink-backend",
+  "version": "0.1.0",
+  "description": "The backend for the ListenInk PDF reader",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc --build tsconfig.json",
+    "test": "ts-mocha -p tsconfig.json src/**/*_test.ts",
+    "start": "./init-dev-database.sh --if-missing && tsc-watch -p tsconfig.json --onSuccess \"node .\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YakimaProgrammer/ListenInk.git"
+  },
+  "author": "ListenInk Team",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/YakimaProgrammer/ListenInk/issues"
+  },
+  "homepage": "https://github.com/YakimaProgrammer/ListenInk#readme",
+  "devDependencies": {
+    "@faker-js/faker": "^9.3.0",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.5",
+    "prisma": "^6.2.1",
+    "tsc-watch": "^6.2.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "zod": "^3.24.1"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.709.0",
+    "@prisma/client": "^6.2.1",
+    "@types/cookie-parser": "^1.4.8",
+    "cookie-parser": "^1.4.7",
+    "express": "^4.21.2",
+    "pdf2image": "^1.2.3",
+    "tmp-promise": "^3.0.3"
+  }
+}

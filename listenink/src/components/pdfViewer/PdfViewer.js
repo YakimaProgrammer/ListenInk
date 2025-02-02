@@ -16,7 +16,15 @@ const PdfViewer = () => {
         <h1>This is PDF Content.</h1>
       </div> */}
       <div className="pdfExample">
-        <img src={verticalExample} alt="pdfExample" />
+        <img
+          src={verticalExample}
+          style={{
+            transform: `scale(${scale})`,
+            transformOrigin: "center",
+            transition: "transform 0.2s ease",
+          }}
+          alt="pdfExample"
+        />
       </div>
     </div>
   );
