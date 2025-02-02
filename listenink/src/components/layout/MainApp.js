@@ -201,13 +201,17 @@ function MainApp() {
                     <button onClick={() => {
                       handleAddDocument()
                       setShowAddPopup((prev) => !prev)
-                    }}>
+                    }}
+                      className="hstack-left">
+                      <i class="bi bi-file-earmark-text"></i>
                       Create New Document
                     </button>
                     <button onClick={() => {
                       handleAddCategory()
                       setShowAddPopup((prev) => !prev)
-                    }}>
+                    }}
+                      className="hstack-left">
+                      <i class="bi bi-folder"></i>
                       Create New Category
                     </button>
                   </div>

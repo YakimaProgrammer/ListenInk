@@ -302,7 +302,9 @@ export default function Sidebar({
                                                 handleAddDocument();
                                                 setShowAddDropdown(false);
                                             }}
+                                            className="hstack-left"
                                         >
+                                            <i class="bi bi-file-earmark-text"></i>
                                             Create New Document
                                         </button>
                                         <button
@@ -310,7 +312,9 @@ export default function Sidebar({
                                                 handleAddCategory();
                                                 setShowAddDropdown(false);
                                             }}
+                                            className="hstack-left"
                                         >
+                                            <i class="bi bi-folder"></i>
                                             Create New Category
                                         </button>
                                     </div>
@@ -458,12 +462,12 @@ export default function Sidebar({
                             </button>
                             {contextMenu.itemType === "category" && (
                                 <button onClick={handleContextChangeColor} className="hstack-left">
-                                    <i class="bi bi-palette-fill"></i>
+                                    <i class="bi bi-palette"></i>
                                     Change Color
                                 </button>
                             )}
                             <button onClick={handleContextDelete} className="hstack-left">
-                                <i class="bi bi-trash3-fill red" ></i>
+                                <i class="bi bi-trash3 red" ></i>
                                 <p className="red">Delete</p>
                             </button>
                         </div>
