@@ -9,7 +9,9 @@ export const fetchData = createAsyncThunk(
   'data/fetchData',
   async (_, { dispatch }) => {
     try {
-      const req  = await fetch(`${BASE}/auth`, { method: "POST" });
+      const method = document.cookie.includes("userId") ? "GET" : "POST";
+      
+      const req  = await fetch(`${BASE}/auth`, { method });
       const resp = await req.json();
       dispatch(setCreds(resp));
     } catch (e) {

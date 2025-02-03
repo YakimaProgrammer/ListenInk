@@ -4,6 +4,7 @@ import { createBrowserRouter, RouterProvider } from "react-router";
 import { StyledEngineProvider } from "@mui/material/styles";
 import { Provider } from "react-redux";
 import { store } from "./store";
+import { urlFor } from "./pages/urlfor";
 
 // Components
 import { Root } from "./pages/Root";
@@ -17,6 +18,10 @@ let router = createBrowserRouter([
   {
     path: "/",
     Component: Root,
+  },
+  {
+    path: urlFor("docs", ":docId"),
+    Component: Root
   },
   {
     path: "/auth",
