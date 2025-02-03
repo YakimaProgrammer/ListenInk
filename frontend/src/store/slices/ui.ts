@@ -4,6 +4,8 @@ import type { PayloadAction } from '@reduxjs/toolkit';
 interface UIState {
   sidebarOpen: boolean;
   openCategories: Record<string, boolean>; // Sets would be fun, but aren't JSON serializable
+  searchDialogOpen: boolean;
+  searchQuery: string;
 }
 
 interface CategoryStateChange {
@@ -13,7 +15,9 @@ interface CategoryStateChange {
 
 const initialState: UIState = {
   sidebarOpen: true,
-  openCategories: {}
+  openCategories: {},
+  searchDialogOpen: false,
+  searchQuery: ""
 }
 
 export const uiSlice = createSlice({
@@ -30,9 +34,17 @@ export const uiSlice = createSlice({
       } else {
 	state.openCategories[action.payload.id] = false;
       }
+    },
+
+    setQuery: (state, action: PayloadAction<string>) => {
+      state.searchQuery = action.payload;
+    },
+
+    setSearchDialog: (state, action: PayloadAction<boolean>) => {
+      state.searchDialogOpen = action.payload;
     }
   },
 })
 
-export const { setSidebar, setCategory } = uiSlice.actions
+export const { setSidebar, setCategory, setQuery, setSearchDialog } = uiSlice.actions
 export default uiSlice.reducer

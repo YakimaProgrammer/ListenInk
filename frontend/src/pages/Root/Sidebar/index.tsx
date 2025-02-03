@@ -7,9 +7,10 @@ import styles from "./index.module.scss";
 
 interface SidebarProps {
   sidebarOpen: boolean;
-  setClosed: () => void;
+  closeSidebar: () => void;
+  openDialog: () => void;
 }
-export function Sidebar({ sidebarOpen, setClosed }: SidebarProps) {
+export function Sidebar({ sidebarOpen, closeSidebar, openDialog }: SidebarProps) {
   return (
     <Drawer
       className={styles.drawer}
@@ -20,7 +21,7 @@ export function Sidebar({ sidebarOpen, setClosed }: SidebarProps) {
     >
       <DrawerHeader>
 	{/* Left: search and upload */}
-	<IconButton>
+	<IconButton onClick={openDialog}>
 	  <Search />
 	</IconButton>
 	<IconButton>
@@ -31,7 +32,7 @@ export function Sidebar({ sidebarOpen, setClosed }: SidebarProps) {
         <Box sx={{ flexGrow: 1 }} />
 
 	{/* Right: menu button */}
-	<IconButton onClick={setClosed}>
+	<IconButton onClick={closeSidebar}>
           <ChevronLeft />
         </IconButton>
       </DrawerHeader>

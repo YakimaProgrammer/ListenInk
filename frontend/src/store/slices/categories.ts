@@ -3,7 +3,8 @@ import type { PayloadAction } from '@reduxjs/toolkit';
 import { Category, Document } from '../../types';
 import { PromiseState } from '../helper-types';
 
-export type ReshapedCategory = Category & {documents: Omit<Document, "category">[]};
+export type ReducedDoc = Omit<Document, "category">;
+export type ReshapedCategory = Category & {documents: ReducedDoc[]};
 
 interface CategoriesSuccessState {
   categories: ReshapedCategory[]

@@ -9,6 +9,8 @@ import { urlFor } from "@/pages/urlfor";
 
 const categoriesMapStateToProps = (state: RootState) => {
   const reason: string | undefined = state.categories.status === "failure" ? state.categories.message : undefined;
+  // ReducedDoc is a placeholder type until I stablize the API.
+  // It includes information I largely expect to be there in the final API version.
   const categories: ReshapedCategory[] | undefined = state.categories.status === "success" ? state.categories.categories : undefined;
   
   return {
