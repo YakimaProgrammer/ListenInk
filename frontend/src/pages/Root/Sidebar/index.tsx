@@ -1,7 +1,10 @@
-import { Drawer, IconButton, Divider, List, ListItem, ListItemText, ListItemButton, ListItemIcon, Box } from '@mui/material';
-import { Inbox, Mail, ChevronLeft, Search, Upload } from "@mui/icons-material";
+import { Drawer, IconButton, Divider, Box } from '@mui/material';
+import { ChevronLeft, Search, Upload } from "@mui/icons-material";
 import { DrawerHeader } from "@/components/DrawerHeader";
+import { Categories } from '../Categories';
+
 import styles from "./index.module.scss";
+
 
 interface SidebarProps {
   sidebarOpen: boolean;
@@ -35,31 +38,7 @@ export function Sidebar({ sidebarOpen, setClosed }: SidebarProps) {
       </DrawerHeader>
       
       <Divider />
-      <List>
-        {['Inbox', 'Starred', 'Send email', 'Drafts'].map((text, index) => (
-          <ListItem key={text} disablePadding>
-            <ListItemButton>
-              <ListItemIcon>
-                {index % 2 === 0 ? <Inbox /> : <Mail />}
-              </ListItemIcon>
-              <ListItemText primary={text} />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
-      <Divider />
-      <List>
-        {['All mail', 'Trash', 'Spam'].map((text, index) => (
-          <ListItem key={text} disablePadding>
-            <ListItemButton>
-              <ListItemIcon>
-                {index % 2 === 0 ? <Inbox /> : <Mail />}
-              </ListItemIcon>
-              <ListItemText primary={text} />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
+      <Categories />
     </Drawer>
   );
 }
