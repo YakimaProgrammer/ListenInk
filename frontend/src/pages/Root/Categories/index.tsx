@@ -1,4 +1,4 @@
-import { List, ListItem, ListItemText } from "@mui/material";
+import { List, ListItemButton, ListItemText } from "@mui/material";
 import { connect, ConnectedProps } from "react-redux";
 import { Conditional } from "@/components/Conditional";
 import { Category } from "@/types";
@@ -22,12 +22,12 @@ function CategoriesComponent({ categories, status, reason }: PropsFromRedux) {
   return (
     <Conditional status={status} reason={reason}>
       <List>
-	{categories?.map((c, index) => (
-          <ListItem key={index}>
-            <ListItemText
-              primary={c.name}
-            />
-          </ListItem>
+	{categories?.map(c => (
+          <ListItemButton key={c.id}>
+            <ListItemText style={{ color: c.color }}>
+	      {c.name}
+	    </ListItemText>
+          </ListItemButton>
 	))}
       </List>
     </Conditional>

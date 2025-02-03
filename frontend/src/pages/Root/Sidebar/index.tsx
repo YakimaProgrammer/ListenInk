@@ -5,7 +5,6 @@ import { Categories } from '../Categories';
 
 import styles from "./index.module.scss";
 
-
 interface SidebarProps {
   sidebarOpen: boolean;
   setClosed: () => void;

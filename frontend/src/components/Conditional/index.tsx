@@ -14,7 +14,7 @@ interface ConditionalProps {
 export function Conditional({ status, reason, children }: ConditionalProps) {
   switch (status) {
     case "success":
-      return <>children</>;
+      return <>{ children }</>;
 
     case "pending":
       return (
