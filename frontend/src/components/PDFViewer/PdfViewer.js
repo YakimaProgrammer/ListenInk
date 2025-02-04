@@ -1,29 +1,27 @@
-import React from "react";
-import "./PdfViewer.css";
-import "bootstrap-icons/font/bootstrap-icons.css";
-import pdfExample from "./pdfPageTest/pdfExample.png";
-import verticalExample from "./pdfPageTest/verticalExample.jpg";
+import React from 'react';
+import { ViewSidebar } from '@mui/icons-material';
+import { IconButton } from '@mui/material';
+import styles from './PdfViewer.module.scss';
+import verticalExample from './pdfPageTest/verticalExample.jpg';
+import { PDFViewerProps } from './types';
 
-const PdfViewer = () => {
+const PdfViewer: React.FC<PDFViewerProps> = ({ scale = 1 }) => {
   return (
-    <div className="pdfViewer">
-      <div className="pdfLeftSideView">
-        <button className="sideMenu-toggle">
-          <i className="bi bi-layout-text-sidebar"></i>
-        </button>
+    <div className={styles.pdfViewer}>
+      <div className={styles.pdfLeftSideView}>
+        <IconButton className={styles.sideMenuToggle}>
+          <ViewSidebar />
+        </IconButton>
       </div>
-      {/* <div className="pdfContent">
-        <h1>This is PDF Content.</h1>
-      </div> */}
-      <div className="pdfExample">
+      <div className={styles.pdfExample}>
         <img
           src={verticalExample}
           style={{
             transform: `scale(${scale})`,
-            transformOrigin: "center",
-            transition: "transform 0.2s ease",
+            transformOrigin: 'center',
+            transition: 'transform 0.2s ease',
           }}
-          alt="pdfExample"
+          alt="PDF preview"
         />
       </div>
     </div>
