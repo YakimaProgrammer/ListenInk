@@ -14,8 +14,6 @@ router.post("/", async (_req: Request, res: Response<User>) => {
 });
 
 router.get("/", async (req: Request, res: Response<User | Err>) => {
-  console.log(req.cookies);
-  
   const user = await prisma.user.findUnique({ where: { id: req.cookies.userId }});
   if (user === null) {
     res.status(404).send({err: "Not found!"})
