@@ -39,7 +39,7 @@ function SearchDialogComponent({ query, open, close, setQuery, docs }: PropsFrom
       <ListItemButton
 	key={i}
 	onClick={() => {if (d !== undefined) { navigate(urlFor("docs", d.id)); close() }}}
-	className={`${style.searchResult} ${d === undefined ? style.hidden : ""}`}
+	className={d === undefined ? style.hidden : ""}
       >
 	<ListItemIcon>
 	  <Description />
