@@ -1,9 +1,8 @@
-import React from 'react';
 import { PdfTopView } from './PdfTopView';
 import { PdfViewer } from './PdfViewer';
-import styles from './MainPdf.module.scss';
+import styles from './index.module.scss';
 
-const MainPdf = (): JSX.Element => {
+export function PDFViewer() {
   return (
     <div className={styles.mainPdf}>
       <PdfTopView currentPage={2} totalPages={20} zoomLevel={100} />
@@ -11,5 +10,3 @@ const MainPdf = (): JSX.Element => {
     </div>
   );
 };
-
-export default MainPdf;

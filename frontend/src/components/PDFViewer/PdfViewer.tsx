@@ -1,11 +1,13 @@
-import React from 'react';
 import { ViewSidebar } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
 import styles from './PdfViewer.module.scss';
-import verticalExample from './pdfPageTest/verticalExample.jpg';
-import { PDFViewerProps } from './types';
 
-const PdfViewer = ({ scale = 1 }: PDFViewerProps): JSX.Element => {
+export interface PDFViewerProps {
+  scale: number;
+  src: string;
+}
+
+export function PdfViewer({ scale, src }: PDFViewerProps) {
   return (
     <div className={styles.pdfViewer}>
       <div className={styles.pdfLeftSideView}>
@@ -15,7 +17,7 @@ const PdfViewer = ({ scale = 1 }: PDFViewerProps): JSX.Element => {
       </div>
       <div className={styles.pdfExample}>
         <img
-          src={verticalExample}
+          src={src}
           style={{
             transform: `scale(${scale})`,
             transformOrigin: 'center',
@@ -27,5 +29,3 @@ const PdfViewer = ({ scale = 1 }: PDFViewerProps): JSX.Element => {
     </div>
   );
 };
-
-export default PdfViewer;
