@@ -5,7 +5,7 @@ import styles from './PdfViewer.module.scss';
 import verticalExample from './pdfPageTest/verticalExample.jpg';
 import { PDFViewerProps } from './types';
 
-const PdfViewer: React.FC<PDFViewerProps> = ({ scale = 1 }) => {
+const PdfViewer = ({ scale = 1 }: PDFViewerProps): JSX.Element => {
   return (
     <div className={styles.pdfViewer}>
       <div className={styles.pdfLeftSideView}>

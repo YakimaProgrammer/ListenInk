@@ -10,13 +10,13 @@ import { IconButton, TextField } from '@mui/material';
 import styles from './PdfTopView.module.scss';
 import { PdfTopViewProps } from './types';
 
-const PdfTopView: React.FC<PdfTopViewProps> = ({
+const PdfTopView = ({
   currentPage = 1,
   totalPages = 1,
   zoomLevel = 100,
   onPageChange,
   onZoomChange
-}) => {
+}: PdfTopViewProps): JSX.Element => {
   return (
     <div className={styles.pdfTopView}>
       <IconButton className={styles.topbarSearch}>

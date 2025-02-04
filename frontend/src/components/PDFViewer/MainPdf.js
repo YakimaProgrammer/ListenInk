@@ -3,7 +3,7 @@ import { PdfTopView } from './PdfTopView';
 import { PdfViewer } from './PdfViewer';
 import styles from './MainPdf.module.scss';
 
-const MainPdf: React.FC = () => {
+const MainPdf = (): JSX.Element => {
   return (
     <div className={styles.mainPdf}>
       <PdfTopView currentPage={2} totalPages={20} zoomLevel={100} />
