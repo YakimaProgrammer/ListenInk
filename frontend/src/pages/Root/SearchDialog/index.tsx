@@ -2,9 +2,12 @@ import { AppDispatch, RootState, setQuery, setSearchDialog } from "@/store";
 import { Dialog, DialogContent, IconButton, InputAdornment, List, ListItemButton, ListItemIcon, TextField } from "@mui/material";
 import { connect, ConnectedProps } from "react-redux";
 import { useNavigate } from "react-router";
+import { JSX } from "react";
 import { Search, Close, Description } from "@mui/icons-material";
 import { ReducedDoc } from "@/store/slices/categories";
 import { urlFor } from "@/pages/urlfor";
+
+import style from "./index.module.scss";
 
 const mapStateToProps = (state: RootState) => ({
   query: state.ui.searchQuery,
@@ -20,20 +23,33 @@ const mapDispatchToProps = (dispatch: AppDispatch) => ({
 const connector = connect(mapStateToProps, mapDispatchToProps);
 type PropsFromRedux = ConnectedProps<typeof connector>;
 
+
+const NUM_RESULTS = 10;
 function SearchDialogComponent({ query, open, close, setQuery, docs }: PropsFromRedux) {
   let navigate = useNavigate();
   
   // [TODO] This is proof-of-concept searching. I recommend fuse.js for fuzzy + full text search
-  const hits = docs.filter(d => d.name.toLowerCase().includes(query.toLowerCase())).slice(0,10);
-  const results = hits.map(d => (
-    <ListItemButton key={d.id} onClick={() => {navigate(urlFor("docs", d.id)); close()}}>
-      <ListItemIcon>
-	<Description />
-      </ListItemIcon>
+  const hits = docs.filter(d => d.name.toLowerCase().includes(query.toLowerCase())).slice(0, NUM_RESULTS);
 
-      {d.name}
-    </ListItemButton>
-  ));
+  // This is kind of evil. Normally, I'd `.map()` from hits to results, but I want to have precisely `NUM_RESULTS` results 
+  const results: JSX.Element[] = [];
+  for (let i = 0; i < NUM_RESULTS; i++) {
+    let d: ReducedDoc | undefined = hits[i];
+    results.push(
+      <ListItemButton
+	key={i}
+	onClick={() => {if (d !== undefined) { navigate(urlFor("docs", d.id)); close() }}}
+	className={`${style.searchResult} ${d === undefined ? style.hidden : ""}`}
+      >
+	<ListItemIcon>
+	  <Description />
+	</ListItemIcon>
+
+	{d?.name}
+      </ListItemButton>
+    )
+  }
+  
   return (
     <Dialog open={open} onClose={close} maxWidth="md" fullWidth>
       <DialogContent dividers>
