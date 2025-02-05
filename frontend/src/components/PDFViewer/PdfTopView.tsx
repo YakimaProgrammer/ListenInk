@@ -7,7 +7,7 @@ import {
 } from '@mui/icons-material';
 import { IconButton, TextField } from '@mui/material';
 
-import styles from './PdfTopView.module.scss';
+import styles from './PdfViewer.module.scss';
 
 interface PdfTopViewProps {
   currentPage: number;

@@ -1,6 +1,6 @@
 import { PdfTopView } from './PdfTopView';
 import { PdfViewer } from './PdfViewer';
-import styles from './MainPdf.module.scss';
+import styles from './index.module.scss';
 
 export function PDFViewer() {
   return (
