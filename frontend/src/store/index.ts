@@ -18,6 +18,15 @@ export type AppDispatch = typeof store.dispatch
 
 export { setCreds, fail as authFail } from "./slices/auth";
 export { setCategories, fail as docsFail } from "./slices/categories";
-export { setSidebar, setCategory, setQuery, setSearchDialog } from "./slices/ui";
+export {
+  setSidebar,
+  setCategory,
+  setQuery,
+  setSearchDialog,
+  setIsPlaying,
+  setPlaybackPos,
+  setPlaybackSpeed,
+  setPlaybackEnd
+} from "./slices/ui";
 
 window.addEventListener("load", () => store.dispatch(fetchData()));

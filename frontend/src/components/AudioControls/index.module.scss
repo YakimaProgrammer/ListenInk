@@ -1,17 +1,17 @@
-.audio-controls {
+.audioControls {
     width: 100%;
     padding: 20px;
     font-family: Arial, sans-serif;
   }
   
-  .time-display {
+  .timeDisplay {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 10px;
   }
   
-  .progress-bar {
+  .progressBar {
     flex-grow: 1;
     height: 10px;
     background: #ddd;
@@ -25,21 +25,21 @@
     width: 0;
   }
   
-  .control-panel {
+  .controlPanel {
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 10px;
   }
   
-  .control-button,
-  .play-pause-button {
+  .controlButton,
+  .playPauseButton {
     padding: 10px;
     font-size: 16px;
     cursor: pointer;
   }
   
-  .playback-speed {
+  .playbackSpeed {
     padding: 5px;
   }
   
