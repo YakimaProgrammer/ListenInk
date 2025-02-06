@@ -1,0 +1,12 @@
+@use "src/styles/drawer";
+
+.main {
+  flex-grow: 1;
+  padding: 24px;
+  transition: margin 0.3s ease-out;
+  margin-left: -(#{drawer.$drawer-width});
+}
+
+.mainOpen {
+  margin-left: 0;
+}
