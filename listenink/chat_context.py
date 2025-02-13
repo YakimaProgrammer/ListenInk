@@ -3,7 +3,7 @@ import os
 folder_path = "src/components/"
 
 include = []
-exclude = ['Sidebar', 'poo', 'AudioControls', 'DS_Store']
+exclude = []
 
 
 for root, _, files in os.walk(folder_path):

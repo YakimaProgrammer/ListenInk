@@ -78,6 +78,699 @@ Content:
 }
 
 ```
+File: src/components/layout/poo.css
+```
+Content:
+/* Container that keeps the popup positioned under the button */
+.add-new-button-container {
+  position: relative;
+  /* So the popup is absolute to this container */
+  display: inline-block;
+}
+
+/* The popup itself */
+.add-new-popup {
+  position: absolute;
+  top: 100%;
+  /* directly below the button */
+  left: 0;
+  z-index: 9999;
+  min-width: 180px;
+  /* wide enough so text doesn't wrap */
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  /* more rounded corners */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  margin-top: 4px;
+  /* small gap below the button */
+  overflow: hidden;
+  /* ensures corners are fully rounded */
+}
+
+/* Some inner padding if desired */
+.add-new-popup-content {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0;
+  /* vertical spacing inside */
+}
+
+/* Each button in the popup */
+.add-new-popup-content button {
+  background: transparent;
+  border: none;
+  outline: none;
+  width: 100%;
+  text-align: left;
+  padding: 8px 16px;
+  cursor: pointer;
+  white-space: nowrap;
+  /* text stays on one line */
+  transition: background-color 0.2s ease-in-out;
+  font-size: 14px;
+  /* optional: adjust font size */
+}
+
+/* Hover effect to 'deepen' the background */
+.add-new-popup-content button:hover {
+  background-color: #ececec;
+}
+
+```
+File: src/components/layout/AudioControls.css
+```
+Content:
+.audio-controls {
+  width: 80%;
+  margin-left: 10%;
+  margin-right: 10%;
+  /* padding: 20px; */
+  font-family: Arial, sans-serif;
+}
+
+.time-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.progress-bar {
+  flex-grow: 1;
+  height: 10px;
+  background: #ddd;
+  margin: 0 10px;
+  position: relative;
+}
+
+.progress {
+  height: 100%;
+  background: #007bff;
+  width: 0;
+}
+
+.control-panel {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.control-button,
+.play-pause-button {
+  padding: 10px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.playback-speed {
+  padding: 5px;
+}
+
+
+/* audioslider */
+.volume-slider {
+    width: 100px;
+    margin-left: 10px;
+    appearance: none;
+    height: 4px;
+    background: #ddd;
+    border-radius: 5px;
+    outline: none;
+    cursor: pointer;
+  }
+  
+  .volume-slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    background: #007bff;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  
+  .volume-slider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: #007bff;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  
+  .volume-slider::-ms-thumb {
+    width: 12px;
+    height: 12px;
+    background: #007bff;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  
+  
+
+```
+File: src/components/layout/Sidebar.js
+```
+Content:
+import React, { useState, useRef, useEffect } from "react";
+import "./Sidebar.css";
+import "bootstrap-icons/font/bootstrap-icons.css";
+import { useSelector, useDispatch } from "react-redux";
+import { useCategories } from "../../contexts/CategoriesContext";
+import Search from "./Search.js";
+import {
+    moveDocument,
+    addCategory, // from your existing code
+    renameCategory,
+    deleteCategory,
+    renameDocument,
+    deleteDocument,
+    changeCategoryColor, // <---- import our new action
+    reorderCategories
+} from "../../contexts/categoriesSlice";
+
+const categoryColors = [
+    "#001219",
+    "#005f73",
+    "#0a9396",
+    "#94d2bd",
+    "#e9d8a6",
+    "#ee9b00",
+    "#ca6702",
+    "#bb3e03",
+    "#ae2012",
+    "#9b2226",
+];
+
+const truncateText = (text = "", maxLength = 5) => {
+    if (text.length <= maxLength) {
+        return text;
+    }
+    return text.slice(0, maxLength - 3) + "...";
+};
+
+export default function Sidebar({
+    onToggleSidebar,
+    handleAddDocument,
+    handleAddCategory,
+}) {
+    const dispatch = useDispatch();
+    const { categories, documents, curDocument, setCurDocument } = useCategories();
+    const [showSearch, setShowSearch] = useState(false);
+
+    // "Add New" popup
+    const [showAddDropdown, setShowAddDropdown] = useState(false);
+    const addDropdownRef = useRef(null); // Ref to the "Add New" popup container
+
+    // Right-click context menu
+    const [contextMenu, setContextMenu] = useState({
+        visible: false,
+        x: 0,
+        y: 0,
+        itemType: null, // 'category' or 'document'
+        itemId: null,
+        showColorPicker: false, // <---- new flag to show color grid
+    });
+    const contextMenuRef = useRef(null); // Ref to the context menu container
+
+    // Confirm delete modal
+    const [confirmDelete, setConfirmDelete] = useState({
+        open: false,
+        itemType: null,
+        itemId: null,
+    });
+
+    const confirmDeleteRef = useRef(null); // Ref to the white box in the modal
+
+    // Inline rename states for category/document
+    const [editingCatId, setEditingCatId] = useState(null);
+    const [tempCatName, setTempCatName] = useState("");
+    const [editingDocId, setEditingDocId] = useState(null);
+    const [tempDocName, setTempDocName] = useState("");
+
+    // Click / KeyDown handlers to close popups if user clicks away or presses ESC
+    useEffect(() => {
+        const handleGlobalClick = (e) => {
+            // If the context menu is open and the click is outside it, close it
+            if (contextMenu.visible) {
+                if (
+                    contextMenuRef.current &&
+                    !contextMenuRef.current.contains(e.target)
+                ) {
+                    setContextMenu({ ...contextMenu, visible: false, showColorPicker: false });
+                }
+            }
+
+            // If the add new dropdown is open and the click is outside it, close it
+            if (showAddDropdown) {
+                if (
+                    addDropdownRef.current &&
+                    !addDropdownRef.current.contains(e.target)
+                ) {
+                    setShowAddDropdown(false);
+                }
+            }
+
+            // If delete modal is open and click is **outside** the modal box, close it
+            if (confirmDelete.open) {
+                if (
+                    confirmDeleteRef.current &&
+                    !confirmDeleteRef.current.contains(e.target)
+                ) {
+                    setConfirmDelete({ open: false, itemType: null, itemId: null });
+                }
+            }
+        };
+
+        const handleKeyDown = (e) => {
+            if (e.key === "Escape") {
+                setContextMenu({
+                    ...contextMenu,
+                    visible: false,
+                    showColorPicker: false,
+                });
+                setShowAddDropdown(false);
+                setConfirmDelete({ open: false, itemType: null, itemId: null });
+            }
+        };
+
+        document.addEventListener("mousedown", handleGlobalClick);
+        document.addEventListener("keydown", handleKeyDown);
+
+        return () => {
+            document.removeEventListener("mousedown", handleGlobalClick);
+            document.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [contextMenu, showAddDropdown, confirmDelete]);
+
+    // Refs to automatically focus rename input
+    // const catInputRef = useRef(null);
+    // const docInputRef = useRef(null);
+
+    const toggleSearch = () => setShowSearch((prev) => !prev);
+    const toggleAddDropdown = () => setShowAddDropdown((prev) => !prev);
+
+    // Right-click handler
+    const handleRightClick = (e, itemType, itemId) => {
+        e.preventDefault();
+        // Show context menu at mouse location
+        setContextMenu({
+            visible: true,
+            x: e.pageX,
+            y: e.pageY,
+            itemType,
+            itemId,
+            showColorPicker: false, // reset any sub-menu
+        });
+    };
+
+    // // Hide the context menu if user left-clicks anywhere
+    // const handleClickAway = () => {
+    //     if (contextMenu.visible) {
+    //         setContextMenu({ ...contextMenu, visible: false });
+    //     }
+    // };
+
+    // Context menu actions
+    const handleContextRename = () => {
+        const { itemType, itemId } = contextMenu;
+        setContextMenu({ ...contextMenu, visible: false });
+
+        if (itemType === "category") {
+            // Find the category name
+            const cat = categories.find((c) => c.id === itemId);
+            if (cat) {
+                setEditingCatId(itemId);
+                setTempCatName(cat.name);
+            }
+        } else if (itemType === "document") {
+            const doc = documents.find((d) => d.id === itemId);
+            if (doc) {
+                setEditingDocId(itemId);
+                setTempDocName(doc.name);
+            }
+        }
+    };
+
+    const handleContextDelete = () => {
+        const { itemType, itemId } = contextMenu;
+        setContextMenu({ ...contextMenu, visible: false });
+
+        // Open a confirmation popup
+        setConfirmDelete({
+            open: true,
+            itemType,
+            itemId,
+        });
+
+
+    };
+
+    // [NEW] Show color picker sub-menu (for categories only)
+    const handleContextChangeColor = () => {
+        setContextMenu({
+            ...contextMenu,
+            showColorPicker: true,
+        });
+    };
+
+    // [NEW] Called when user picks a color
+    const handlePickColor = (color) => {
+        dispatch(changeCategoryColor({ categoryId: contextMenu.itemId, color }));
+        // Close the menu
+        setContextMenu({
+            ...contextMenu,
+            visible: false,
+            showColorPicker: false,
+        });
+    };
+
+    // Inline rename - Category
+    const handleCategoryBlur = (catId) => {
+        if (tempCatName.trim() !== "") {
+            dispatch(renameCategory({ categoryId: catId, newName: tempCatName }));
+        }
+        setEditingCatId(null);
+    };
+
+    const handleCatKeyDown = (e, catId) => {
+        if (e.key === "Enter") {
+            e.target.blur();
+        }
+    };
+
+    // Inline rename - Document
+    const handleDocumentBlur = (docId) => {
+        if (tempDocName.trim() !== "") {
+            dispatch(renameDocument({ docId, newName: tempDocName }));
+        }
+        setEditingDocId(null);
+    };
+
+    const handleDocKeyDown = (e, docId) => {
+        if (e.key === "Enter") {
+            e.target.blur();
+        }
+    };
+
+    // Confirm delete
+    const handleConfirmDelete = () => {
+        const { itemType, itemId } = confirmDelete;
+
+        if (itemType === "category") {
+            dispatch(deleteCategory(itemId));
+        } else if (itemType === "document") {
+            dispatch(deleteDocument(itemId));
+        }
+
+        setConfirmDelete({ open: false, itemType: null, itemId: null });
+    };
+
+    const handleCancelDelete = () => {
+        setConfirmDelete({ open: false, itemType: null, itemId: null });
+    };
+
+    // Drag & Drop
+    const handleDragStart = (e, docId, sourceCategoryId) => {
+        // Store the dragged docId and the source category in the DataTransfer
+        e.dataTransfer.setData("docId", docId);
+        e.dataTransfer.setData("sourceCategoryId", sourceCategoryId);
+    };
+
+    const handleDragOver = (e) => {
+        // Needed to allow dropping
+        e.preventDefault();
+    };
+
+    const handleDrop = (e, targetCategoryId) => {
+        e.preventDefault();
+        const docId = e.dataTransfer.getData("docId");
+        const sourceCategoryId = e.dataTransfer.getData("sourceCategoryId");
+
+        dispatch(moveDocument({ docId, sourceCategoryId, targetCategoryId }));
+    };
+
+    return (
+        <div style={{ margin: "20px" }}>
+            {/* Header buttons */}
+            <div className="hstack header">
+                <button onClick={onToggleSidebar}>
+                    <i className="bi bi-layout-sidebar"></i>
+                </button>
+                <div className="right-align">
+                    <div className="hstack">
+                        {/* Search button */}
+                        <button onClick={toggleSearch}>
+                            <i className="bi bi-search" />
+                        </button>
+
+                        {/* Add New (Dropdown) */}
+                        <div className="add-new-dropdown-container" ref={addDropdownRef}>
+                            <button onClick={toggleAddDropdown}>
+                                <i className="bi bi-pencil-square" />
+                            </button>
+                            {showAddDropdown && (
+                                <div className="add-new-popup">
+                                    <div className="add-new-popup-content">
+                                        <button
+                                            onClick={() => {
+                                                handleAddDocument();
+                                                setShowAddDropdown(false);
+                                            }}
+                                            className="hstack-left"
+                                        >
+                                            <i class="bi bi-file-earmark-text"></i>
+                                            Create New Document
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                handleAddCategory();
+                                                setShowAddDropdown(false);
+                                            }}
+                                            className="hstack-left"
+                                        >
+                                            <i class="bi bi-folder"></i>
+                                            Create New Category
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Search Popup */}
+            {showSearch && (
+                <div className="search-popup">
+                    <div className="search-popup-content">
+                        <button className="close-popup" onClick={toggleSearch}>
+                            <i className="bi bi-x"></i>
+                        </button>
+                        <Search />
+                    </div>
+                </div>
+            )}
+
+            {/* Categories + Documents */}
+            {[...categories]
+                .sort((a, b) => {
+                    if (a.name === "Uncategorized") return 1;
+                    if (b.name === "Uncategorized") return -1;
+                    return 0;
+                })
+                .map((category, index) => {
+                    const isUncategorized = category.name === "Uncategorized";
+
+                    return (
+                        <div
+                            key={index}
+                            style={{ marginBottom: "16px" }}
+                            onDragOver={handleDragOver}
+                            onDrop={(e) => handleDrop(e, category.id)}
+                        >
+
+                            {/* CATEGORY TITLE */}
+                            {!isUncategorized && (
+                                <div
+                                    onContextMenu={(e) => handleRightClick(e, "category", category.id)}
+                                    style={{ fontWeight: "bold", color: category.color }}
+                                    className="category-row"
+                                >
+                                    {/* If editing this category, show input. Otherwise, show text. */}
+                                    {editingCatId === category.id ? (
+                                        <input
+                                            // ref={catInputRef}
+                                            type="text"
+                                            value={tempCatName}
+                                            onChange={(e) => setTempCatName(e.target.value)}
+                                            onBlur={() => handleCategoryBlur(category.id)}
+                                            onKeyDown={(e) => handleCatKeyDown(e, category.id)}
+                                            autoFocus
+                                        />
+                                    ) : (
+                                        truncateText(category.name, 14)
+                                    )}
+
+                                    {/* Move category buttons */}
+                                    {!isUncategorized && (
+                                        <div className="move-buttons">
+                                            {/* If not the first, show "move up" button */}
+                                            {index > 0 && (
+                                                <button
+                                                    style={{ marginLeft: '8px' }}
+                                                    onClick={() =>
+                                                        dispatch(
+                                                            reorderCategories({
+                                                                categoryId: category.id,
+                                                                referenceCategoryId: categories[index - 1].id,
+                                                                position: 'before'
+                                                            })
+                                                        )
+                                                    }
+                                                >
+                                                    <i class="bi bi-arrow-up-short"></i>
+                                                </button>
+                                            )}
+
+                                            {/* If not the last, show "move down" button */}
+                                            {index < categories.length - 2 && (
+                                                <button
+                                                    style={{ marginLeft: '4px' }}
+                                                    onClick={() =>
+                                                        dispatch(
+                                                            reorderCategories({
+                                                                categoryId: category.id,
+                                                                referenceCategoryId: categories[index + 1].id,
+                                                                position: 'after'
+                                                            })
+                                                        )
+                                                    }
+                                                >
+                                                    <i class="bi bi-arrow-down-short"></i>
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* DOCUMENTS for this category */}
+                            <div style={{ marginLeft: isUncategorized ? "0px" : "20px" }}>
+                                {category.documents.map((docId) => {
+                                    const doc = documents.find((d) => d.id === docId);
+                                    if (!doc) return null;
+                                    const isActive = curDocument?.id === doc.id;
+
+                                    return (
+                                        <div
+                                            key={doc.id}
+                                            style={{ display: "flex", alignItems: "center" }}
+                                            onContextMenu={(e) => handleRightClick(e, "document", doc.id)}
+                                        >
+                                            {editingDocId === doc.id ? (
+                                                <input
+                                                    // ref={docInputRef}
+                                                    type="text"
+                                                    value={tempDocName}
+                                                    onChange={(e) => setTempDocName(e.target.value)}
+                                                    onBlur={() => handleDocumentBlur(doc.id)}
+                                                    onKeyDown={(e) => handleDocKeyDown(e, doc.id)}
+                                                    autoFocus
+                                                    style={{ marginRight: 10 }}
+                                                />
+                                            ) : (
+                                                <button
+                                                    onClick={() => setCurDocument(doc)}
+                                                    className={`doc-button ${isActive ? "active" : ""}`}
+                                                    draggable={true}
+                                                    onDragStart={(e) =>
+                                                        handleDragStart(e, doc.id, category.id)
+                                                    }
+                                                >
+                                                    {truncateText(doc.name, 22)}
+                                                </button>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    );
+                })}
+
+            {/* CONTEXT MENU */}
+            {contextMenu.visible && (
+                <div
+                    className="context-menu add-new-popup"
+                    ref={contextMenuRef}
+                    style={{
+                        position: "absolute",
+                        top: contextMenu.y,
+                        left: contextMenu.x,
+                        zIndex: 9999,
+                    }}
+                >
+                    {/* If user is picking colors, show color grid. Otherwise, show rename/delete. */}
+                    {contextMenu.itemType === "category" && contextMenu.showColorPicker ? (
+                        <div className="color-grid">
+                            {categoryColors.map((color) => {
+                                // Get the current category to see its color
+                                const cat = categories.find((c) => c.id === contextMenu.itemId);
+                                const isSelected = cat && cat.color === color;
+
+                                return (
+                                    <div
+                                        key={color}
+                                        className="color-circle"
+                                        style={{
+                                            backgroundColor: color,
+                                            outline: isSelected ? "2px solid black" : "2px solid transparent",
+                                        }}
+                                        onClick={() => handlePickColor(color)}
+                                    />
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div className="add-new-popup-content">
+                            <button onClick={handleContextRename} className="hstack-left">
+                                <i class="bi bi-pencil"></i>
+                                <p>Rename</p>
+                            </button>
+                            {contextMenu.itemType === "category" && (
+                                <button onClick={handleContextChangeColor} className="hstack-left">
+                                    <i class="bi bi-palette"></i>
+                                    Change Color
+                                </button>
+                            )}
+                            <button onClick={handleContextDelete} className="hstack-left">
+                                <i class="bi bi-trash3 red" ></i>
+                                <p className="red">Delete</p>
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* DELETE CONFIRMATION MODAL */}
+            {confirmDelete.open && (
+                <div className="delete-confirm-overlay">
+                    {/* If you click the overlay, it closes.
+              The white box has its own ref to stop clicks. */}
+                    <div className="delete-confirm-modal" ref={confirmDeleteRef}>
+                        <p>Are you sure you want to delete this?</p>
+                        <button className="red" onClick={handleConfirmDelete}>Yes, delete</button>
+                        <button onClick={handleCancelDelete}>Cancel</button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+
+```
 File: src/components/layout/MainApp.js
 ```
 Content:
@@ -530,6 +1223,355 @@ Content:
 }
 
 ```
+File: src/components/layout/Sidebar.css
+```
+Content:
+/* List Item Styling */
+/* * {
+    z-index: 1000
+} */
+
+li {
+    width: 200px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    display: inline-block;
+}
+
+.header {
+    margin-bottom: 20px;
+}
+
+button {
+    position: relative;
+    /* Establish a reference point for the pseudo-element */
+    background-color: transparent;
+    border: none;
+    padding: 2px;
+    /* Initial padding for the button */
+    outline: none;
+    cursor: pointer;
+    z-index: 1;
+    /* Ensure the button stays above the pseudo-element */
+    transition: all 0.3s ease;
+    /* Smooth transition for any button properties */
+}
+
+button::before {
+    content: "";
+    /* Empty content for the pseudo-element */
+    position: absolute;
+    top: 0px;
+    /* Expand the background beyond the button's boundaries */
+    left: 0px;
+    right: 0px;
+    bottom: 0px;
+    background-color: #ececec;
+    z-index: -1;
+    /* Place the background behind the button */
+    border-radius: 4px;
+    /* Optional: add rounded corners if needed */
+    opacity: 0;
+    /* Start fully transparent */
+    transition: all 0.3s ease;
+    /* Smooth transition for hover effect */
+}
+
+button:hover::before {
+    opacity: 1;
+    /* Make the pseudo-element visible on hover */
+}
+
+
+/* Default styles for doc-button */
+.doc-button {
+    cursor: pointer;
+    padding: 5px 10px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    text-align: left;
+    /* width: 100%; */
+}
+
+.doc-button {
+    width: 100%;
+}
+
+.doc-button.active {
+    background-color: #ececec;
+}
+
+/* HStack (Horizontal Stack) */
+.hstack {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 20px;
+    width: 100%;
+}
+
+.hstack-left {
+    display: flex;
+    align-items: left;
+    justify-content: flex-start;
+    gap: 10px;
+    /* width: 100%; */
+}
+
+/* VStack (Vertical Stack) */
+.vstack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+}
+
+/* Ensure child elements have no margin or padding */
+.hstack>*,
+.vstack>* {
+    margin: 0;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+
+
+/* Remove border and shadow globally */
+.hstack,
+.vstack,
+.hstack>*,
+.vstack>* {
+    border: none;
+    box-shadow: none;
+}
+
+/* Right Align Specific Elements */
+.right-align {
+    margin-left: auto;
+    /* Push this element to the far right */
+}
+
+/*SEARCH FORMATTING
+
+
+/* Popup overlay background */
+.search-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+/* Popup content */
+.search-popup-content {
+    background: white;
+    width: 60%;
+    max-width: 800px;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    position: relative;
+}
+
+/* Close button */
+.close-popup {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #333;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.close-popup:hover {
+    color: #e74c3c;
+}
+
+/* Container that wraps the "Add New" button and dropdown */
+.add-new-dropdown-container {
+    position: relative;
+    display: inline-block;
+}
+
+/* The dropdown menu itself */
+.add-new-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    /* Placed just below the button */
+    left: 0;
+    background-color: #ffffff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 4px 0;
+    min-width: 150px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 9999;
+    /* Ensure it appears above other elements */
+}
+
+.add-new-dropdown-menu button {
+    display: block;
+    width: 100%;
+    background: transparent;
+    border: none;
+    text-align: left;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.add-new-dropdown-menu button:hover {
+    background-color: #f0f0f0;
+}
+
+/* The popup itself */
+.add-new-popup {
+    position: absolute;
+    top: 100%;
+    /* directly below the button */
+    left: 0;
+    z-index: 9999;
+    min-width: 90px;
+    /* wide enough so text doesn't wrap */
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    /* more rounded corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-top: 4px;
+    /* small gap below the button */
+    /* overflow: hidden; */
+    /* ensures corners are fully rounded */
+}
+
+/* Some inner padding if desired */
+.add-new-popup-content {
+    display: flex;
+    flex-direction: column;
+    padding: 4px 0;
+    /* vertical spacing inside */
+}
+
+/* Each button in the popup */
+.add-new-popup-content button {
+    background: transparent;
+    border: none;
+    outline: none;
+    width: 100%;
+    text-align: left;
+    padding: 8px 16px;
+    cursor: pointer;
+    white-space: nowrap;
+    /* text stays on one line */
+    transition: background-color 0.2s ease-in-out;
+    font-size: 14px;
+    /* optional: adjust font size */
+}
+
+/* Hover effect to 'deepen' the background */
+.add-new-popup-content button:hover {
+    background-color: #ececec;
+}
+
+/* Right-click context menu reusing the .add-new-popup style */
+.context-menu {
+    /* .add-new-popup styles are included in the className,
+       so you only need position overrides if desired */
+    position: absolute;
+    /* top and left assigned inline */
+    z-index: 9999;
+}
+
+/* Delete Confirmation Modal (Grey background + White box) */
+.delete-confirm-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    /* dim the page */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.delete-confirm-modal {
+    background: white;
+    width: 300px;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.delete-confirm-modal button {
+    margin: 10px;
+    padding: 8px 16px;
+}
+
+.color-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 30px);
+    /* 5 columns of 30px each */
+    grid-template-rows: repeat(2, 30px);
+    /* 2 rows */
+    gap: 8px;
+    padding: 8px;
+    justify-items: center;
+    align-items: center;
+    /* adjust as needed */
+}
+
+.color-circle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.2s ease-in-out;
+    outline-offset: -1px;
+    /* so it appears nicely around the circle if you do an outline */
+}
+
+.color-circle:hover {
+    transform: scale(1.1);
+    /* highlights the color on hover */
+}
+
+.red {
+    color: crimson;
+}
+
+.category-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    /* name far left, buttons far right */
+    width: 100%;
+    /* ensures it stretches across the container */
+}
+
+.move-buttons {
+    display: flex;
+    gap: 0;
+    /* ensures absolutely no space between buttons */
+}
+
+.move-buttons button {
+    margin: 0;
+    padding: 0 4px;
+    /* optional minimal padding so they're clickable */
+}
+
+```
 File: src/components/layout/MainAppContainer.js
 ```
 Content:
@@ -552,6 +1594,121 @@ function App() {
 }
 
 export default App;
+
+
+```
+File: src/components/layout/AudioControls.js
+```
+Content:
+
+import React, { useState, useEffect } from "react";
+import "./AudioControls.css";
+
+function AudioControls() {
+  const [isPlaying, setIsPlaying] = useState(false); // Play/Pause state
+  const [playbackSpeed, setPlaybackSpeed] = useState(1.0); // Playback speed
+  const [currentPosition, setCurrentPosition] = useState(0); // the current time
+  const [volume, setVolume] = useState(50); // Volume state (0-100)
+  const totalLength = 300; // Example total length
+
+  // Time formatting
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  // Handle Play/Pause
+  const handlePlayPause = () => {
+    setIsPlaying((prevState) => !prevState);
+  };
+
+  // Handle Rewind
+  const handleRewind = () => {
+    setCurrentPosition((prev) => Math.max(0, prev - 10));
+  };
+
+  // Handle Skip
+  const handleSkip = () => {
+    setCurrentPosition((prev) => Math.min(totalLength, prev + 10));
+  };
+
+  // Update the position while playing
+  useEffect(() => {
+    let interval;
+    if (isPlaying) {
+      interval = setInterval(() => {
+        setCurrentPosition((prev) => Math.min(prev + 1, totalLength));
+      }, 1000 / playbackSpeed);
+    } else {
+      clearInterval(interval);
+    }
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [isPlaying, playbackSpeed]);
+
+  // Handle Volume Change
+  const handleVolumeChange = (e) => {
+    setVolume(Number(e.target.value));
+  };
+
+  // Calculate time remaining
+  const timePlayed = currentPosition;
+  const timeRemaining = totalLength - currentPosition;
+
+  return (
+    <div className="audio-controls">
+      {/* Controls Section */}
+      <div className="control-panel">
+        <button onClick={handleRewind} className="control-button">
+          ⏪ 10
+        </button>
+        <button onClick={handlePlayPause} className="play-pause-button">
+          {isPlaying ? "⏸" : "▶️"}
+        </button>
+        <button onClick={handleSkip} className="control-button">
+          10 ⏩
+        </button>
+        <select
+          className="playback-speed"
+          value={playbackSpeed}
+          onChange={(e) => setPlaybackSpeed(Number(e.target.value))}
+        >
+          <option value={0.5}>0.5x</option>
+          <option value={1.0}>1x</option>
+          <option value={1.25}>1.25x</option>
+          <option value={1.5}>1.5x</option>
+          <option value={2.0}>2x</option>
+        </select>
+        {/* Volume Slider */}
+        <input
+          type="range"
+          min="0"
+          max="100"
+          value={volume}
+          onChange={handleVolumeChange}
+          className="volume-slider"
+        />
+      </div>
+
+      {/* Progress Bar Section */}
+      <div className="time-display">
+        <span className="time-played">{formatTime(timePlayed)}</span>
+        <div className="progress-bar">
+          <div
+            className="progress"
+            style={{ width: `${(timePlayed / totalLength) * 100}%` }}
+          ></div>
+        </div>
+        <span className="time-remaining">{formatTime(timeRemaining)}</span>
+      </div>
+    </div>
+  );
+}
+
+export default AudioControls;
 
 
 ```
