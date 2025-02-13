@@ -1,0 +1,56 @@
+.
+|____chat_context.txt
+|____hi.txt
+|____README.md
+|____chat_context.py
+|____public
+| |____favicon.ico
+| |____index.html
+| |____logo512.png
+| |____import_icon.png
+| |____manifest.json
+| |____robots.txt
+| |____logo192.png
+|____.gitignore
+|____package-lock.json
+|____package.json
+|____src
+| |____contexts
+| | |____store.js
+| | |____CategoriesContext.js
+| | |____categoriesSlice.js
+| |____reportWebVitals.js
+| |____App.css
+| |____index.js
+| |____index.css
+| |____components
+| | |____auth
+| | | |____Register.js
+| | | |____Login.js
+| | |____layout
+| | | |____Search.css
+| | | |____poo.css
+| | | |____AudioControls.css
+| | | |____Sidebar.js
+| | | |____MainApp.js
+| | | |____PDFDropModal.css
+| | | |____Sidebar.css
+| | | |____MainAppContainer.js
+| | | |____AudioControls.js
+| | | |____PDFDropModal.js
+| | | |____Search.js
+| | | |____MainApp.css
+| | |____pdfViewer
+| | | |____MainPdf.css
+| | | |____PdfTopView.css
+| | | |____PdfTopView.js
+| | | |____MainPdf.js
+| | | |____PdfViewer.js
+| | | |____PdfViewer.css
+| | | |____pdfPageTest
+| | | | |____verticalExample.jpg
+| | | | |____pdfExample.png
+| |____App.test.js
+| |____setupTests.js
+| |____logo.svg
+| |____App.js
