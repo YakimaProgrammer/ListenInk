@@ -1,0 +1,346 @@
+/* List Item Styling */
+/* * {
+    z-index: 1000
+} */
+
+li {
+    width: 200px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    display: inline-block;
+}
+
+.header {
+    margin-bottom: 20px;
+}
+
+button {
+    position: relative;
+    /* Establish a reference point for the pseudo-element */
+    background-color: transparent;
+    border: none;
+    padding: 2px;
+    /* Initial padding for the button */
+    outline: none;
+    cursor: pointer;
+    z-index: 1;
+    /* Ensure the button stays above the pseudo-element */
+    transition: all 0.3s ease;
+    /* Smooth transition for any button properties */
+}
+
+button::before {
+    content: "";
+    /* Empty content for the pseudo-element */
+    position: absolute;
+    top: 0px;
+    /* Expand the background beyond the button's boundaries */
+    left: 0px;
+    right: 0px;
+    bottom: 0px;
+    background-color: #ececec;
+    z-index: -1;
+    /* Place the background behind the button */
+    border-radius: 4px;
+    /* Optional: add rounded corners if needed */
+    opacity: 0;
+    /* Start fully transparent */
+    transition: all 0.3s ease;
+    /* Smooth transition for hover effect */
+}
+
+button:hover::before {
+    opacity: 1;
+    /* Make the pseudo-element visible on hover */
+}
+
+
+/* Default styles for doc-button */
+.doc-button {
+    cursor: pointer;
+    padding: 5px 10px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    text-align: left;
+    /* width: 100%; */
+}
+
+.doc-button {
+    width: 100%;
+}
+
+.doc-button.active {
+    background-color: #ececec;
+}
+
+/* HStack (Horizontal Stack) */
+.hstack {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 20px;
+    width: 100%;
+}
+
+.hstack-left {
+    display: flex;
+    align-items: left;
+    justify-content: flex-start;
+    gap: 10px;
+    /* width: 100%; */
+}
+
+/* VStack (Vertical Stack) */
+.vstack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+}
+
+/* Ensure child elements have no margin or padding */
+.hstack>*,
+.vstack>* {
+    margin: 0;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+
+
+/* Remove border and shadow globally */
+.hstack,
+.vstack,
+.hstack>*,
+.vstack>* {
+    border: none;
+    box-shadow: none;
+}
+
+/* Right Align Specific Elements */
+.right-align {
+    margin-left: auto;
+    /* Push this element to the far right */
+}
+
+/*SEARCH FORMATTING
+
+
+/* Popup overlay background */
+.search-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+/* Popup content */
+.search-popup-content {
+    background: white;
+    width: 60%;
+    max-width: 800px;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    position: relative;
+}
+
+/* Close button */
+.close-popup {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #333;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.close-popup:hover {
+    color: #e74c3c;
+}
+
+/* Container that wraps the "Add New" button and dropdown */
+.add-new-dropdown-container {
+    position: relative;
+    display: inline-block;
+}
+
+/* The dropdown menu itself */
+.add-new-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    /* Placed just below the button */
+    left: 0;
+    background-color: #ffffff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 4px 0;
+    min-width: 150px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 9999;
+    /* Ensure it appears above other elements */
+}
+
+.add-new-dropdown-menu button {
+    display: block;
+    width: 100%;
+    background: transparent;
+    border: none;
+    text-align: left;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.add-new-dropdown-menu button:hover {
+    background-color: #f0f0f0;
+}
+
+/* The popup itself */
+.add-new-popup {
+    position: absolute;
+    top: 100%;
+    /* directly below the button */
+    left: 0;
+    z-index: 9999;
+    min-width: 90px;
+    /* wide enough so text doesn't wrap */
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    /* more rounded corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-top: 4px;
+    /* small gap below the button */
+    /* overflow: hidden; */
+    /* ensures corners are fully rounded */
+}
+
+/* Some inner padding if desired */
+.add-new-popup-content {
+    display: flex;
+    flex-direction: column;
+    padding: 4px 0;
+    /* vertical spacing inside */
+}
+
+/* Each button in the popup */
+.add-new-popup-content button {
+    background: transparent;
+    border: none;
+    outline: none;
+    width: 100%;
+    text-align: left;
+    padding: 8px 16px;
+    cursor: pointer;
+    white-space: nowrap;
+    /* text stays on one line */
+    transition: background-color 0.2s ease-in-out;
+    font-size: 14px;
+    /* optional: adjust font size */
+}
+
+/* Hover effect to 'deepen' the background */
+.add-new-popup-content button:hover {
+    background-color: #ececec;
+}
+
+/* Right-click context menu reusing the .add-new-popup style */
+.context-menu {
+    /* .add-new-popup styles are included in the className,
+       so you only need position overrides if desired */
+    position: absolute;
+    /* top and left assigned inline */
+    z-index: 9999;
+}
+
+/* Delete Confirmation Modal (Grey background + White box) */
+.delete-confirm-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    /* dim the page */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.delete-confirm-modal {
+    background: white;
+    width: 300px;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.delete-confirm-modal button {
+    margin: 10px;
+    padding: 8px 16px;
+}
+
+.color-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 30px);
+    /* 5 columns of 30px each */
+    grid-template-rows: repeat(2, 30px);
+    /* 2 rows */
+    gap: 8px;
+    padding: 8px;
+    justify-items: center;
+    align-items: center;
+    /* adjust as needed */
+}
+
+.color-circle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.2s ease-in-out;
+    outline-offset: -1px;
+    /* so it appears nicely around the circle if you do an outline */
+}
+
+.color-circle:hover {
+    transform: scale(1.1);
+    /* highlights the color on hover */
+}
+
+.red {
+    color: crimson;
+}
+
+.category-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    /* name far left, buttons far right */
+    width: 100%;
+    /* ensures it stretches across the container */
+}
+
+.move-buttons {
+    display: flex;
+    gap: 0;
+    /* ensures absolutely no space between buttons */
+}
+
+.move-buttons button {
+    margin: 0;
+    padding: 0 4px;
+    /* optional minimal padding so they're clickable */
+}
+
+.category-button {}
