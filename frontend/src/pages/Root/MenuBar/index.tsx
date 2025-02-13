@@ -16,7 +16,7 @@ export function MenuBar({ sidebarOpen, setOpen }: MenuProps) {
       position="fixed"
       className={`${styles.appBar} ${sidebarOpen ? styles.appBarOpen : ""}`}
     >
-      <Toolbar>
+      <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
         <IconButton
           color="inherit"
           aria-label="open drawer"
@@ -29,7 +29,9 @@ export function MenuBar({ sidebarOpen, setOpen }: MenuProps) {
         <Typography variant="h6" noWrap>
           {doc?.name}
         </Typography>
-        <Profile />
+        <div className="alignRight">
+          <Profile />
+        </div>
       </Toolbar>
     </AppBar>
   );
