@@ -1,0 +1,70 @@
+.
+|____chat_context.txt
+|____hi.txt
+|____chat_context.py
+|____public
+| |____favicon.ico
+| |____index.html
+| |____logo512.png
+| |____manifest.json
+| |____robots.txt
+| |____logo192.png
+|____.gitignore
+|____package-lock.json
+|____package.json
+|____config-overrides.js
+|____tsconfig.json
+|____src
+| |____index.tsx
+| |____index.css
+| |____types.ts
+| |____styles
+| | |_____drawer.scss
+| |____components
+| | |____SearchDialog
+| | | |____index.tsx
+| | | |____index.module.scss
+| | |____Conditional
+| | | |____index.tsx
+| | | |____index.module.scss
+| | |____PDFViewer
+| | | |____index.tsx
+| | | |____PdfTopView.tsx
+| | | |____PdfViewer.module.scss
+| | | |____PdfViewer.tsx
+| | | |____index.module.scss
+| | |____WithDocument
+| | | |____index.tsx
+| | |____DrawerHeader
+| | | |____index.tsx
+| | | |____index.module.scss
+| | |____AudioControls
+| | | |____index.tsx
+| | | |____index.module.scss
+| |____react-app-env.d.ts
+| |____pages
+| | |____Auth
+| | | |____index.tsx
+| | |____urlfor.tsx
+| | |____Root
+| | | |____Sidebar
+| | | | |____index.tsx
+| | | | |____index.module.scss
+| | | |____index.tsx
+| | | |____MenuBar
+| | | | |____index.tsx
+| | | | |____index.module.scss
+| | | |____Content
+| | | | |____index.tsx
+| | | | |____index.module.scss
+| | | |____index.module.scss
+| | | |____Categories
+| | | | |____index.tsx
+| |____store
+| | |____helper-types.ts
+| | |____slices
+| | | |____categories.ts
+| | | |____ui.ts
+| | | |____auth.ts
+| | |____thunks.ts
+| | |____index.ts

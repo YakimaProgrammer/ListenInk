@@ -1,0 +1,1482 @@
+File: src/index.tsx
+```
+Content:
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { createBrowserRouter, RouterProvider } from "react-router";
+import { StyledEngineProvider } from "@mui/material/styles";
+import { Provider } from "react-redux";
+import { store } from "./store";
+import { urlFor } from "./pages/urlfor";
+
+// Components
+import { Root } from "./pages/Root";
+import { Auth } from "./pages/Auth";
+
+// A global css file, but we use css modules for this project for namespacing
+import "./index.css";
+import "bootstrap-icons/font/bootstrap-icons.css";
+
+let router = createBrowserRouter([
+  {
+    path: "/",
+    Component: Root,
+  },
+  {
+    path: urlFor("docs", ":docId"),
+    Component: Root
+  },
+  {
+    path: "/auth",
+    Component: Auth,
+  },
+]);
+
+const root = ReactDOM.createRoot(
+  document.getElementById('root') as HTMLElement
+);
+root.render(
+  <React.StrictMode>
+    <StyledEngineProvider injectFirst>
+      <Provider store={store}>
+	<RouterProvider router={router} />
+      </Provider>
+    </StyledEngineProvider>
+  </React.StrictMode>
+);
+
+
+```
+File: src/index.css
+```
+Content:
+html, body {
+    margin: 0;
+}
+
+
+```
+File: src/types.ts
+```
+Content:
+import { z } from "zod";
+
+export interface DocId {
+  document_id: string
+}
+
+export interface Category {
+  userId: string,
+  color: string,
+  name: string,
+  id: string
+}
+
+export interface Document {
+  name: string,
+  numpages: number,
+  s3key: string,
+  bookmarks: Bookmark[],
+  //  shares: string[],
+  id: string,
+  completed: boolean,
+  category: Category
+}
+
+export interface Bookmark {
+  id: string,
+  page: number,
+  audiotime: number,
+  documentId: string,
+}
+
+export interface Err {
+  err: string
+};
+
+export interface User {
+  name: string
+  id: string
+  email: string
+}
+
+// Validator for DocId
+export const DocIdValidator = z.object({
+  document_id: z.string().min(1, "document_id must be a non-empty string"),
+});
+
+// Validator for Category
+export const CategoryValidator = z.object({
+  userId: z.string().min(1, "userId must be a non-empty string"),
+  color: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, "color must be a valid hex color code"),
+  name: z.string().min(1, "name must be a non-empty string"),
+  id: z.string().min(1, "id must be a non-empty string"),
+});
+
+// Validator for Bookmark
+export const BookmarkValidator = z.object({
+  page: z
+    .number()
+    .int()
+    .positive("page must be a positive integer"),
+  audiotime: z
+    .number()
+    .nonnegative("audiotime must be a non-negative number"),
+  id: z
+    .string()
+    .min(1, "id must be a non-empty string"),
+  documentId: z
+    .string()
+    .min(1, "id must be a non-empty string"),
+});
+
+// Validator for Document
+export const DocumentValidator = z.object({
+  name: z.string().min(1, "name must be a non-empty string"),
+  numpages: z
+    .number()
+    .int()
+    .positive("numpages must be a positive integer"),
+  s3key: z.string().min(1, "s3key must be a non-empty string"),
+  bookmarks: z.array(BookmarkValidator),
+  id: z.string().min(1, "id must be a non-empty string"),
+  completed: z.boolean(),
+  category: CategoryValidator,
+});
+
+
+```
+File: src/react-app-env.d.ts
+```
+Content:
+/// <reference types="node" />
+/// <reference types="react" />
+/// <reference types="react-dom" />
+
+declare namespace NodeJS {
+  interface ProcessEnv {
+    readonly NODE_ENV: 'development' | 'production' | 'test';
+    readonly PUBLIC_URL: string;
+  }
+}
+
+declare module '*.avif' {
+  const src: string;
+  export default src;
+}
+
+declare module '*.bmp' {
+  const src: string;
+  export default src;
+}
+
+declare module '*.gif' {
+  const src: string;
+  export default src;
+}
+
+declare module '*.jpg' {
+  const src: string;
+  export default src;
+}
+
+declare module '*.jpeg' {
+  const src: string;
+  export default src;
+}
+
+declare module '*.png' {
+  const src: string;
+  export default src;
+}
+
+declare module '*.webp' {
+    const src: string;
+    export default src;
+}
+
+declare module '*.svg' {
+  import * as React from 'react';
+
+  export const ReactComponent: React.FunctionComponent<React.SVGProps<
+    SVGSVGElement
+  > & { title?: string }>;
+
+  const src: string;
+  export default src;
+}
+
+declare module '*.module.css' {
+  const classes: { readonly [key: string]: string };
+  export default classes;
+}
+
+declare module '*.module.scss' {
+  const classes: { readonly [key: string]: string };
+  export default classes;
+}
+
+declare module '*.module.sass' {
+  const classes: { readonly [key: string]: string };
+  export default classes;
+}
+
+declare module '*.txt' {
+  const content: string;
+  export default content;
+}
+
+declare module '*.pdf' {
+  const src: string;
+  export default src;
+}
+
+
+```
+File: src/styles/_drawer.scss
+```
+Content:
+$drawer-width: 240px;
+$drawer-height: 64px;
+
+
+```
+File: src/components/SearchDialog/index.tsx
+```
+Content:
+import { AppDispatch, RootState, setQuery, setSearchDialog } from "@/store";
+import { Dialog, DialogContent, IconButton, InputAdornment, List, ListItemButton, ListItemIcon, TextField } from "@mui/material";
+import { connect, ConnectedProps } from "react-redux";
+import { useNavigate } from "react-router";
+import { JSX } from "react";
+import { Search, Close, Description } from "@mui/icons-material";
+import { ReducedDoc } from "@/store/slices/categories";
+import { urlFor } from "@/pages/urlfor";
+
+import style from "./index.module.scss";
+
+const mapStateToProps = (state: RootState) => ({
+  query: state.ui.searchQuery,
+  open: state.ui.searchDialogOpen,
+  // ReducedDoc is a placeholder type until I stablize the API.
+  // It includes information I largely expect to be there in the final API version. 
+  docs: state.categories.status === "success" ? state.categories.categories.reduce<ReducedDoc[]>((acc, c) => acc.concat(c.documents), []) : []
+});
+const mapDispatchToProps = (dispatch: AppDispatch) => ({
+  close: () => dispatch(setSearchDialog(false)),
+  setQuery: (query: string) => dispatch(setQuery(query))
+});
+const connector = connect(mapStateToProps, mapDispatchToProps);
+type PropsFromRedux = ConnectedProps<typeof connector>;
+
+
+const NUM_RESULTS = 10;
+function SearchDialogComponent({ query, open, close, setQuery, docs }: PropsFromRedux) {
+  let navigate = useNavigate();
+  
+  // [TODO] This is proof-of-concept searching. I recommend fuse.js for fuzzy + full text search
+  const hits = docs.filter(d => d.name.toLowerCase().includes(query.toLowerCase())).slice(0, NUM_RESULTS);
+
+  // This is kind of evil. Normally, I'd `.map()` from hits to results, but I want to have precisely `NUM_RESULTS` results 
+  const results: JSX.Element[] = [];
+  for (let i = 0; i < NUM_RESULTS; i++) {
+    let d: ReducedDoc | undefined = hits[i];
+    results.push(
+      <ListItemButton
+	key={i}
+	onClick={() => {if (d !== undefined) { navigate(urlFor("docs", d.id)); close() }}}
+	className={d === undefined ? style.hidden : ""}
+      >
+	<ListItemIcon>
+	  <Description />
+	</ListItemIcon>
+
+	{d?.name}
+      </ListItemButton>
+    )
+  }
+  
+  return (
+    <Dialog open={open} onClose={close} maxWidth="md" fullWidth>
+      <DialogContent dividers>
+	<TextField
+          variant="standard"
+          placeholder="Search documents..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+	  fullWidth
+          slotProps={{
+            input: {
+	      startAdornment: (
+		<InputAdornment position="start">
+		  <Search />
+	        </InputAdornment>
+              ),
+	      endAdornment: (
+		<InputAdornment position="end">
+		  <IconButton onClick={query === "" ? close : () => setQuery("")} size="small">
+                    <Close />
+		  </IconButton>
+	      </InputAdornment>
+              ),
+	    }
+          }}
+	/>
+	<List>
+	  { results }
+	</List>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export const SearchDialog = connector(SearchDialogComponent);
+
+
+```
+File: src/components/SearchDialog/index.module.scss
+```
+Content:
+.hidden {
+    opacity: 0;
+}
+
+
+```
+File: src/components/Conditional/index.tsx
+```
+Content:
+import { ReactNode } from 'react';
+import { Box, CircularProgress, Typography, Icon } from "@mui/material";
+import { WarningAmber } from "@mui/icons-material";
+import { LoadingState } from '@/store/helper-types';
+
+import styles from "./index.module.scss";
+
+interface ConditionalProps {
+  status: LoadingState;
+  reason?: string;
+  children?: ReactNode;
+}
+
+export function Conditional({ status, reason, children }: ConditionalProps) {
+  switch (status) {
+    case "success":
+      return <>{ children }</>;
+
+    case "pending":
+      return (
+        <Box className={styles.box}>
+          <CircularProgress />
+	</Box>
+      );
+
+    case "failure":
+      return (
+        <Box className={styles.box}>
+          <Icon color="error">
+	    <WarningAmber />
+	  </Icon>
+	  <Typography>{reason}</Typography>
+	</Box>
+      );
+  }
+}
+
+
+```
+File: src/components/Conditional/index.module.scss
+```
+Content:
+.box {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    flex-direction: column;
+}
+
+
+```
+File: src/components/PDFViewer/index.tsx
+```
+Content:
+import { PdfTopView } from './PdfTopView';
+import { PdfViewer } from './PdfViewer';
+import styles from './index.module.scss';
+
+export function PDFViewer() {
+  return (
+    <div className={styles.mainPdf}>
+      <PdfTopView currentPage={2} totalPages={20} zoomLevel={100} onPageChange={() => {}} onZoomChange={() => {}} />
+      <PdfViewer scale={1} src="TODO" />
+    </div>
+  );
+};
+
+
+```
+File: src/components/PDFViewer/PdfTopView.tsx
+```
+Content:
+import { 
+  Search,
+  KeyboardArrowUp,
+  KeyboardArrowDown,
+  ZoomIn,
+  ZoomOut
+} from '@mui/icons-material';
+import { IconButton, TextField } from '@mui/material';
+
+import styles from './PdfViewer.module.scss';
+
+interface PdfTopViewProps {
+  currentPage: number;
+  totalPages: number;
+  zoomLevel: number;
+  onPageChange: (page: number) => void;
+  onZoomChange: (zoom: number) => void;
+}
+
+export function PdfTopView({
+  currentPage,
+  totalPages,
+  zoomLevel,
+  onPageChange,
+  onZoomChange
+}: PdfTopViewProps) {
+  return (
+    <div className={styles.pdfTopView}>
+      <IconButton className={styles.topbarSearch}>
+        <Search />
+      </IconButton>
+
+      <div className={styles.pageDisplay}>
+        <IconButton onClick={() => onPageChange(currentPage - 1)}>
+          <KeyboardArrowUp />
+        </IconButton>
+        
+        <TextField 
+          size="small"
+          value={currentPage}
+          className={styles.pageInput}
+        />
+        <span>/</span>
+        <span>{totalPages}</span>
+
+        <IconButton onClick={() => onPageChange(currentPage + 1)}>
+          <KeyboardArrowDown />
+        </IconButton>
+      </div>
+
+      <div className={styles.zoomControl}>
+        <IconButton onClick={() => onZoomChange(zoomLevel - 10)}>
+          <ZoomOut />
+        </IconButton>
+        <span>{zoomLevel}%</span>
+        <IconButton onClick={() => onZoomChange(zoomLevel + 10)}>
+          <ZoomIn />
+        </IconButton>
+      </div>
+    </div>
+  );
+};
+
+
+```
+File: src/components/PDFViewer/PdfViewer.module.scss
+```
+Content:
+.pdfViewer {
+  width: 1000px;
+  height: 460px;
+  background-color: transparent;
+  border-radius: 0;
+  display: flex;
+  flex-direction: row;
+}
+
+.pdfLeftSideView {
+  width: 40px;
+  height: 460px;
+  background-color: #dee7eb;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.3);
+}
+
+.sideMenuToggle {
+  position: relative;
+  top: 10px;
+}
+
+.pdfExample {
+  width: 960px;
+  height: 460px;
+  background-color: transparent;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: auto;
+  box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.3);
+}
+
+.pdfContent {
+  width: 960px;
+  height: 460px;
+  background-color: pink;
+  box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.3);
+}
+
+
+```
+File: src/components/PDFViewer/PdfViewer.tsx
+```
+Content:
+import { ViewSidebar } from '@mui/icons-material';
+import { IconButton } from '@mui/material';
+import styles from './PdfViewer.module.scss';
+
+export interface PDFViewerProps {
+  scale: number;
+  src: string;
+}
+
+export function PdfViewer({ scale, src }: PDFViewerProps) {
+  return (
+    <div className={styles.pdfViewer}>
+      <div className={styles.pdfLeftSideView}>
+        <IconButton className={styles.sideMenuToggle}>
+          <ViewSidebar />
+        </IconButton>
+      </div>
+      <div className={styles.pdfExample}>
+        <img
+          src={src}
+          style={{
+            transform: `scale(${scale})`,
+            transformOrigin: 'center',
+            transition: 'transform 0.2s ease',
+          }}
+          alt="PDF preview"
+        />
+      </div>
+    </div>
+  );
+};
+
+
+```
+File: src/components/PDFViewer/index.module.scss
+```
+Content:
+.mainPdf {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+
+```
+File: src/components/WithDocument/index.tsx
+```
+Content:
+import { RootState } from "@/store";
+import { ReducedDoc } from "@/store/slices/categories";
+import { ComponentType } from "react";
+import { useSelector } from "react-redux";
+import { useParams } from "react-router";
+
+export function useDocument(): ReducedDoc | null {
+  const { docId } = useParams();
+  const doc = useSelector((state: RootState) => {
+    if (state.categories.status === "success") {
+      // We LOVE n^2 traversals on the client-side!
+      for (let category of state.categories.categories) {
+	for (let doc of category.documents) {
+	  if (doc.id === docId) {
+	    return doc;
+	  }
+	}
+      }
+    }
+    return null;
+  });
+  return doc;
+}
+
+interface InjectedProps {
+  docId: string | undefined;
+  doc: Document | null;
+}
+
+export function withDocument<P extends InjectedProps>(
+  WrappedComponent: ComponentType<P>
+) {
+  return (props: Omit<P, keyof InjectedProps>) => {
+    const { docId } = useParams();
+    const doc = useDocument();
+    return <WrappedComponent {...(props as P)} docId={docId} doc={doc} />;
+  };
+}
+
+
+```
+File: src/components/DrawerHeader/index.tsx
+```
+Content:
+import { ReactNode } from "react";
+import styles from "./index.module.scss";
+
+interface DrawerHeaderProps {
+  children?: ReactNode;
+};
+
+export function DrawerHeader({ children }: DrawerHeaderProps) {
+  return (
+    <div className={styles.drawerHeader}>
+      { children }
+    </div>
+  )
+}
+
+
+```
+File: src/components/DrawerHeader/index.module.scss
+```
+Content:
+@use "src/styles/drawer";
+
+.drawerHeader {
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  justify-content: flex-end;
+  min-height: drawer.$drawer-height;
+}
+
+
+```
+File: src/components/AudioControls/index.tsx
+```
+Content:
+import { ChangeEvent } from "react";
+import { AppDispatch, RootState } from "@/store";
+import { newAudioPlayback, PlaybackSpeed, setIsPlaying, setPlaybackPos, setPlaybackSpeed } from "@/store/slices/ui";
+import { connect, ConnectedProps } from "react-redux";
+import { useDocument } from "../WithDocument";
+import style from "./index.module.scss";
+
+
+interface AudioControlsProps {
+  docId: string
+}
+
+function mapStateToProps(state: RootState, ownProps: AudioControlsProps) {
+  // The audio playback might not exist in the state. If it doesn't, we'll pretend it has the default values
+  return state.ui.audioPlaybacks[ownProps.docId] ?? newAudioPlayback({});
+}
+function mapDispatchToProps(dispatch: AppDispatch, ownProps: AudioControlsProps) {
+  return {
+    setIsPlaying: (isPlaying: boolean) => dispatch(setIsPlaying({id: ownProps.docId, isPlaying })),
+    setPlaybackSpeed: (playbackSpeed: PlaybackSpeed) => dispatch(setPlaybackSpeed({id: ownProps.docId, playbackSpeed })),
+    setPlaybackPos: (pos: number) => dispatch(setPlaybackPos({ id: ownProps.docId, playbackPos: pos }))
+  };
+}
+const connector = connect(mapStateToProps, mapDispatchToProps);
+type PropsFromRedux = ConnectedProps<typeof connector>;
+
+function isPlaybackSpeed(speed: number): speed is PlaybackSpeed {
+  switch (speed) {
+    case 0.25:
+    case 0.5:
+    case 1:
+    case 1.25:
+    case 1.5:
+    case 2:
+      return true;
+    default:
+      return false;
+  }
+}
+
+function AudioControlsComponent({ isPlaying, setIsPlaying, playbackSpeed, setPlaybackSpeed, playbackPos, setPlaybackPos, end }: PropsFromRedux) {
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  const handleRewind = () => setPlaybackPos(Math.max(0, playbackPos - 10)); //rewind 
+  const handleSkip = () => setPlaybackPos(Math.min(end, playbackPos + 10)); //skip, like rewind would have to ensure gets the next chunk
+  const handlePlayPause = () => setIsPlaying(!isPlaying);
+
+  const maybeSetPlaybackSpeed = (e: ChangeEvent<HTMLSelectElement>) => {
+    const v = parseFloat(e.target.value);
+    if (isPlaybackSpeed(v)) {
+      setPlaybackSpeed(v)
+    } else {
+      console.warn(`Received an impossible input from the select element! ${v} is not a PlaybackSpeed!`);
+    }
+  }
+  
+  const timeRemaining = end - playbackPos;
+
+  return (
+    <div className={style.audioControls}>
+
+      {/* Controls Section */}
+      <div className={style.controlPanel}>
+        <button onClick={handleRewind} className={style.controlButton}>
+          ⏪ 10
+        </button>
+        <button onClick={handlePlayPause} className={style.playPauseButton}>
+          {isPlaying ? "⏸" : "▶️"}
+        </button>
+        <button onClick={handleSkip} className={style.controlButton}>
+          10 ⏩
+        </button>
+        <select
+          className={style.playbackSpeed}
+          value={playbackSpeed}
+          onChange={maybeSetPlaybackSpeed}
+        >
+	  <option value={0.25}>0.5x</option>
+          <option value={0.5}>0.5x</option>
+          <option value={1.0}>1x</option>
+          <option value={1.25}>1.25x</option>
+          <option value={1.5}>1.5x</option>
+          <option value={2.0}>2x</option>
+        </select>
+      </div>
+
+      {/* Progress Bar Section */}
+      <div className={style.timeDisplay}>
+        <span className={style.timePlayed}>{formatTime(playbackPos)}</span>
+        <div className={style.progressBar}>
+          <div
+            className={style.progress}
+            style={{ width: `${(playbackPos / end) * 100}%` }}
+          ></div>
+        </div>
+        <span className={style.timeRemaining}>
+          {formatTime(timeRemaining)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+const ConnectedAudioControls = connector(AudioControlsComponent);
+export function AudioControls() {
+  const doc = useDocument();
+  if (doc?.id !== undefined) {
+    return <ConnectedAudioControls docId={doc?.id} />
+  } else {
+    return null;
+  }
+}
+
+
+```
+File: src/components/AudioControls/index.module.scss
+```
+Content:
+.audioControls {
+    width: 100%;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+  }
+  
+  .timeDisplay {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .progressBar {
+    flex-grow: 1;
+    height: 10px;
+    background: #ddd;
+    margin: 0 10px;
+    position: relative;
+  }
+  
+  .progress {
+    height: 100%;
+    background: #007bff;
+    width: 0;
+  }
+  
+  .controlPanel {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .controlButton,
+  .playPauseButton {
+    padding: 10px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  
+  .playbackSpeed {
+    padding: 5px;
+  }
+  
+
+
+```
+File: src/pages/urlfor.tsx
+```
+Content:
+export function urlFor(page: "docs", context: string): string {
+  if (page === "docs") {
+    return `/docs/${context}`;
+  }
+
+  // Impossible, return home
+  return "";
+}
+
+
+```
+File: src/pages/Auth/index.tsx
+```
+Content:
+export function Auth() {
+  return <h1>It also works!</h1>
+}
+
+
+```
+File: src/pages/Root/index.tsx
+```
+Content:
+import { connect, ConnectedProps } from "react-redux";
+import Box from '@mui/material/Box';
+import { AppDispatch, RootState, setSearchDialog, setSidebar } from "@/store";
+
+import styles from './index.module.scss';
+
+// I made a very arbitrary choice here that I don't love
+// All these components really only make sense in the context of the <Root /> page
+// This component kind of does its own thing (but is still very context dependent on <Root />
+import { SearchDialog } from "@/components/SearchDialog";
+// ... but these components are just layout abstractions for how stuff is laid out
+import { MenuBar } from "./MenuBar";
+import { Sidebar } from "./Sidebar";
+import { Content } from "./Content";
+// Should these all be grouped together? Probably!
+
+// Unfortunately, TypeScript kinda freaks out if you let in infer too much stuff at once
+// By pulling these props out, we can handhold the typechecker so it doesn't think that
+// these Redux-provided props are something other components need to worry about 
+const mapStateToProps = (state: RootState) => ({
+  sidebarOpen: state.ui.sidebarOpen,
+});
+
+const mapDispatchToProps = (dispatch: AppDispatch) => ({
+  openSidebar: () => dispatch(setSidebar(true)),
+  closeSidebar: () => dispatch(setSidebar(false)),
+  openDialog: () => dispatch(setSearchDialog(true))
+});
+
+// Get inferred props from connect()
+const connector = connect(mapStateToProps, mapDispatchToProps);
+type PropsFromRedux = ConnectedProps<typeof connector>;
+
+function RootComponent({ sidebarOpen, openSidebar, closeSidebar, openDialog }: PropsFromRedux) {  
+  return (
+    <Box className={styles.root}>
+      <MenuBar sidebarOpen={sidebarOpen} setOpen={openSidebar} />
+      <Sidebar sidebarOpen={sidebarOpen} closeSidebar={closeSidebar} openDialog={openDialog} />
+      <Content sidebarOpen={sidebarOpen} />
+      <SearchDialog />
+    </Box>
+  );
+}
+
+export const Root = connector(RootComponent);
+
+
+```
+File: src/pages/Root/index.module.scss
+```
+Content:
+.root {
+  display: flex;
+}
+
+
+```
+File: src/pages/Root/Sidebar/index.tsx
+```
+Content:
+import { Drawer, IconButton, Divider, Box } from '@mui/material';
+import { ChevronLeft, Search, Upload } from "@mui/icons-material";
+import { DrawerHeader } from "@/components/DrawerHeader";
+import { Categories } from '../Categories';
+
+import styles from "./index.module.scss";
+
+interface SidebarProps {
+  sidebarOpen: boolean;
+  closeSidebar: () => void;
+  openDialog: () => void;
+}
+export function Sidebar({ sidebarOpen, closeSidebar, openDialog }: SidebarProps) {
+  return (
+    <Drawer
+      className={styles.drawer}
+      variant="persistent"
+      anchor="left"
+      open={sidebarOpen}
+      classes={{ paper: styles.drawerPaper }}
+    >
+      <DrawerHeader>
+	{/* Left: search and upload */}
+	<IconButton onClick={openDialog}>
+	  <Search />
+	</IconButton>
+	<IconButton>
+	  <Upload />
+	</IconButton>
+
+	{/* Spacer to push the menu button to the right */}
+        <Box sx={{ flexGrow: 1 }} />
+
+	{/* Right: menu button */}
+	<IconButton onClick={closeSidebar}>
+          <ChevronLeft />
+        </IconButton>
+      </DrawerHeader>
+      
+      <Divider />
+      <Categories />
+    </Drawer>
+  );
+}
+
+
+```
+File: src/pages/Root/Sidebar/index.module.scss
+```
+Content:
+@use "src/styles/drawer";
+
+.drawer {
+  width: drawer.$drawer-width;
+  flex-shrink: 0;
+}
+
+.drawerPaper {
+  width: drawer.$drawer-width;
+  box-sizing: border-box;
+}
+
+
+
+```
+File: src/pages/Root/MenuBar/index.tsx
+```
+Content:
+import { AppBar, Toolbar, IconButton, Typography } from "@mui/material";
+import { Menu } from "@mui/icons-material";
+import { useDocument } from "@/components/WithDocument";
+import styles from "./index.module.scss";
+
+interface MenuProps {
+  sidebarOpen: boolean;
+  setOpen: () => void;
+}
+export function MenuBar({ sidebarOpen, setOpen }: MenuProps) {
+  const doc = useDocument();
+
+  return (
+    <AppBar position="fixed" className={`${styles.appBar} ${sidebarOpen ? styles.appBarOpen : ''}`}>
+      <Toolbar>
+        <IconButton
+          color="inherit"
+          aria-label="open drawer"
+          onClick={setOpen}
+          edge="start"
+          className={`${styles.menuButton} ${sidebarOpen ? styles.hidden : ''}`}
+        >
+         <Menu />
+        </IconButton>
+        <Typography variant="h6" noWrap>
+          { doc?.name }
+        </Typography>
+      </Toolbar>
+    </AppBar>
+  );
+}
+
+
+```
+File: src/pages/Root/MenuBar/index.module.scss
+```
+Content:
+@use "src/styles/drawer";
+
+.appBar {
+  transition: margin 0.3s ease-out, width 0.3s ease-out;
+}
+
+.appBarOpen {
+  width: calc(100% - #{drawer.$drawer-width});
+  margin-left: drawer.$drawer-width;
+}
+
+.menuButton {
+  margin-right: 16px;
+}
+
+.hidden {
+  display: none;
+}
+
+
+```
+File: src/pages/Root/Content/index.tsx
+```
+Content:
+import { DrawerHeader } from "@/components/DrawerHeader";
+import { PDFViewer } from "@/components/PDFViewer";
+import { AudioControls } from "@/components/AudioControls";
+
+import styles from "./index.module.scss";
+import { useDocument } from "@/components/WithDocument";
+
+interface ContentProps {
+  sidebarOpen: boolean;
+}
+export function Content({ sidebarOpen }: ContentProps) {
+  const doc = useDocument();
+
+  const elems = (
+    <>
+      <PDFViewer />
+      <AudioControls />
+    </>
+  );
+  
+  return (
+    <main className={`${styles.main} ${sidebarOpen ? styles.mainOpen : ''}`}>
+      <DrawerHeader />
+      {(doc?.id !== undefined) ? elems : null}
+    </main>
+  );
+}
+
+
+```
+File: src/pages/Root/Content/index.module.scss
+```
+Content:
+@use "src/styles/drawer";
+
+.main {
+  flex-grow: 1;
+  padding: 24px;
+  transition: margin 0.3s ease-out;
+  margin-left: -(#{drawer.$drawer-width});
+}
+
+.mainOpen {
+  margin-left: 0;
+}
+
+
+```
+File: src/pages/Root/Categories/index.tsx
+```
+Content:
+import { List, ListItemButton, ListItemText, Collapse } from "@mui/material";
+import { connect, ConnectedProps } from "react-redux";
+import { useNavigate, useParams } from "react-router";
+
+import { Conditional } from "@/components/Conditional";
+import { AppDispatch, RootState, setCategory } from "@/store";
+import { ReshapedCategory } from "@/store/slices/categories";
+import { urlFor } from "@/pages/urlfor";
+
+const categoriesMapStateToProps = (state: RootState) => {
+  const reason: string | undefined = state.categories.status === "failure" ? state.categories.message : undefined;
+  // ReducedDoc is a placeholder type until I stablize the API.
+  // It includes information I largely expect to be there in the final API version.
+  const categories: ReshapedCategory[] | undefined = state.categories.status === "success" ? state.categories.categories : undefined;
+  
+  return {
+    reason,
+    categories,
+    status: state.categories.status
+  }
+};
+const categoriesConnector = connect(categoriesMapStateToProps);
+type CategoriesPropsFromRedux = ConnectedProps<typeof categoriesConnector>;
+
+function CategoriesComponent({ categories, status, reason }: CategoriesPropsFromRedux) {
+  return (
+    <Conditional status={status} reason={reason}>
+      <List>
+	{categories?.map(c => <ConnectedCategory key={c.id} c={c} />)}
+      </List>
+    </Conditional>
+  );
+}
+export const Categories = categoriesConnector(CategoriesComponent);
+
+
+
+
+
+interface CategoryOwnProps {
+  c: ReshapedCategory;
+}
+const categoryMapStateToProps = (state: RootState, ownProps: CategoryOwnProps) => ({
+  open: !!state.ui.openCategories[ownProps.c.id]
+});
+const categoryMapDispatchToProps = (dispatch: AppDispatch, ownProps: CategoryOwnProps) => ({
+  setOpen: (open: boolean) => dispatch(setCategory({ open, id: ownProps.c.id }))
+});
+const categoryConnector = connect(categoryMapStateToProps, categoryMapDispatchToProps);
+type CategoryPropsFromRedux = ConnectedProps<typeof categoryConnector>;
+function CategoryComponent({ c, open, setOpen }: CategoryPropsFromRedux & CategoryOwnProps) {
+  const { docId } = useParams();
+  const navigate = useNavigate();
+  
+  const documents = c.documents.map(d => (
+    <ListItemButton key={d.id} selected={ d.id === docId } onClick={() => navigate(urlFor("docs", d.id))}>
+      <ListItemText primary={d.name} style={{ textOverflow: "ellipsis" }} />
+    </ListItemButton>
+  ));
+
+  const forceOpen = c.documents.some(d => d.id === docId);
+  
+  return (
+    <>
+      <ListItemButton onClick={() => { if (!forceOpen) { setOpen(!open) } } }>
+        <ListItemText style={{ color: c.color }}>
+	  {c.name}
+   	</ListItemText>
+      </ListItemButton>
+      <Collapse in={open || forceOpen}>
+	{/* Padding left of 4 for nice indentation */}
+	<List component="div" disablePadding sx={{ pl: 4 }}>
+	  { documents }
+	</List>
+      </Collapse>
+    </>
+  );
+}
+const ConnectedCategory = categoryConnector(CategoryComponent);
+
+
+```
+File: src/store/helper-types.ts
+```
+Content:
+export type Success = "success";
+export type Pending = "pending";
+export type Failure = "failure";
+export type LoadingState = Success | Pending | Failure;
+
+export type PromiseState<T> =
+  (T & { status: Success })
+  | { status: Pending }
+  | { status: Failure, message: string };
+
+
+```
+File: src/store/thunks.ts
+```
+Content:
+import { createAsyncThunk } from '@reduxjs/toolkit';
+import { setCreds, setCategories, authFail, docsFail } from ".";
+import { ReshapedCategory } from './slices/categories';
+import { Document } from '@/types';
+
+const BASE = "/api/v1";
+
+export const fetchData = createAsyncThunk(
+  'data/fetchData',
+  async (_, { dispatch }) => {
+    try {
+      const method = document.cookie.includes("userId") ? "GET" : "POST";
+      
+      const req  = await fetch(`${BASE}/auth`, { method });
+      const resp = await req.json();
+      dispatch(setCreds(resp));
+    } catch (e) {
+      if (typeof e === "string") {
+	dispatch(authFail(e));
+      }
+      return;
+    }
+
+    try {
+      const docsReq = await fetch(`${BASE}/docs`);
+      const docsResp: Document[] = await docsReq.json();
+      
+      const reshapedCategories: ReshapedCategory[] = Object.values(
+	docsResp.reduce((acc, doc) => {
+	  // Destructure to remove the category from the document (so we don't duplicate it)
+	  const { category, ...documentWithoutCategory } = doc;
+
+	  // If we haven't seen this category before, initialize it
+	  if (!acc[category.id]) {
+	    acc[category.id] = { ...category, documents: [] };
+	  }
+	  // Add the document (without its category) to the appropriate category group
+	  acc[category.id].documents.push(documentWithoutCategory);
+
+	  return acc;
+	}, {} as Record<string, ReshapedCategory>)
+      );
+      
+      dispatch(setCategories(reshapedCategories));
+    } catch (e) {
+      if (typeof e === "string") {
+	dispatch(docsFail(e));
+      }
+    }
+  }
+);
+
+
+```
+File: src/store/index.ts
+```
+Content:
+import { configureStore } from '@reduxjs/toolkit'
+import categoriesReducer from "./slices/categories";
+import authReducer from "./slices/auth";
+import uiReducer from "./slices/ui";
+import { fetchData } from './thunks';
+
+export const store = configureStore({
+  reducer: {
+    categories: categoriesReducer,
+    auth: authReducer,
+    ui: uiReducer
+  },
+})
+
+// Infer the `RootState` and `AppDispatch` types from the store itself
+export type RootState = ReturnType<typeof store.getState>
+export type AppDispatch = typeof store.dispatch
+
+export { setCreds, fail as authFail } from "./slices/auth";
+export { setCategories, fail as docsFail } from "./slices/categories";
+export {
+  setSidebar,
+  setCategory,
+  setQuery,
+  setSearchDialog,
+  setIsPlaying,
+  setPlaybackPos,
+  setPlaybackSpeed,
+  setPlaybackEnd
+} from "./slices/ui";
+
+window.addEventListener("load", () => store.dispatch(fetchData()));
+
+
+```
+File: src/store/slices/categories.ts
+```
+Content:
+import { createSlice } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
+import { Category, Document } from '../../types';
+import { PromiseState } from '../helper-types';
+
+export type ReducedDoc = Omit<Document, "category">;
+export type ReshapedCategory = Category & {documents: ReducedDoc[]};
+
+interface CategoriesSuccessState {
+  categories: ReshapedCategory[]
+}
+
+export type CategoriesState = PromiseState<CategoriesSuccessState>;
+
+const initialState = { status: "pending" } as CategoriesState;
+
+export const categoriesSlice = createSlice({
+  name: 'categories',
+  initialState,
+  reducers: {
+    setCategories: (_, action: PayloadAction<ReshapedCategory[]>) => {
+      return { status: "success", categories: action.payload };
+    },
+
+    fail: (_, action: PayloadAction<string>) => {
+      return { status: "failure", message: action.payload }
+    }
+  },
+})
+
+// Action creators are generated for each case reducer function
+export const { setCategories, fail } = categoriesSlice.actions
+
+export default categoriesSlice.reducer
+
+
+```
+File: src/store/slices/ui.ts
+```
+Content:
+import { createSlice } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
+
+interface UIState {
+  sidebarOpen: boolean;
+  openCategories: Record<string, boolean | undefined>; // Sets would be fun, but aren't JSON serializable
+  searchDialogOpen: boolean;
+  searchQuery: string;
+  audioPlaybacks: Record<string, AudioPlayback | undefined>
+}
+
+export type PlaybackSpeed = 0.25 | 0.5 | 1 | 1.25 | 1.5 | 2;
+
+export interface AudioPlayback {
+  isPlaying: boolean;
+  playbackSpeed: PlaybackSpeed;
+  playbackPos: number;
+  end: number;
+}
+
+// When this method is synced with the API, this function will be replaced by a thunk
+export function newAudioPlayback({ isPlaying, playbackSpeed, playbackPos, end }: Partial<AudioPlayback>): AudioPlayback {
+  console.warn("DEPRECATED + TODO: called `newAudioPlayback` instead of calling out to the API!");
+  return {
+    isPlaying: isPlaying ?? false,
+    playbackSpeed: playbackSpeed ?? 1,
+    playbackPos: playbackPos ?? 0,
+    end: end ?? 300 // @TODO
+  };
+}
+// For audio playback, there is a good chance we've never actually created the object
+// we want to use yet. If so, we need to create it and tell Redux about it, otherwise
+// we'll just update a property. Writing the same function over and over again with slight
+// differences is annoying, so I wrote a higher-order-function that uses TypeScript wizardry
+// to ensure that the resulting reducer functions are usefully typed based on AudioPlayback
+// AND that only reducers for AudioPlayback props can be created.
+function playbackActionCreator<K extends keyof AudioPlayback>(prop: K): (state: UIState, action: PayloadAction<StateChange<K, AudioPlayback[K]>>) => void {
+  return (state, action) => {
+    if (state.audioPlaybacks[action.payload.id] === undefined) {
+	state.audioPlaybacks[action.payload.id] = newAudioPlayback({ [prop]: action.payload[prop] });
+    } else {
+      // I really, really don't like type assertions
+      // Anyway, in this case, I know that our action is guaranteed to have a property
+      // with the same type as the one that we are trying to set in the audio playback,
+      // but since I'm doing such a complicated and dynamic type dance here, TypeScript
+      // can't statically verify that.
+      state.audioPlaybacks[action.payload.id]![prop] = action.payload[prop] as unknown as AudioPlayback[K];
+      }
+  };
+}
+
+// This is me being evil in TypeScript.
+// This lets me dynamically create types like: {id: string, open: boolean}
+// This is useful for writing single-purpose reducer actions without
+// writing a massive amount of similar interfaces.
+type StateChange<K extends string, T> = { id: string } & { [P in K]: T };
+
+const initialState: UIState = {
+  sidebarOpen: true,
+  openCategories: {},
+  searchDialogOpen: false,
+  searchQuery: "",
+  audioPlaybacks: {}
+}
+
+export const uiSlice = createSlice({
+  name: 'ui',
+  initialState,
+  reducers: {
+    setSidebar: (state, action: PayloadAction<boolean>) => {
+      state.sidebarOpen = action.payload;
+    },
+
+    setCategory: (state, action: PayloadAction<StateChange<"open", boolean>>) => {
+      state.openCategories[action.payload.id] = action.payload.open;
+    },
+
+    setQuery: (state, action: PayloadAction<string>) => {
+      state.searchQuery = action.payload;
+    },
+
+    setSearchDialog: (state, action: PayloadAction<boolean>) => {
+      state.searchDialogOpen = action.payload;
+    },
+
+    setIsPlaying: playbackActionCreator("isPlaying"),
+    setPlaybackSpeed: playbackActionCreator("playbackSpeed"),
+    setPlaybackPos: playbackActionCreator("playbackPos"),
+    setPlaybackEnd: playbackActionCreator("end")
+  },
+})
+
+export const {
+  setSidebar,
+  setCategory,
+  setQuery,
+  setSearchDialog,
+  setIsPlaying,
+  setPlaybackPos,
+  setPlaybackSpeed,
+  setPlaybackEnd
+} = uiSlice.actions
+export default uiSlice.reducer
+
+
+```
+File: src/store/slices/auth.ts
+```
+Content:
+import { createSlice } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
+import { User } from '../../types';
+import { PromiseState } from '../helper-types';
+
+type AuthState = PromiseState<User>;
+
+const initialState = { status: "pending" } as AuthState;
+
+export const authSlice = createSlice({
+  name: 'auth',
+  initialState,
+  reducers: {
+    setCreds: (state, action: PayloadAction<User>) => {
+      if (state.status === "pending") {
+	return {
+	  status: "success", // Normally, I would write to state directly, but the type checker wants to dance
+	  name: action.payload.name,
+	  id: action.payload.id,
+	  email: action.payload.email
+	}
+      }
+    },
+
+    fail: (_, action: PayloadAction<string>) => {
+      return { status: "failure", message: action.payload }
+    }
+  },
+})
+
+export const { setCreds, fail } = authSlice.actions
+
+export default authSlice.reducer
+
+
+```
