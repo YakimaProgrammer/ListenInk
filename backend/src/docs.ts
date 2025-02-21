@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { DocId, Document, DocumentValidator, Err } from "./types";
+import { DocId, Document, DocumentSchema, Err } from "./types";
 import { PrismaClient } from '@prisma/client';
 import { Readable } from "stream";
 
@@ -51,7 +51,7 @@ router.patch("/:docid", async (req: Request, res: Response<Document | Err>) => {
   } else {
     try {
       // This should scare you
-      const patched: Document = DocumentValidator.parse({...doc, ...req.body});
+      const patched: Document = DocumentSchema.parse({...doc, ...req.body});
 
       const docBookmarks = doc.bookmarks.map(b => b.id);
       const patchedBookmarks = patched.bookmarks.map(b => b.id);

@@ -1,6 +1,6 @@
-import { createSlice } from '@reduxjs/toolkit';
-import type { PayloadAction } from '@reduxjs/toolkit';
-import { Category, Document } from '../../types';
+import { z } from "zod";
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { Category, Document, DocumentSchema, ErrSchema } from '@/types';
 import { PromiseState } from '../helper-types';
 
 export type ReducedDoc = Omit<Document, "category">;
@@ -17,18 +17,70 @@ const initialState = { status: "pending" } as CategoriesState;
 export const categoriesSlice = createSlice({
   name: 'categories',
   initialState,
-  reducers: {
-    setCategories: (_, action: PayloadAction<ReshapedCategory[]>) => {
-      return { status: "success", categories: action.payload };
-    },
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchDocuments.pending, (state: CategoriesState) => {
+        state.status = 'pending';
+      })
+      .addCase(fetchDocuments.fulfilled, (_, action: PayloadAction<ReshapedCategory[]>) => {
+	// Normally, I would use Immer to modify state, but the typechecker has trust issues 
+        return {
+	  status: "success",
+	  categories: action.payload
+	}
+      })
+      .addCase(fetchDocuments.rejected, (_, action: PayloadAction<string | undefined>) => {
+        return {
+	  status: "failure",
+	  message: action.payload ?? "An unknown error occured!"
+	}
+      });
+  }
+});
 
-    fail: (_, action: PayloadAction<string>) => {
-      return { status: "failure", message: action.payload }
+const DocumentOrErrSchema = z.union([z.array(DocumentSchema), ErrSchema]);
+export const fetchDocuments = createAsyncThunk<
+  ReshapedCategory[],
+  void,
+  { rejectValue: string }
+>(
+  'data/fetchDocuments',
+  async (_, { rejectWithValue }) => {
+    try {
+      const req = await fetch("/api/v1/docs");
+      const resp = DocumentOrErrSchema.safeParse(await req.json());
+      if (resp.success) {
+	if ("err" in resp.data) {
+	  return rejectWithValue(resp.data.err);
+	} else {
+	  // Maps an array of documents pointing to categories to
+	  // an array of categories containing documents.
+	  const reshapedCategories: ReshapedCategory[] = Object.values(
+	    resp.data.reduce((acc, doc) => {
+	      // Destructure to remove the category from the document (so we don't duplicate it)
+	      const { category, ...documentWithoutCategory } = doc;
+
+	      // If we haven't seen this category before, initialize it
+	      if (!acc[category.id]) {
+		acc[category.id] = { ...category, documents: [] };
+	      }
+	      // Add the document (without its category) to the appropriate category group
+	      acc[category.id].documents.push(documentWithoutCategory);
+
+	      return acc;
+	    }, {} as Record<string, ReshapedCategory>)
+	  );
+	  return reshapedCategories;
+	}
+      } else {
+	return rejectWithValue("Could not parse document info!");
+      }
+      
+    } catch (err) {
+      return rejectWithValue("Error retrieving document info!");
     }
-  },
-})
+  }
+);
 
-// Action creators are generated for each case reducer function
-export const { setCategories, fail } = categoriesSlice.actions
-
-export default categoriesSlice.reducer
+export default categoriesSlice.reducer;
