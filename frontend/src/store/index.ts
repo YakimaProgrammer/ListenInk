@@ -33,9 +33,5 @@ window.addEventListener("load",  async () => {
     await store.dispatch(fetchDocuments()).unwrap();
   } catch (err) {
     console.error("Error during page load:", err);
-    if (document.location.pathname !== "/login") {
-      document.location.pathname = "/login";
-    }
   }
-   
 });

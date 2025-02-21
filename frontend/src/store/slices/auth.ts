@@ -41,7 +41,8 @@ export const fetchProfile = createAsyncThunk<
   'data/fetchCreds',
   async (_, { rejectWithValue }) => {
     try {
-      const req = await fetch("/api/v1/auth");
+      const hasCookie = document.cookie.includes("userId");
+      const req = await fetch("/api/v1/auth", { method: hasCookie ? "GET" : "POST" });
       const resp = UserOrErrSchema.safeParse(await req.json());
       if (resp.success) {
 	if ("err" in resp.data) {
