@@ -1,0 +1,30 @@
+$arrow-size: 15px;
+$overall-height: 40px;
+$icon-size: 40px;
+
+/* styles for the simple search icon */
+.searchIcon {
+  width: $icon-size;
+  height: $icon-size;
+}
+
+/* styles for the page number display section */
+.pageNumberDisplayBox {
+  width: 200px;
+  height: $overall-height;
+  display: flex;
+  align-items: center;
+
+  // styles for arrow button that moves
+  // to the next and previous page
+  .arrowUpDown {
+    width: $arrow-size;
+    height: $arrow-size;
+  }
+}
+
+.zoomControl {
+  width: 120px;
+  height: 40px;
+  margin-left: 200px;
+}
