@@ -20,11 +20,14 @@ export {
   setCategory,
   setQuery,
   setSearchDialog,
-  setIsPlaying,
-  setPlaybackPos,
-  setPlaybackSpeed,
-  setPlaybackEnd
 } from "./slices/ui";
+
+export {
+  setIsPlaying,
+  setPlaybackSpeed,
+  setPlaybackPosition
+} from "./slices/categories";
+
 
 window.addEventListener("load",  async () => {
   try {

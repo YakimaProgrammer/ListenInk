@@ -1,30 +1,25 @@
 import { RootState } from "@/store";
-import { ReducedDoc } from "@/store/slices/categories";
+import { Document } from "@/types";
 import { ComponentType } from "react";
 import { useSelector } from "react-redux";
 import { useParams } from "react-router";
 
-export function useDocument(): ReducedDoc | null {
+export function useDocument(): Document | undefined {
   const { docId } = useParams();
   const doc = useSelector((state: RootState) => {
     if (state.categories.status === "success") {
-      // We LOVE n^2 traversals on the client-side!
-      for (let category of state.categories.categories) {
-	for (let doc of category.documents) {
-	  if (doc.id === docId) {
-	    return doc;
-	  }
-	}
+      if (docId !== undefined) {
+	return state.categories.documents[docId];
       }
-    }
-    return null;
+    } 
+    return undefined;
   });
   return doc;
 }
 
 interface InjectedProps {
-  docId: string | undefined;
-  doc: Document | null;
+  docId?: string;
+  doc?: Document;
 }
 
 export function withDocument<P extends InjectedProps>(

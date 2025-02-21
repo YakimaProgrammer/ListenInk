@@ -18,6 +18,7 @@ interface PdfTopViewProps {
   zoomLevel: number;
   onPageChange: (page: number) => void;
   onZoomChange: (zoom: number) => void;
+  openSearchDialog: () => void;
 }
 
 export function PdfTopView({
@@ -26,6 +27,7 @@ export function PdfTopView({
   zoomLevel,
   onPageChange,
   onZoomChange,
+  openSearchDialog
 }: PdfTopViewProps) {
   return (
     <div>
@@ -45,7 +47,7 @@ export function PdfTopView({
         }}
       >
         {/* Search Icon for searching content */}
-        <IconButton className={styles.searchIcon}>
+        <IconButton className={styles.searchIcon} onClick={openSearchDialog}>
           <Search />
         </IconButton>
 

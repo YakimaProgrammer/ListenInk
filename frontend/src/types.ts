@@ -29,7 +29,7 @@ export const DocumentSchema = z.object({
   // shares: z.array(z.string()), // Uncomment if needed
   id: z.string(),
   completed: z.boolean(),
-  category: CategorySchema,
+  categoryId: z.string()
 });
 export type Document = z.infer<typeof DocumentSchema>;
 

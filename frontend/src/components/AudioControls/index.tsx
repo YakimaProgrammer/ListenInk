@@ -1,6 +1,6 @@
 import { ChangeEvent } from "react";
-import { AppDispatch, RootState } from "@/store";
-import { newAudioPlayback, PlaybackSpeed, setIsPlaying, setPlaybackPos, setPlaybackSpeed } from "@/store/slices/ui";
+import { AppDispatch, RootState, setIsPlaying, setPlaybackSpeed, setPlaybackPosition } from "@/store";
+import { PlaybackSpeed } from "@/store/slices/categories";
 import { connect, ConnectedProps } from "react-redux";
 import { useDocument } from "../WithDocument";
 import style from "./index.module.scss";
@@ -11,27 +11,35 @@ interface AudioControlsProps {
 }
 
 function mapStateToProps(state: RootState, ownProps: AudioControlsProps) {
-  // The audio playback might not exist in the state. If it doesn't, we'll pretend it has the default values
-  return state.ui.audioPlaybacks[ownProps.docId] ?? newAudioPlayback({});
+  if (state.categories.status === "success") {
+    return {
+      isPlaying: state.categories.documents[ownProps.docId]?.isPlaying ?? false,
+      end: 300, // Soon to be derived from the underlying audio element,
+      playbackPos: state.categories.documents[ownProps.docId]?.bookmarks.at(0)?.audiotime ?? 0,
+      playbackSpeed: state.categories.documents[ownProps.docId]?.playbackSpeed ?? "1"
+    };
+  } else {
+    throw new Error("Attempted to render an AudioControls before documents were loaded!")
+  }
 }
 function mapDispatchToProps(dispatch: AppDispatch, ownProps: AudioControlsProps) {
   return {
     setIsPlaying: (isPlaying: boolean) => dispatch(setIsPlaying({id: ownProps.docId, isPlaying })),
     setPlaybackSpeed: (playbackSpeed: PlaybackSpeed) => dispatch(setPlaybackSpeed({id: ownProps.docId, playbackSpeed })),
-    setPlaybackPos: (pos: number) => dispatch(setPlaybackPos({ id: ownProps.docId, playbackPos: pos }))
+    setPlaybackPos: (pos: number) => dispatch(setPlaybackPosition({ id: ownProps.docId, time: pos }))
   };
 }
 const connector = connect(mapStateToProps, mapDispatchToProps);
 type PropsFromRedux = ConnectedProps<typeof connector>;
 
-function isPlaybackSpeed(speed: number): speed is PlaybackSpeed {
+function isPlaybackSpeed(speed: string): speed is PlaybackSpeed {
   switch (speed) {
-    case 0.25:
-    case 0.5:
-    case 1:
-    case 1.25:
-    case 1.5:
-    case 2:
+    case "0.25":
+    case "0.5":
+    case "1":
+    case "1.25":
+    case "1.5":
+    case "2":
       return true;
     default:
       return false;
@@ -50,9 +58,9 @@ function AudioControlsComponent({ isPlaying, setIsPlaying, playbackSpeed, setPla
   const handlePlayPause = () => setIsPlaying(!isPlaying);
 
   const maybeSetPlaybackSpeed = (e: ChangeEvent<HTMLSelectElement>) => {
-    const v = parseFloat(e.target.value);
+    const v = e.target.value;
     if (isPlaybackSpeed(v)) {
-      setPlaybackSpeed(v)
+      setPlaybackSpeed(v);
     } else {
       console.warn(`Received an impossible input from the select element! ${v} is not a PlaybackSpeed!`);
     }

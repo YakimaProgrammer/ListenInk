@@ -36,7 +36,7 @@ router.get("/:docid/stream", (_req: Request, res: Response<string>) => { // `POS
 // Eventually, this will be refined such that only properties that make sense to modify (name, bookmarks) are mutable
 // Right now, this does double-duty for modifying bookmarks. imo, this should be its own resource
 router.patch("/:docid", async (req: Request, res: Response<Document | Err>) => { // `PATCH /api/v1/docs/<docid>`
-  const doc: Document | null = await prisma.document.findUnique({
+  const doc = await prisma.document.findUnique({
     where: {
       id: req.params.docid
     },
@@ -51,7 +51,8 @@ router.patch("/:docid", async (req: Request, res: Response<Document | Err>) => {
   } else {
     try {
       // This should scare you
-      const patched: Document = DocumentSchema.parse({...doc, ...req.body});
+      const partial: Partial<Document> = DocumentSchema.partial().parse(req.body);
+      const patched: Document = {...doc, ...partial};
 
       const docBookmarks = doc.bookmarks.map(b => b.id);
       const patchedBookmarks = patched.bookmarks.map(b => b.id);
@@ -62,16 +63,14 @@ router.patch("/:docid", async (req: Request, res: Response<Document | Err>) => {
 	  id: req.params.docid
 	},
 	include: {
-	  bookmarks: true,
-	  category: true
+	  bookmarks: true
 	},
 	data: {
 	  ...patched,
 	  bookmarks: {
 	    deleteMany: deletedBookmarks.map(b => ({id : b})),
 	    upsert: patched.bookmarks.map(b => ({ where: { id: b.id }, create: b, update: b }))
-	  },
-	  category: undefined
+	  }
 	}
       });
 
@@ -84,7 +83,7 @@ router.patch("/:docid", async (req: Request, res: Response<Document | Err>) => {
 });
 
 router.delete("/:docid", async (req: Request, res: Response<Document | Err>) => {
-  const doc: Document | null = await prisma.document.findUnique({
+  const doc = await prisma.document.findUnique({
     where: {
       id: req.params.docid
     },
@@ -107,7 +106,7 @@ router.delete("/:docid", async (req: Request, res: Response<Document | Err>) => 
 });
 
 router.get("/:docid", async (req: Request, res: Response<Document | Err>) => { // `GET /api/v1/docs/<id>`
-  const doc: Document | null = await prisma.document.findUnique({
+  const doc = await prisma.document.findUnique({
     where: {
       id: req.params.docid
     },
