@@ -25,7 +25,7 @@ export {
 export {
   setIsPlaying,
   setPlaybackSpeed,
-  setPlaybackPosition
+  updateBookmark
 } from "./slices/categories";
 
 

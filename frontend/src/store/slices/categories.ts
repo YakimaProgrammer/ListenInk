@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createSlice, createAsyncThunk, PayloadAction, createSelector } from '@reduxjs/toolkit';
-import { Category, CategorySchema, Document, DocumentSchema, ErrSchema } from '@/types';
+import { Bookmark, BookmarkSchema, Category, CategorySchema, Document, DocumentSchema, ErrSchema } from '@/types';
 import { PromiseState } from '../helper-types';
 import { RootState } from "..";
 
@@ -67,12 +67,41 @@ export const categoriesSlice = createSlice({
 	  message: action.payload ?? "An unknown error occured!"
 	}
       });
+
+    builder
+      .addCase(updateBookmark.fulfilled, (state, action: PayloadAction<Bookmark>) => {
+	if (state.status === "success") {
+	  const doc = state.documents[action.payload.documentId];
+	  if (doc === undefined) {
+	    console.error(`[ERROR] A document with id ${action.payload.documentId} was accepted by the server, but no matching document exists on the client!`);
+	    return;
+	  }
+	  const index = doc.bookmarks.findIndex(bookmark => bookmark.id === action.payload.id);
+	  if (index !== -1) {
+	    // If found, replace the existing bookmark
+	    doc.bookmarks[index] = action.payload;
+	  } else {
+	    // If not found, append the new bookmark
+	    doc.bookmarks.push(action.payload);
+	  }
+	  
+	} else {
+	  // Either fetchDocuments() is still processing or an error occured while it was processing
+	  console.error("[ERROR] Cannot reconcile client state with server state! Server accepted a bookmark modification, but the client does not have a valid document list!");
+	}
+      })
+      .addCase(updateBookmark.rejected, (_, action: PayloadAction<string | undefined>) => {
+	console.error(`[ERROR] An error occured when modifying a bookmark: ${action.payload}`);
+      })
   }
 });
 
 const DocumentsOrErrSchema = z.union([z.array(DocumentSchema), ErrSchema]);
 const CategoriesOrErrSchema = z.union([z.array(CategorySchema), ErrSchema]);
 
+/** An async thunk that fetches all the documents and category data from the server.
+ * Intended to run once on page load, but can be could again to resync with the server in an evil way
+ */  
 export const fetchDocuments = createAsyncThunk<
   CategoriesSuccessState,
   void,
@@ -88,6 +117,7 @@ export const fetchDocuments = createAsyncThunk<
       const catsResp = CategoriesOrErrSchema.safeParse(await catsReq.json());
 
       if (!docsResp.success) {
+	console.error(docsResp.error.message);
 	return rejectWithValue("Could not parse document info!");
       }
       if ("err" in docsResp.data) {
@@ -117,14 +147,72 @@ export const fetchDocuments = createAsyncThunk<
   }
 );
 
-export const setPlaybackPosition = createAsyncThunk<
-  void,
-  StateChange<"time", number>,
-  { rejectValue: string }
+interface UpdateBookmarkProps {
+  docId: string;
+  time?: number;
+  page?: number;
+  bookmarkId?: number | string;
+}
+
+const BookmarkOrErrSchema = z.union([BookmarkSchema, ErrSchema]);
+/** An async thunk that handles a lot of work surrounding bookmarks and page-resumption.
+ *
+ * @param docId - required; which document to do bookmark things on. Returns an error if the document does not exist.
+ * @param time - optional; the time to set/update the bookmark to in seconds. Defaults to zero.
+ * @param page - optional; the zero-indexed page to set/update the bookmark to. Defaults to zero.
+ * @param bookmarkId - optional; either a bookmarkId or the relative index of a bookmark. If omitted or if it points to a nonexistant bookmark, the field is ignored and a new bookmark is created.
+ * @returns a new `Bookmark`
+ */
+export const updateBookmark = createAsyncThunk<
+  Bookmark,
+  UpdateBookmarkProps,
+  { rejectValue: string, state: RootState }
 >(
   'data/setPlaybackPosition',
-  async ({ id, time }, { rejectWithValue }) => {
-    
+  async ({ docId, time, page, bookmarkId }, { rejectWithValue, getState }) => {
+    const state = getState();
+    if (state.categories.status === "success") {
+      const doc = state.categories.documents[docId];
+      if (doc === undefined) {
+	return rejectWithValue("No such document with that id exists!");
+      } else {
+	let bookmark: Bookmark | undefined = undefined;
+	if (bookmarkId === undefined) {
+	  bookmark = doc.bookmarks.at(0);
+	} else if (typeof bookmarkId === "string") {
+	  bookmark = doc.bookmarks.find(b => b.id === bookmarkId);
+	} else if (typeof bookmarkId === "number") {
+	  bookmark = doc.bookmarks.at(bookmarkId);
+	}
+	
+	const slug = bookmark === undefined ? "" : `/${bookmark.id}`;
+	const req = await fetch(`/api/v1/docs/${docId}/bookmarks${slug}`, {
+	  method: bookmark === undefined ? "POST" : "PATCH",
+	  headers: {
+	    'Content-Type': 'application/json',
+	  },
+	  body: JSON.stringify({
+	    // Pass the full infinite chaos of user input to the server...
+	    page: page ?? bookmark?.page ?? 0,
+	    audiotime: time ?? bookmark?.audiotime ?? 0
+	  })
+	});
+
+	// ... and let the server decide if that change is a good idea or not
+	const resp = BookmarkOrErrSchema.safeParse(await req.json());
+	if (resp.success) {
+	  if ("err" in resp.data) {
+	    return rejectWithValue(resp.data.err);
+	  } else {
+	    return resp.data;
+	  }
+	} else {
+	  return rejectWithValue(resp.error.message);
+	}	
+      }
+    } else {
+      return rejectWithValue("Can't set the playback position while categories are still pending!")
+    }
   }
 );
 

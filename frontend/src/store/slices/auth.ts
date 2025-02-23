@@ -46,6 +46,7 @@ export const fetchProfile = createAsyncThunk<
       const resp = UserOrErrSchema.safeParse(await req.json());
       if (resp.success) {
 	if ("err" in resp.data) {
+	  console.error(resp.data.err);
 	  return rejectWithValue(resp.data.err);
 	} else {
 	  return resp.data;
@@ -56,6 +57,7 @@ export const fetchProfile = createAsyncThunk<
       }
       
     } catch (err) {
+      console.error(err);
       return rejectWithValue("Error retrieving user profile info!");
     }
   }
