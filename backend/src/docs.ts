@@ -47,43 +47,42 @@ router.patch("/:docid", async (req: Request, res: Response<Document | Err>) => {
   if (doc === null || doc.category.userId !== req.cookies.userId) {
     res.status(404).send({err: "Not found!"});
   } else {
-    try {
-      const partial = DocumentSchema.omit({ id: true, numpages: true, s3key: true, bookmarks: true, completed: true }).partial().parse(req.body);
-      
-      if (partial.categoryId !== undefined) {
-	// Ask the database if the user owns a category with this id
-	const category = await prisma.category.findFirst({
-	  where: {
-	    userId: req.cookies.userId,
-	    id: partial.categoryId
-	  }
-	});
-	if (category === null) {
-	  res.status(404).send({err: `No such category with id ${partial.categoryId} exists!`});
-	  return;
-	}
-      }
-      
-      const ret: Document = await prisma.document.update({
-	where: {
-	  id: req.params.docid
-	},
-	include: {
-	  bookmarks: true
-	},
-	data: partial
-      });
-
-      res.status(200).send(ret);
-    } catch (e) {
-      console.error(e);
-      res.status(400).send({err : "Something when wrong!"});
+    const partial = DocumentSchema.omit({ id: true, numpages: true, s3key: true, bookmarks: true, completed: true }).partial().safeParse(req.body);
+    if (!partial.success) {
+      res.status(400).send({ err: partial.error.message });
+      return;
     }
+      
+    if (partial.data.categoryId !== undefined) {
+      // Ask the database if the user owns a category with this id
+      const category = await prisma.category.findFirst({
+	where: {
+	  userId: req.cookies.userId,
+	  id: partial.data.categoryId
+	}
+      });
+      if (category === null) {
+	res.status(404).send({err: `No such category with id ${partial.data.categoryId} exists!`});
+	return;
+      }
+    }
+      
+    const ret: Document = await prisma.document.update({
+      where: {
+	id: req.params.docid
+      },
+      include: {
+	bookmarks: true
+      },
+      data: partial.data
+    });
+
+    res.status(200).send(ret);
   }
 });
 
 router.patch("/:docid/bookmarks/:id", async (req: Request, res: Response<Bookmark | Err>) => {
-   const doc = await prisma.document.findUnique({
+  const doc = await prisma.document.findUnique({
     where: {
       id: req.params.docid
     },
@@ -96,34 +95,33 @@ router.patch("/:docid/bookmarks/:id", async (req: Request, res: Response<Bookmar
   if (doc === null || doc.category.userId !== req.cookies.userId) {
     res.status(404).send({err: "Not found!"});
   } else {
-    try {
-      const id = req.params.id;
-      if (doc.bookmarks.some(b => b.id === id)) {
-	const partial = BookmarkSchema.omit({ id: true, documentId: true }).partial().parse(req.body);
-	if (partial.page !== undefined) {
-	  if (partial.page > doc.numpages) {
-	    res.status(400).send({err: "Cannot create a bookmark the points beyond the number of pages in the document!"});
-	    return;
-	  }
-	}
-	
-	const mark = await prisma.bookmark.update({
-	  where: { id },
-	  data: partial
-	});
-	res.status(200).send(mark);
-      } else {
-	res.status(400).send({err: "Tried to update a bookmark that does not exist!"})
+    const id = req.params.id;
+    if (doc.bookmarks.some(b => b.id === id)) {
+      const partial = BookmarkSchema.omit({ id: true, documentId: true }).partial().safeParse(req.body);
+      if (!partial.success) {
+	res.status(400).send({ err: partial.error.message });
+	return;
       }
-    } catch (err) {
-      console.error(err);
-      res.status(400).send({err : "Something when wrong!"});
+      if (partial.data.page !== undefined) {
+	if (partial.data.page > doc.numpages) {
+	  res.status(400).send({err: "Cannot create a bookmark the points beyond the number of pages in the document!"});
+	  return;
+	}
+      }
+	
+      const mark = await prisma.bookmark.update({
+	where: { id },
+	data: partial.data
+      });
+      res.status(200).send(mark);
+    } else {
+      res.status(400).send({err: "Tried to update a bookmark that does not exist!"})
     }
   }
 });
 
 router.post("/:docid/bookmarks", async (req: Request, res: Response<Bookmark | Err>) => {
-   const doc = await prisma.document.findUnique({
+  const doc = await prisma.document.findUnique({
     where: {
       id: req.params.docid
     },
@@ -136,29 +134,29 @@ router.post("/:docid/bookmarks", async (req: Request, res: Response<Bookmark | E
   if (doc === null || doc.category.userId !== req.cookies.userId) {
     res.status(404).send({err: "Not found!"});
   } else {
-    try {
-      const id = req.params.id;
-      if (doc.bookmarks.some(b => b.id === id)) {
-	const markMeta = BookmarkSchema.omit({ id: true, documentId: true }).parse(req.body);
-	const mark = await prisma.bookmark.create({
-	  data: {
-	    documentId: req.params.docid,
-	    ...markMeta
-	  }
-	});
-	res.status(200).send(mark);
-      } else {
-	res.status(400).send({err: "Tried to update a bookmark that does not exist!"})
+    const id = req.params.id;
+    if (doc.bookmarks.some(b => b.id === id)) {
+      const markMeta = BookmarkSchema.omit({ id: true, documentId: true }).safeParse(req.body);
+      if (!markMeta.success) {
+	res.status(400).send({ err: markMeta.error.message });
+	return;
       }
-    } catch (err) {
-      console.error(err);
-      res.status(400).send({err : "Something when wrong!"});
+      
+      const mark = await prisma.bookmark.create({
+	data: {
+	  documentId: req.params.docid,
+	  ...markMeta.data
+	}
+      });
+      res.status(200).send(mark);
+    } else {
+      res.status(400).send({err: "Tried to update a bookmark that does not exist!"})
     }
   }
 });
 
 router.delete("/:docid/bookmarks/:id", async (req: Request, res: Response<Err | undefined>) => {
-   const doc = await prisma.document.findUnique({
+  const doc = await prisma.document.findUnique({
     where: {
       id: req.params.docid
     },
@@ -249,9 +247,9 @@ router.get("/:docid/pages/:pagenum/image", async (req: Request, res: Response) =
     res.status(200);
     if (response.body === null) {
       res.send();
-     } else {
+    } else {
       Readable.fromWeb(response.body).pipe(res);
-     }
+    }
   }
 });
 
