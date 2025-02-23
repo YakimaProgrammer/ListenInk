@@ -15,21 +15,21 @@ export type Category = z.infer<typeof CategorySchema>;
 
 export const BookmarkSchema = z.object({
   id: z.string().nanoid(),
-  page: z.number().finite().positive(),
-  audiotime: z.number().finite().positive(),
+  page: z.number().finite().min(0),
+  audiotime: z.number().finite().min(0),
   documentId: z.string().nanoid(),
 });
 export type Bookmark = z.infer<typeof BookmarkSchema>;
 
 export const DocumentSchema = z.object({
   name: z.string(),
-  numpages: z.number().finite().positive(),
+  numpages: z.number().finite().min(1), // A document must have at least one page
   s3key: z.string(),
-  bookmarks: z.array(BookmarkSchema),
+  bookmarks: z.array(BookmarkSchema), // I considered a .refine on the overall type to assert that no bookmark pointed beyond `numpages`, but then we couldn't use .partial() for DocumentSchema
   id: z.string().nanoid(),
   completed: z.boolean(),
   categoryId: z.string().nanoid()
-});
+})
 export type Document = z.infer<typeof DocumentSchema>;
 
 export const ErrSchema = z.object({
