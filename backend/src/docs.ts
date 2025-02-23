@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { DocId, Document, DocumentSchema, Err } from "./types";
+import { Bookmark, BookmarkSchema, DocId, Document, DocumentSchema, Err } from "./types";
 import { PrismaClient } from '@prisma/client';
 import { Readable } from "stream";
 
@@ -33,8 +33,6 @@ router.get("/:docid/stream", (_req: Request, res: Response<string>) => { // `POS
   res.status(200).send("todo...");
 });
 
-// Eventually, this will be refined such that only properties that make sense to modify (name, bookmarks) are mutable
-// Right now, this does double-duty for modifying bookmarks. imo, this should be its own resource
 router.patch("/:docid", async (req: Request, res: Response<Document | Err>) => { // `PATCH /api/v1/docs/<docid>`
   const doc = await prisma.document.findUnique({
     where: {
@@ -50,13 +48,21 @@ router.patch("/:docid", async (req: Request, res: Response<Document | Err>) => {
     res.status(404).send({err: "Not found!"});
   } else {
     try {
-      // This should scare you
-      const partial: Partial<Document> = DocumentSchema.partial().parse(req.body);
-      const patched: Document = {...doc, ...partial};
-
-      const docBookmarks = doc.bookmarks.map(b => b.id);
-      const patchedBookmarks = patched.bookmarks.map(b => b.id);
-      const deletedBookmarks = docBookmarks.filter(b => patchedBookmarks.includes(b));
+      const partial = DocumentSchema.omit({ id: true, numpages: true, s3key: true, bookmarks: true, completed: true }).partial().parse(req.body);
+      
+      if (partial.categoryId !== undefined) {
+	// Ask the database if the user owns a category with this id
+	const category = await prisma.category.findFirst({
+	  where: {
+	    userId: req.cookies.userId,
+	    id: partial.categoryId
+	  }
+	});
+	if (category === null) {
+	  res.status(404).send({err: `No such category with id ${partial.categoryId} exists!`});
+	  return;
+	}
+      }
       
       const ret: Document = await prisma.document.update({
 	where: {
@@ -65,18 +71,118 @@ router.patch("/:docid", async (req: Request, res: Response<Document | Err>) => {
 	include: {
 	  bookmarks: true
 	},
-	data: {
-	  ...patched,
-	  bookmarks: {
-	    deleteMany: deletedBookmarks.map(b => ({id : b})),
-	    upsert: patched.bookmarks.map(b => ({ where: { id: b.id }, create: b, update: b }))
-	  }
-	}
+	data: partial
       });
 
       res.status(200).send(ret);
     } catch (e) {
       console.error(e);
+      res.status(400).send({err : "Something when wrong!"});
+    }
+  }
+});
+
+router.patch("/:docid/bookmarks/:id", async (req: Request, res: Response<Bookmark | Err>) => {
+   const doc = await prisma.document.findUnique({
+    where: {
+      id: req.params.docid
+    },
+    include: {
+      bookmarks: true,
+      category: true
+    }
+  });
+
+  if (doc === null || doc.category.userId !== req.cookies.userId) {
+    res.status(404).send({err: "Not found!"});
+  } else {
+    try {
+      const id = req.params.id;
+      if (doc.bookmarks.some(b => b.id === id)) {
+	const partial = BookmarkSchema.omit({ id: true, documentId: true }).partial().parse(req.body);
+	if (partial.page !== undefined) {
+	  if (partial.page > doc.numpages) {
+	    res.status(400).send({err: "Cannot create a bookmark the points beyond the number of pages in the document!"});
+	    return;
+	  }
+	}
+	
+	const mark = await prisma.bookmark.update({
+	  where: { id },
+	  data: partial
+	});
+	res.status(200).send(mark);
+      } else {
+	res.status(400).send({err: "Tried to update a bookmark that does not exist!"})
+      }
+    } catch (err) {
+      console.error(err);
+      res.status(400).send({err : "Something when wrong!"});
+    }
+  }
+});
+
+router.post("/:docid/bookmarks", async (req: Request, res: Response<Bookmark | Err>) => {
+   const doc = await prisma.document.findUnique({
+    where: {
+      id: req.params.docid
+    },
+    include: {
+      bookmarks: true,
+      category: true
+    }
+  });
+
+  if (doc === null || doc.category.userId !== req.cookies.userId) {
+    res.status(404).send({err: "Not found!"});
+  } else {
+    try {
+      const id = req.params.id;
+      if (doc.bookmarks.some(b => b.id === id)) {
+	const markMeta = BookmarkSchema.omit({ id: true, documentId: true }).parse(req.body);
+	const mark = await prisma.bookmark.create({
+	  data: {
+	    documentId: req.params.docid,
+	    ...markMeta
+	  }
+	});
+	res.status(200).send(mark);
+      } else {
+	res.status(400).send({err: "Tried to update a bookmark that does not exist!"})
+      }
+    } catch (err) {
+      console.error(err);
+      res.status(400).send({err : "Something when wrong!"});
+    }
+  }
+});
+
+router.delete("/:docid/bookmarks/:id", async (req: Request, res: Response<Err | undefined>) => {
+   const doc = await prisma.document.findUnique({
+    where: {
+      id: req.params.docid
+    },
+    include: {
+      bookmarks: true,
+      category: true
+    }
+  });
+
+  if (doc === null || doc.category.userId !== req.cookies.userId) {
+    res.status(404).send({err: "Not found!"});
+  } else {
+    try {
+      const id = req.params.id;
+      if (doc.bookmarks.some(b => b.id === id)) {
+	await prisma.bookmark.delete({
+	  where: { id }
+	});
+	res.status(204).send();
+      } else {
+	res.status(400).send({err: "Tried to delete a bookmark that does not exist!"})
+      }
+    } catch (err) {
+      console.error(err);
       res.status(400).send({err : "Something when wrong!"});
     }
   }
