@@ -102,6 +102,7 @@ router.patch("/:docid/bookmarks/:id", async (req: Request, res: Response<Bookmar
 	res.status(400).send({ err: partial.error.message });
 	return;
       }
+
       if (partial.data.page !== undefined) {
 	if (partial.data.page > doc.numpages) {
 	  res.status(400).send({err: "Cannot create a bookmark the points beyond the number of pages in the document!"});
