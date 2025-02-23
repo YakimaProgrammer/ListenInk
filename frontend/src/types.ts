@@ -15,7 +15,7 @@ export type Category = z.infer<typeof CategorySchema>;
 
 export const BookmarkSchema = z.object({
   id: z.string().nanoid(),
-  page: z.number().finite().min(0),
+  page: z.number().finite().min(0).multipleOf(1),
   audiotime: z.number().finite().min(0),
   documentId: z.string().nanoid(),
 });
