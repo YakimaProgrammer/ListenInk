@@ -1,10 +1,9 @@
 import { ChangeEvent } from "react";
-import { AppDispatch, RootState, setIsPlaying, setPlaybackSpeed, setPlaybackPosition } from "@/store";
+import { AppDispatch, RootState, setIsPlaying, setPlaybackSpeed, updateBookmark } from "@/store";
 import { PlaybackSpeed } from "@/store/slices/categories";
 import { connect, ConnectedProps } from "react-redux";
-import { useDocument } from "../WithDocument";
+import { withDocument } from "../WithDocument";
 import style from "./index.module.scss";
-
 
 interface AudioControlsProps {
   docId: string
@@ -26,7 +25,7 @@ function mapDispatchToProps(dispatch: AppDispatch, ownProps: AudioControlsProps)
   return {
     setIsPlaying: (isPlaying: boolean) => dispatch(setIsPlaying({id: ownProps.docId, isPlaying })),
     setPlaybackSpeed: (playbackSpeed: PlaybackSpeed) => dispatch(setPlaybackSpeed({id: ownProps.docId, playbackSpeed })),
-    setPlaybackPos: (pos: number) => dispatch(setPlaybackPosition({ id: ownProps.docId, time: pos }))
+    setPlaybackPos: (pos: number) => dispatch(updateBookmark({ docId: ownProps.docId, time: pos }))
   };
 }
 const connector = connect(mapStateToProps, mapDispatchToProps);
@@ -113,12 +112,4 @@ function AudioControlsComponent({ isPlaying, setIsPlaying, playbackSpeed, setPla
   );
 }
 
-const ConnectedAudioControls = connector(AudioControlsComponent);
-export function AudioControls() {
-  const doc = useDocument();
-  if (doc?.id !== undefined) {
-    return <ConnectedAudioControls docId={doc?.id} />
-  } else {
-    return null;
-  }
-}
+export const AudioControls = withDocument(connector(AudioControlsComponent));
