@@ -382,6 +382,18 @@ function CategoryRow({ category, index, total }: CategoryRowProps) {
                 }}
               />
             )}
+            <button
+              style={{
+                marginLeft: "auto",
+                cursor: "grab",
+                background: "transparent",
+                border: "none",
+              }}
+              draggable
+              onDragStart={(ev) => handleDragStart(ev, doc)}
+            >
+              <span style={{ color: "#999" }}>⋮⋮</span>
+            </button>
           </ListItemButton>
         ))}
       </Collapse>
