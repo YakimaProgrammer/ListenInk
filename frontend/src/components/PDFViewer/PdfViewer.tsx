@@ -1,6 +1,6 @@
 import { ViewSidebar } from "@mui/icons-material";
 import { IconButton } from "@mui/material";
-import styles from "./pdfViewer.module.scss";
+import styles from "./PdfViewer.module.scss";
 
 export interface PDFViewerProps {
   scale: number;

@@ -4,17 +4,16 @@ import { connect, ConnectedProps } from "react-redux";
 import { useNavigate } from "react-router";
 import { JSX } from "react";
 import { Search, Close, Description } from "@mui/icons-material";
-import { ReducedDoc } from "@/store/slices/categories";
 import { urlFor } from "@/pages/urlfor";
+import { EnhancedDocument } from "@/store/slices/categories";
+import { Document } from "@/types";
 
 import style from "./index.module.scss";
 
 const mapStateToProps = (state: RootState) => ({
   query: state.ui.searchQuery,
   open: state.ui.searchDialogOpen,
-  // ReducedDoc is a placeholder type until I stablize the API.
-  // It includes information I largely expect to be there in the final API version. 
-  docs: state.categories.status === "success" ? state.categories.categories.reduce<ReducedDoc[]>((acc, c) => acc.concat(c.documents), []) : []
+  docs: state.categories.status === "success" ? Object.values(state.categories.documents).filter((d): d is EnhancedDocument => d !== undefined) : []
 });
 const mapDispatchToProps = (dispatch: AppDispatch) => ({
   close: () => dispatch(setSearchDialog(false)),
@@ -34,7 +33,7 @@ function SearchDialogComponent({ query, open, close, setQuery, docs }: PropsFrom
   // This is kind of evil. Normally, I'd `.map()` from hits to results, but I want to have precisely `NUM_RESULTS` results 
   const results: JSX.Element[] = [];
   for (let i = 0; i < NUM_RESULTS; i++) {
-    let d: ReducedDoc | undefined = hits[i];
+    let d: Document | undefined = hits[i];
     results.push(
       <ListItemButton
 	key={i}

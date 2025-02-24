@@ -7,6 +7,7 @@ import {
   ZoomOut,
 } from "@mui/icons-material";
 import { Box, IconButton, TextField } from "@mui/material";
+import { useEffect, useState } from "react";
 
 // Import styles (CSS) from other scss files.
 // import styles from "./PdfViewer.module.scss";
@@ -18,6 +19,7 @@ interface PdfTopViewProps {
   zoomLevel: number;
   onPageChange: (page: number) => void;
   onZoomChange: (zoom: number) => void;
+  openSearchDialog: () => void;
 }
 
 export function PdfTopView({
@@ -26,7 +28,34 @@ export function PdfTopView({
   zoomLevel,
   onPageChange,
   onZoomChange,
+  openSearchDialog
 }: PdfTopViewProps) {
+  // Holding users to the strict input validation requirements sucks.
+  // Let's transiently let them break those requirements
+  const [transientPage, setTransientPage] = useState(`${currentPage}`);
+  const [isValid, setIsValid] = useState(true);
+  
+  // Reset transientPage when the external page changes. We trust this value
+  useEffect(() => {
+    setTransientPage(`${currentPage}`);
+    setIsValid(true);
+  }, [currentPage]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPage = parseFloat(e.target.value);
+
+    // Update transient value immediately
+    setTransientPage(e.target.value);
+
+    // A page must be between zero and the maximum number of pages and must be an integer
+    if (newPage >= 0 && newPage <= totalPages && newPage === Math.floor(newPage)) {
+      onPageChange(newPage);
+      setIsValid(true);
+    } else {
+      setIsValid(false);
+    }
+  };
+  
   return (
     <div>
       {/* Entire Top Bar Section */}
@@ -45,13 +74,13 @@ export function PdfTopView({
         }}
       >
         {/* Search Icon for searching content */}
-        <IconButton className={styles.searchIcon}>
+        <IconButton className={styles.searchIcon} onClick={openSearchDialog}>
           <Search />
         </IconButton>
 
         {/* Page Number Display Section */}
         <div className={styles.pageNumberDisplayBox}>
-          <IconButton onClick={() => onPageChange(currentPage - 1)}>
+          <IconButton onClick={() => onPageChange(currentPage + 1)}>
             <KeyboardArrowUp
               className={`${styles.pageNumberDisplayBox} ${styles.arrowUpDown}`}
             />
@@ -59,16 +88,17 @@ export function PdfTopView({
 
           <TextField
             size="small"
-            value={currentPage}
+            value={transientPage}
+	    error={!isValid}
+	    onChange={handleChange}
             fullWidth={true}
             sx={{
-              width: 35,
+              width: 60,
               "& .MuiInputBase-root": {
                 height: 20, // Force smaller height
                 fontFamily: "Roboto", // Change font
                 fontSize: "15px", // Reduce font size
               },
-              backgroundColor: "white",
               borderRadius: 1, // this border radius is for the bgcolor that matches the input box
               display: "flex",
               alignItems: "center",
@@ -89,7 +119,7 @@ export function PdfTopView({
           </span>
           <span style={{ fontFamily: "Roboto" }}>{totalPages}</span>
 
-          <IconButton onClick={() => onPageChange(currentPage + 1)}>
+          <IconButton onClick={() => onPageChange(currentPage - 1)}>
             <KeyboardArrowDown className={styles.arrowUpDown} />
           </IconButton>
         </div>

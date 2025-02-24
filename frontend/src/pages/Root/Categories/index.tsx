@@ -4,14 +4,13 @@ import { useNavigate, useParams } from "react-router";
 
 import { Conditional } from "@/components/Conditional";
 import { AppDispatch, RootState, setCategory } from "@/store";
-import { ReshapedCategory } from "@/store/slices/categories";
+import { selectCategories } from "@/store/slices/categories";
 import { urlFor } from "@/pages/urlfor";
+import { Category, Document } from "@/types";
 
 const categoriesMapStateToProps = (state: RootState) => {
   const reason: string | undefined = state.categories.status === "failure" ? state.categories.message : undefined;
-  // ReducedDoc is a placeholder type until I stablize the API.
-  // It includes information I largely expect to be there in the final API version.
-  const categories: ReshapedCategory[] | undefined = state.categories.status === "success" ? state.categories.categories : undefined;
+  const categories = Object.values(selectCategories(state));
   
   return {
     reason,
@@ -26,7 +25,7 @@ function CategoriesComponent({ categories, status, reason }: CategoriesPropsFrom
   return (
     <Conditional status={status} reason={reason}>
       <List>
-	{categories?.map(c => <ConnectedCategory key={c.id} c={c} />)}
+	{categories.map(c => <ConnectedCategory key={c.id} c={c} />)}
       </List>
     </Conditional>
   );
@@ -38,7 +37,7 @@ export const Categories = categoriesConnector(CategoriesComponent);
 
 
 interface CategoryOwnProps {
-  c: ReshapedCategory;
+  c: (Category & { documents: Document[] });
 }
 const categoryMapStateToProps = (state: RootState, ownProps: CategoryOwnProps) => ({
   open: !!state.ui.openCategories[ownProps.c.id]
