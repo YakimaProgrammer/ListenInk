@@ -1,0 +1,104 @@
+.
+|____chat_context.txt
+|____frontend
+| |____hi.txt
+| |____public
+| | |____favicon.ico
+| | |____index.html
+| | |____logo512.png
+| | |____manifest.json
+| | |____robots.txt
+| | |____logo192.png
+| |____package.json
+| |____config-overrides.js
+| |____tsconfig.json
+| |____src
+| | |____index.tsx
+| | |____index.css
+| | |____types.ts
+| | |____styles
+| | | |_____drawer.scss
+| | |____components
+| | | |____SearchDialog
+| | | | |____index.tsx
+| | | | |____index.module.scss
+| | | |____Conditional
+| | | | |____index.tsx
+| | | | |____index.module.scss
+| | | |____PDFViewer
+| | | | |____index.tsx
+| | | | |____PdfTopView.tsx
+| | | | |____PdfViewer.module.scss
+| | | | |____PdfViewer.tsx
+| | | | |____index.module.scss
+| | | |____WithDocument
+| | | | |____index.tsx
+| | | |____DrawerHeader
+| | | | |____index.tsx
+| | | | |____index.module.scss
+| | | |____AudioControls
+| | | | |____index.tsx
+| | | | |____index.module.scss
+| | |____hooks
+| | | |____useCategories.ts
+| | |____react-app-env.d.ts
+| | |____pages
+| | | |____Auth
+| | | | |____index.tsx
+| | | |____urlfor.tsx
+| | | |____Root
+| | | | |____Sidebar
+| | | | | |____index.tsx
+| | | | | |____index.module.scss
+| | | | |____index.tsx
+| | | | |____MenuBar
+| | | | | |____index.tsx
+| | | | | |____index.module.scss
+| | | | |____Content
+| | | | | |____index.tsx
+| | | | | |____index.module.scss
+| | | | |____index.module.scss
+| | | | |____Categories
+| | | | | |____index.tsx
+| | |____store
+| | | |____helper-types.ts
+| | | |____slices
+| | | | |____categories.ts
+| | | | |____ui.ts
+| | | | |____auth.ts
+| | | |____thunks.ts
+| | | |____index.ts
+|____LICENSE
+|____spec
+| |____spec.md
+|____backend
+| |____dist
+| | |____categories.js
+| | |____types.js
+| | |____docs.js
+| | |____auth.js
+| | |____index.js
+| |____init-dev-database.sh
+| |____prisma
+| | |____migrations
+| | | |____20250214074839_init
+| | | | |____migration.sql
+| | | |____migration_lock.toml
+| | |____init-dev-database.ts
+| | |____schema.prisma
+| | |____dev.db
+| |____package.json
+| |____tsconfig.json
+| |____src
+| | |____types.ts
+| | |____docs.ts
+| | |____categories.ts
+| | |____dev
+| | | |____bee movie intro.opus
+| | | |____alice in wonderland.hocr
+| | | |____alice in wonderland.png
+| | |____index.ts
+| | |____auth.ts
+|____tree.sh
+|____chat_context.py
+|____tree.txt

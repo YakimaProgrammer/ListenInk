@@ -8,13 +8,12 @@ export function useDocument(): ReducedDoc | null {
   const { docId } = useParams();
   const doc = useSelector((state: RootState) => {
     if (state.categories.status === "success") {
-      // We LOVE n^2 traversals on the client-side!
       for (let category of state.categories.categories) {
-	for (let doc of category.documents) {
-	  if (doc.id === docId) {
-	    return doc;
-	  }
-	}
+        for (let d of category.documents) {
+          if (d.id === docId) {
+            return d;
+          }
+        }
       }
     }
     return null;
