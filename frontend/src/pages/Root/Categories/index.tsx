@@ -1,6 +1,8 @@
 // --------------------------------------------------
 // File: src/pages/Root/Categories/index.tsx
+// Updated so RIGHT-CLICK rename mirrors double-click logic
 // --------------------------------------------------
+
 import {
   List,
   ListItemButton,
@@ -24,7 +26,7 @@ import {
 import { connect, ConnectedProps } from "react-redux";
 import { useNavigate, useParams } from "react-router";
 import { Conditional } from "@/components/Conditional";
-import { RootState, AppDispatch, setCategory } from "@/store";
+import { RootState } from "@/store";
 import {
   ReshapedCategory,
   ReducedDoc,
@@ -37,9 +39,14 @@ import {
   moveDocument,
 } from "@/store/slices/categories";
 import { urlFor } from "@/pages/urlfor";
-import { MouseEvent, useState, DragEvent, useEffect } from "react";
+import {
+  useState,
+  useEffect,
+  MouseEvent as ReactMouseEvent,
+  DragEvent,
+} from "react";
 
-// A set of possible colors for category (like the old code)
+/** The palette for changing category colors. */
 const categoryColors = [
   "#001219",
   "#005f73",
@@ -53,6 +60,7 @@ const categoryColors = [
   "#9b2226",
 ];
 
+/** Maps global Redux state into props. */
 const mapStateToProps = (state: RootState) => {
   const reason =
     state.categories.status === "failure"
@@ -67,12 +75,7 @@ const mapStateToProps = (state: RootState) => {
     status: state.categories.status,
   };
 };
-
-const mapDispatchToProps = (dispatch: AppDispatch) => ({
-  setOpenCategory: (catId: string, open: boolean) =>
-    dispatch(setCategory({ id: catId, open })),
-});
-const connector = connect(mapStateToProps, mapDispatchToProps);
+const connector = connect(mapStateToProps);
 type PropsFromRedux = ConnectedProps<typeof connector>;
 
 function CategoriesComponent({ reason, status, categories }: PropsFromRedux) {
@@ -91,10 +94,9 @@ function CategoriesComponent({ reason, status, categories }: PropsFromRedux) {
     </Conditional>
   );
 }
-
 export const Categories = connector(CategoriesComponent);
 
-// Each Category row
+/** Represents a single Category row + nested documents. */
 interface CategoryRowProps {
   category: ReshapedCategory;
   index: number;
@@ -103,18 +105,30 @@ interface CategoryRowProps {
 function CategoryRow({ category, index, total }: CategoryRowProps) {
   const { docId } = useParams();
   const navigate = useNavigate();
+
+  // Whether category is "open."
   const [open, setOpen] = useState(false);
+  // If user selected a doc here, forcibly open
   const hasSelectedDoc = category.documents.some((d) => d.id === docId);
-  // Actually open if user has selected doc in here, or local state
   const isOpen = open || hasSelectedDoc;
 
-  // For inline rename
+  // For inline rename of category
   const [editingCat, setEditingCat] = useState(false);
+  // We keep local catName in sync with Redux changes *when not editing*
   const [catName, setCatName] = useState(category.name);
+  useEffect(() => {
+    if (!editingCat) setCatName(category.name);
+  }, [category.name, editingCat]);
 
-  // For doc rename
+  // For inline rename of docs
   const [editingDocId, setEditingDocId] = useState<string | null>(null);
   const [docName, setDocName] = useState("");
+  // Each time we switch which doc is editing, or doc changes in Redux, re-sync
+  useEffect(() => {
+    if (!editingDocId) return;
+    const d = category.documents.find((doc) => doc.id === editingDocId);
+    if (d) setDocName(d.name);
+  }, [category.documents, editingDocId]);
 
   // Right-click context menu
   const [ctxMenu, setCtxMenu] = useState<{
@@ -124,36 +138,58 @@ function CategoryRow({ category, index, total }: CategoryRowProps) {
     itemId: string;
   } | null>(null);
 
-  // Color submenu
-  const [colorAnchor, setColorAnchor] = useState<HTMLElement | null>(null);
+  // For color picker anchored at a custom position
+  const [colorMenuCoords, setColorMenuCoords] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
 
-  // close the context if user left-clicks away
+  // Close context on any left-click
   useEffect(() => {
     const close = () => setCtxMenu(null);
     window.addEventListener("click", close);
     return () => window.removeEventListener("click", close);
   }, []);
 
-  // DRAG & DROP:
-  // When we drag a doc
+  // DRAG & DROP with a custom drag preview
   const handleDragStart = (
     e: DragEvent<HTMLButtonElement>,
     doc: ReducedDoc
   ) => {
     e.dataTransfer.setData("docId", doc.id);
     e.dataTransfer.setData("sourceCatId", category.id);
+
+    // Create a hidden DOM element so setDragImage can show it
+    const dragIcon = document.createElement("div");
+    dragIcon.style.fontSize = "13px";
+    dragIcon.style.padding = "6px 8px";
+    dragIcon.style.backgroundColor = "#333";
+    dragIcon.style.color = "#fff";
+    dragIcon.style.borderRadius = "4px";
+    dragIcon.innerText = `Dragging: ${doc.name}`;
+    dragIcon.style.position = "absolute";
+    dragIcon.style.top = "-9999px";
+    dragIcon.style.left = "-9999px";
+    document.body.appendChild(dragIcon);
+
+    // Use the hidden element as the drag image
+    e.dataTransfer.setDragImage(dragIcon, 0, 0);
+
+    // Remove it when drag ends
+    e.currentTarget.addEventListener("dragend", () => {
+      document.body.removeChild(dragIcon);
+    });
   };
-  // We allow dropping on the category row itself
+
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
   };
-  // On drop => dispatch moveDocument
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const docId2 = e.dataTransfer.getData("docId");
     const sourceCatId = e.dataTransfer.getData("sourceCatId");
     if (!docId2 || !sourceCatId) return;
-    if (sourceCatId === category.id) return; // same category => no move
+    if (sourceCatId === category.id) return; // no move if same cat
     window.store.dispatch(
       moveDocument({
         docId: docId2,
@@ -163,9 +199,9 @@ function CategoryRow({ category, index, total }: CategoryRowProps) {
     );
   };
 
-  // Right-click
+  // Right-click context
   const handleContextMenu = (
-    e: MouseEvent,
+    e: ReactMouseEvent,
     itemType: "category" | "document",
     itemId: string
   ) => {
@@ -178,103 +214,111 @@ function CategoryRow({ category, index, total }: CategoryRowProps) {
     });
   };
 
-  // Actually do rename cat
+  // (1) RENAME from context menu
+  const handleRename = () => {
+    console.log("Context menu rename triggered:", ctxMenu);
+    if (!ctxMenu) return;
+
+    if (ctxMenu.itemType === "category") {
+      setEditingCat(true);
+      setCatName(category.name);
+    } else {
+      const doc = category.documents.find((d) => d.id === ctxMenu.itemId);
+      if (doc) {
+        setEditingDocId(ctxMenu.itemId);
+        setDocName(doc.name);
+      }
+    }
+    setCtxMenu(null);
+  };
+
+  // Actually rename category
   const commitCatRename = () => {
-    if (catName.trim() && catName !== category.name) {
+    const trimmed = catName.trim();
+    if (trimmed && trimmed !== category.name) {
       window.store.dispatch(
-        renameCategory({ categoryId: category.id, newName: catName.trim() })
+        renameCategory({ categoryId: category.id, newName: trimmed })
       );
     }
     setEditingCat(false);
   };
 
-  // Move cat up or down
-  const handleMoveUp = (e: MouseEvent) => {
+  const commitDocRename = (docId: string) => {
+    const trimmed = docName.trim();
+    if (trimmed) {
+      window.store.dispatch(renameDocument({ docId, newName: trimmed }));
+    }
+    setEditingDocId(null);
+  };
+
+  // (2) DELETE
+  const handleDelete = () => {
+    if (!ctxMenu) return;
+    if (ctxMenu.itemType === "category") {
+      window.store.dispatch(deleteCategory(ctxMenu.itemId));
+    } else {
+      window.store.dispatch(deleteDocument(ctxMenu.itemId));
+    }
+    setCtxMenu(null);
+  };
+
+  // (3) CHANGE COLOR
+  const handleChangeColor = (mouseX: number, mouseY: number) => {
+    setColorMenuCoords({ x: mouseX, y: mouseY });
+    setCtxMenu(null);
+  };
+  const pickColor = (c: string) => {
+    window.store.dispatch(
+      changeCategoryColor({ categoryId: category.id, color: c })
+    );
+    setColorMenuCoords(null);
+  };
+
+  // (4) REORDER categories up/down
+  const handleMoveUp = (e: ReactMouseEvent) => {
     e.stopPropagation();
     if (index < 1) return;
-    const aboveCat = getCatAtIndex(index - 1);
-    if (!aboveCat) return;
+    const catAbove = getCatAtIndex(index - 1);
+    if (!catAbove) return;
     window.store.dispatch(
       reorderCategories({
         categoryId: category.id,
-        referenceCategoryId: aboveCat.id,
+        referenceCategoryId: catAbove.id,
         position: "before",
       })
     );
   };
-  const handleMoveDown = (e: MouseEvent) => {
+  const handleMoveDown = (e: ReactMouseEvent) => {
     e.stopPropagation();
     if (index >= total - 1) return;
-    const belowCat = getCatAtIndex(index + 1);
-    if (!belowCat) return;
+    const catBelow = getCatAtIndex(index + 1);
+    if (!catBelow) return;
     window.store.dispatch(
       reorderCategories({
         categoryId: category.id,
-        referenceCategoryId: belowCat.id,
+        referenceCategoryId: catBelow.id,
         position: "after",
       })
     );
   };
 
-  // context menu actions
-  const handleRename = () => {
-    if (ctxMenu?.itemType === "category") {
-      // rename category inline
-      setEditingCat(true);
-      setCatName(category.name);
-    } else if (ctxMenu?.itemType === "document") {
-      // rename doc inline
-      setEditingDocId(ctxMenu.itemId);
-      const d = category.documents.find((doc) => doc.id === ctxMenu.itemId);
-      if (d) setDocName(d.name);
-    }
-    setCtxMenu(null);
+  // Double-click rename logic (same as context-rename):
+  const handleCatDoubleClick = () => {
+    setEditingCat(true);
+    setCatName(category.name);
   };
-  const handleDelete = () => {
-    if (ctxMenu?.itemType === "category") {
-      window.store.dispatch(deleteCategory(ctxMenu.itemId));
-    } else {
-      if (ctxMenu) {
-        window.store.dispatch(deleteDocument(ctxMenu.itemId));
-      }
-    }
-    setCtxMenu(null);
-  };
-  const handleChangeColor = (anchor: HTMLElement) => {
-    setColorAnchor(anchor);
-    setCtxMenu(null);
-  };
-  const pickColor = (c: string) => {
-    window.store.dispatch(
-      changeCategoryColor({
-        categoryId: category.id,
-        color: c,
-      })
-    );
-    setColorAnchor(null);
-  };
-
-  // doc rename commit
-  const commitDocRename = (docId: string) => {
-    if (!docName.trim()) {
-      setEditingDocId(null);
-      return;
-    }
-    window.store.dispatch(
-      renameDocument({
-        docId,
-        newName: docName.trim(),
-      })
-    );
-    setEditingDocId(null);
+  const handleDocDoubleClick = (doc: ReducedDoc) => {
+    setEditingDocId(doc.id);
+    setDocName(doc.name);
   };
 
   return (
     <div onDragOver={handleDragOver} onDrop={handleDrop}>
-      {/* Category header row */}
+      {/* Category row */}
       <ListItemButton
         onClick={() => setOpen(!isOpen)}
         onContextMenu={(e) => handleContextMenu(e, "category", category.id)}
+        onDoubleClick={handleCatDoubleClick}
         sx={{ display: "flex", gap: 1 }}
       >
         {isOpen ? <KeyboardArrowDown /> : <KeyboardArrowRight />}
@@ -285,10 +329,9 @@ function CategoryRow({ category, index, total }: CategoryRowProps) {
             autoFocus
             value={catName}
             onChange={(e) => setCatName(e.target.value)}
-            onBlur={commitCatRename}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
-                e.currentTarget.blur();
+                commitCatRename();
               }
             }}
             sx={{ maxWidth: 160 }}
@@ -304,23 +347,8 @@ function CategoryRow({ category, index, total }: CategoryRowProps) {
             }}
           />
         )}
-
-        {/* Up/down arrow for reordering */}
-        <Box sx={{ ml: "auto", display: "flex" }}>
-          {index > 0 && (
-            <IconButton size="small" onClick={handleMoveUp}>
-              <ArrowUpward fontSize="inherit" />
-            </IconButton>
-          )}
-          {index < total - 1 && (
-            <IconButton size="small" onClick={handleMoveDown}>
-              <ArrowDownward fontSize="inherit" />
-            </IconButton>
-          )}
-        </Box>
       </ListItemButton>
 
-      {/* The documents */}
       <Collapse in={isOpen}>
         {category.documents.map((doc) => (
           <ListItemButton
@@ -328,6 +356,7 @@ function CategoryRow({ category, index, total }: CategoryRowProps) {
             selected={doc.id === docId}
             onClick={() => navigate(urlFor("docs", doc.id))}
             onContextMenu={(e) => handleContextMenu(e, "document", doc.id)}
+            onDoubleClick={() => handleDocDoubleClick(doc)}
             sx={{ pl: 6 }}
           >
             {editingDocId === doc.id ? (
@@ -336,9 +365,10 @@ function CategoryRow({ category, index, total }: CategoryRowProps) {
                 autoFocus
                 value={docName}
                 onChange={(e) => setDocName(e.target.value)}
-                onBlur={() => commitDocRename(doc.id)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") e.currentTarget.blur();
+                  if (e.key === "Enter") {
+                    commitDocRename(doc.id);
+                  }
                 }}
                 sx={{ maxWidth: 200 }}
               />
@@ -352,21 +382,6 @@ function CategoryRow({ category, index, total }: CategoryRowProps) {
                 }}
               />
             )}
-
-            {/* Draggable doc */}
-            <button
-              style={{
-                marginLeft: "auto",
-                cursor: "grab",
-                background: "transparent",
-                border: "none",
-              }}
-              draggable
-              onDragStart={(ev) => handleDragStart(ev, doc)}
-            >
-              {/* Could show a small "grip" icon */}
-              <span style={{ color: "#999" }}>⋮⋮</span>
-            </button>
           </ListItemButton>
         ))}
       </Collapse>
@@ -384,7 +399,11 @@ function CategoryRow({ category, index, total }: CategoryRowProps) {
           <Edit sx={{ mr: 1 }} fontSize="small" /> Rename
         </MenuItem>
         {ctxMenu?.itemType === "category" && (
-          <MenuItem onClick={(e) => handleChangeColor(e.currentTarget)}>
+          <MenuItem
+            onClick={() =>
+              handleChangeColor(ctxMenu.mouseX, ctxMenu.mouseY + 8)
+            }
+          >
             <Palette sx={{ mr: 1 }} fontSize="small" /> Change Color
           </MenuItem>
         )}
@@ -393,12 +412,16 @@ function CategoryRow({ category, index, total }: CategoryRowProps) {
         </MenuItem>
       </Menu>
 
-      {/* Color picker submenu */}
+      {/* Color picker anchored at custom position */}
       <Menu
-        open={Boolean(colorAnchor)}
-        anchorEl={colorAnchor}
-        onClose={() => setColorAnchor(null)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        open={Boolean(colorMenuCoords)}
+        onClose={() => setColorMenuCoords(null)}
+        anchorReference="anchorPosition"
+        anchorPosition={
+          colorMenuCoords
+            ? { top: colorMenuCoords.y, left: colorMenuCoords.x }
+            : undefined
+        }
       >
         <Box
           sx={{
@@ -427,11 +450,10 @@ function CategoryRow({ category, index, total }: CategoryRowProps) {
     </div>
   );
 
+  /** Helper to get the category above/below for reorder. */
   function getCatAtIndex(i: number): ReshapedCategory | undefined {
     const st = window.store.getState();
     if (st.categories.status !== "success") return undefined;
     return st.categories.categories[i];
   }
 }
-
-export default CategoriesComponent;
