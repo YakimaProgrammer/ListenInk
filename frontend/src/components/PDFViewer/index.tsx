@@ -8,7 +8,8 @@ import styles from "./index.module.scss";
 
 const mapDispatchToProps = (dispatch: AppDispatch, ownProps: InjectedProps) => ({
   openSearchDialog: () => dispatch(setSearchDialog(true)),
-  setPage: (page: number) => dispatch(updateBookmark({ docId: ownProps.docId, page }))
+  //I'm going to say that the playback time should be inferred to be set to the start if you change pages imo
+  setPage: (page: number) => dispatch(updateBookmark({ docId: ownProps.docId, page, time: 0 }))
 });
 
 const connector = connect(null, mapDispatchToProps);

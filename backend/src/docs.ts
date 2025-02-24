@@ -243,7 +243,7 @@ router.get("/:docid/pages/:pagenum/image", async (req: Request, res: Response) =
   if (doc === null || doc.category.userId !== req.cookies.userId) {
     res.status(404).send({err: "Not found!"});
   } else {
-    const response = await fetch(`https://picsum.photos/id/${req.params.pagenum}/1080/1920`);
+    const response = await fetch(`https://s3.magnusfulton.com/com.listenink/${doc.s3key}/${req.params.pagenum}.jpg`);
     res.setHeader('Content-Type', response.headers.get('content-type') ?? "image/jpeg");
     res.status(200);
     if (response.body === null) {
@@ -255,7 +255,7 @@ router.get("/:docid/pages/:pagenum/image", async (req: Request, res: Response) =
 });
 
 router.get("/:docid/pages/:pagenum/audio", async (req: Request, res: Response) => {
-  const doc = await prisma.document.findUnique({
+    const doc = await prisma.document.findUnique({
     where: {
       id: req.params.docid
     },
@@ -267,7 +267,14 @@ router.get("/:docid/pages/:pagenum/audio", async (req: Request, res: Response) =
   if (doc === null || doc.category.userId !== req.cookies.userId) {
     res.status(404).send({err: "Not found!"});
   } else {
-    res.status(200).sendFile("src/dev/bee movie intro.opus");
+    const response = await fetch(`https://s3.magnusfulton.com/com.listenink/${doc.s3key}/${req.params.pagenum}.mp3`);
+    res.setHeader('Content-Type', response.headers.get('content-type') ?? "image/jpeg");
+    res.status(200);
+    if (response.body === null) {
+      res.send();
+    } else {
+      Readable.fromWeb(response.body).pipe(res);
+    }
   }
 });
 
