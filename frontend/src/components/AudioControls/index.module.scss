@@ -1,45 +1,84 @@
 .audioControls {
-    width: 100%;
-    padding: 20px;
-    font-family: Arial, sans-serif;
-  }
+  width: 100%;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+.timeDisplay {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.progressBar {
+  flex-grow: 1;
+  height: 10px;
+  background: #ddd;
+  margin: 0 10px;
+  position: relative;
+}
+
+.progress {
+  height: 100%;
+  background: #007bff;
+  width: 0;
+}
+
+.controlPanel {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.controlButton,
+.playPauseButton {
+  padding: 10px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.playbackSpeed {
+  padding: 5px;
+}
   
-  .timeDisplay {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-  }
-  
-  .progressBar {
-    flex-grow: 1;
-    height: 10px;
-    background: #ddd;
-    margin: 0 10px;
-    position: relative;
-  }
-  
-  .progress {
-    height: 100%;
-    background: #007bff;
-    width: 0;
-  }
-  
-  .controlPanel {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-  }
-  
-  .controlButton,
-  .playPauseButton {
-    padding: 10px;
-    font-size: 16px;
-    cursor: pointer;
-  }
-  
-  .playbackSpeed {
-    padding: 5px;
-  }
-  
+/* --- frontend/src/components/AudioControls/index.module.scss --- */
+
+.audioControls {
+  width: 100%;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+.controlPanel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.controlButton,
+.playPauseButton {
+  /* your custom button styling can go here */
+}
+
+.timeDisplay {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.progressBar {
+  flex-grow: 1;
+  height: 10px;
+  background: #ddd;
+  margin: 0 10px;
+  position: relative;
+}
+
+.progress {
+  height: 100%;
+  background: #007bff;
+  width: 0;
+}

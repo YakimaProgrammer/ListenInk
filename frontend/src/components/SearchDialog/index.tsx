@@ -1,6 +1,4 @@
-// -----------------------------------------
-// File: src/components/SearchDialog/index.tsx
-// -----------------------------------------
+// --- frontend/src/components/SearchDialog/index.tsx ---
 import { AppDispatch, RootState, setQuery, setSearchDialog } from "@/store";
 import {
   Dialog,
@@ -11,6 +9,7 @@ import {
   ListItemButton,
   ListItemIcon,
   TextField,
+  Typography,
 } from "@mui/material";
 import { connect, ConnectedProps } from "react-redux";
 import { useNavigate } from "react-router";
@@ -41,6 +40,7 @@ const connector = connect(mapStateToProps, mapDispatchToProps);
 type PropsFromRedux = ConnectedProps<typeof connector>;
 
 const NUM_RESULTS = 10;
+
 function SearchDialogComponent({
   query,
   open,
@@ -48,35 +48,35 @@ function SearchDialogComponent({
   setQuery,
   docs,
 }: PropsFromRedux) {
-  let navigate = useNavigate();
+  const navigate = useNavigate();
 
-  // [TODO] This is proof-of-concept searching. I recommend fuse.js for fuzzy + full-text search
+  // Add doc.text search
   const hits = docs
-    .filter((d: ReducedDoc) =>
-      d.name.toLowerCase().includes(query.toLowerCase())
-    )
+    .filter((d: ReducedDoc) => {
+      const titleMatch = d.name.toLowerCase().includes(query.toLowerCase());
+      const textMatch =
+        d.text?.toLowerCase().includes(query.toLowerCase()) ?? false;
+      return titleMatch || textMatch;
+    })
     .slice(0, NUM_RESULTS);
 
-  // This is kind of evil. Normally, I'd `.map()` from hits to results, but I want
-  // exactly `NUM_RESULTS` results (including empty placeholders).
   const results: JSX.Element[] = [];
   for (let i = 0; i < NUM_RESULTS; i++) {
-    const d: ReducedDoc | undefined = hits[i];
+    const d = hits[i];
     results.push(
       <ListItemButton
         key={i}
         onClick={() => {
-          if (d !== undefined) {
+          if (d) {
             navigate(urlFor("docs", d.id));
             close();
           }
         }}
-        className={d === undefined ? style.hidden : ""}
+        className={!d ? style.hidden : ""}
       >
         <ListItemIcon>
           <Description />
         </ListItemIcon>
-
         {d?.name}
       </ListItemButton>
     );
@@ -91,27 +91,30 @@ function SearchDialogComponent({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           fullWidth
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search />
-                </InputAdornment>
-              ),
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    onClick={query === "" ? close : () => setQuery("")}
-                    size="small"
-                  >
-                    <Close />
-                  </IconButton>
-                </InputAdornment>
-              ),
-            },
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search />
+              </InputAdornment>
+            ),
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  onClick={query === "" ? close : () => setQuery("")}
+                  size="small"
+                >
+                  <Close />
+                </IconButton>
+              </InputAdornment>
+            ),
           }}
         />
         <List>{results}</List>
+        {query && hits.length === 0 && (
+          <Typography variant="body2" textAlign="center" mt={2}>
+            No documents found
+          </Typography>
+        )}
       </DialogContent>
     </Dialog>
   );

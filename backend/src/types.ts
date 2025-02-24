@@ -1,42 +1,43 @@
 import { z } from "zod";
 
 export interface DocId {
-  document_id: string
+  document_id: string;
 }
 
 export interface Category {
-  userId: string,
-  color: string,
-  name: string,
-  id: string
+  userId: string;
+  color: string;
+  name: string;
+  id: string;
 }
 
 export interface Document {
-  name: string,
-  numpages: number,
-  s3key: string,
-  bookmarks: Bookmark[],
+  name: string;
+  numpages: number;
+  s3key: string;
+  bookmarks: Bookmark[];
   //  shares: string[],
-  id: string,
-  completed: boolean,
-  category: Category
+  id: string;
+  completed: boolean;
+  text?: string;
+  category: Category;
 }
 
 export interface Bookmark {
-  id: string,
-  page: number,
-  audiotime: number,
-  documentId: string,
+  id: string;
+  page: number;
+  audiotime: number;
+  documentId: string;
 }
 
 export interface Err {
-  err: string
-};
+  err: string;
+}
 
 export interface User {
-  name: string
-  id: string
-  email: string
+  name: string;
+  id: string;
+  email: string;
 }
 
 // Validator for DocId
@@ -56,28 +57,16 @@ export const CategoryValidator = z.object({
 
 // Validator for Bookmark
 export const BookmarkValidator = z.object({
-  page: z
-    .number()
-    .int()
-    .positive("page must be a positive integer"),
-  audiotime: z
-    .number()
-    .nonnegative("audiotime must be a non-negative number"),
-  id: z
-    .string()
-    .min(1, "id must be a non-empty string"),
-  documentId: z
-    .string()
-    .min(1, "id must be a non-empty string"),
+  page: z.number().int().positive("page must be a positive integer"),
+  audiotime: z.number().nonnegative("audiotime must be a non-negative number"),
+  id: z.string().min(1, "id must be a non-empty string"),
+  documentId: z.string().min(1, "id must be a non-empty string"),
 });
 
 // Validator for Document
 export const DocumentValidator = z.object({
   name: z.string().min(1, "name must be a non-empty string"),
-  numpages: z
-    .number()
-    .int()
-    .positive("numpages must be a positive integer"),
+  numpages: z.number().int().positive("numpages must be a positive integer"),
   s3key: z.string().min(1, "s3key must be a non-empty string"),
   bookmarks: z.array(BookmarkValidator),
   id: z.string().min(1, "id must be a non-empty string"),

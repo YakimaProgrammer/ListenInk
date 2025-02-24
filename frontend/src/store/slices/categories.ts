@@ -3,7 +3,10 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { nanoid } from "nanoid";
 import { Category, Document } from "@/types";
 
-export type ReducedDoc = Omit<Document, "category">;
+export type ReducedDoc = Omit<Document, "category"> & {
+  /** optional text content for searching */
+  text?: string;
+};
 export type ReshapedCategory = Category & { documents: ReducedDoc[] };
 
 // A simpler shape: everything at top-level
