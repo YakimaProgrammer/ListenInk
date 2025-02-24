@@ -81,14 +81,55 @@ export function AudioControls() {
         >
           10
         </Button>
-        <Button
+
+        {/* <Button
           variant="contained"
           onClick={handlePlayPause}
           className={styles.playPauseButton}
           startIcon={isPlaying ? <Pause /> : <PlayArrow />}
         >
           {isPlaying ? "Pause" : "Play"}
-        </Button>
+        </Button> */}
+
+        <div>
+          <Button
+            variant="contained"
+            onClick={handlePlayPause}
+            style={{
+              backgroundColor: 'transparent',
+              boxShadow: 'none',
+              padding: 0,
+              minWidth: 'auto',
+              height: 'auto',
+              
+            }}
+            startIcon={
+              isPlaying ? (
+                <svg xmlns="http://www.w3.org/2000/svg" 
+                  width="51" 
+                  height="50" 
+                  fill="black" 
+                  className="bi bi-pause-fill" 
+                  viewBox="0 0 16 16">
+                  <path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5m5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5" />
+                  
+                </svg>
+              ) : (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="50"
+                  height="50"
+                  fill="black"
+                  className="bi bi-play-fill"
+                  viewBox="0 0 16 16"
+                >
+                  <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393" />
+                </svg>
+              )
+            }
+          />
+
+        </div>
         <Button
           variant="outlined"
           onClick={handleSkip}
@@ -113,7 +154,7 @@ export function AudioControls() {
         </FormControl>
 
         {/* Volume Slider */}
-        <Box display="flex" alignItems="center" ml={2}>
+        {/* <Box display="flex" alignItems="center" ml={2}>
           <Typography variant="body2" mr={1}>
             Vol
           </Typography>
@@ -125,7 +166,7 @@ export function AudioControls() {
             max={100}
             sx={{ width: 100 }}
           />
-        </Box>
+        </Box> */}
       </Box>
 
       {/* Progress bar */}

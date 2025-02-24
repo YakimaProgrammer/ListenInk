@@ -1971,7 +1971,7 @@ Content:
   
   .progress {
     height: 100%;
-    background: #007bff;
+    background: #ffffff;
     width: 0;
   }
   

@@ -21,7 +21,8 @@
 
 .progress {
   height: 100%;
-  background: #007bff;
+  background: transparent;
+
   width: 0;
 }
 
@@ -37,6 +38,7 @@
   padding: 10px;
   font-size: 16px;
   cursor: pointer;
+  background: white;
 }
 
 .playbackSpeed {
@@ -79,6 +81,6 @@
 
 .progress {
   height: 100%;
-  background: #007bff;
+  background: white;
   width: 0;
 }
