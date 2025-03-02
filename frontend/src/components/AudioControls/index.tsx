@@ -157,21 +157,7 @@ export function AudioControls() {
       </Box>
 
       {/* Progress bar */}
-      {/* <Box className={styles.timeDisplay}>
-        <Typography variant="body2" className={styles.timePlayed}>
-          {formatTime(timePlayed)}
-        </Typography>
-        <Box className={styles.progressBar}>
-          <Box
-            className={styles.progress}
-            sx={{ width: `${fractionComplete * 100}%` }}
-          />
-        </Box>
-        <Typography variant="body2" className={styles.timeRemaining}>
-          -{formatTime(timeRemaining)}
-        </Typography>
-      </Box>
-  */}
+  
       <Box className={styles.timeDisplay}>
         <Typography className={styles.timePlayed}>
           {formatTime(timePlayed)}
