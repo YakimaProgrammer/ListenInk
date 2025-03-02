@@ -73,24 +73,21 @@ export function AudioControls() {
     <Box className={styles.audioControls}>
       {/* Control Panel */}
       <Box className={styles.controlPanel}>
+      
+
         <Button
-          variant="outlined"
           onClick={handleRewind}
           className={styles.controlButton}
-          startIcon={<ArrowLeft />}
+          style={{ padding: 0, width: '50px', height: '50px' }}
         >
-          10
+          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24">
+            <path d="M11.99,5V1l-5,5l5,5V7c3.31,0,6,2.69,6,6s-2.69,6-6,6s-6-2.69-6-6h-2c0,4.42,3.58,8,8,8s8-3.58,8-8S16.41,5,11.99,5z" />
+            <text x="12" y="16" fontSize="6" textAnchor="middle" fill="black">10</text> {/* The text */}
+          </svg>
         </Button>
 
-        {/* <Button
-          variant="contained"
-          onClick={handlePlayPause}
-          className={styles.playPauseButton}
-          startIcon={isPlaying ? <Pause /> : <PlayArrow />}
-        >
-          {isPlaying ? "Pause" : "Play"}
-        </Button> */}
 
+        {/* Play/Pause Button */}
         <div>
           <Button
             variant="contained"
@@ -101,43 +98,33 @@ export function AudioControls() {
               padding: 0,
               minWidth: 'auto',
               height: 'auto',
-              
             }}
-            startIcon={
-              isPlaying ? (
-                <svg xmlns="http://www.w3.org/2000/svg" 
-                  width="51" 
-                  height="50" 
-                  fill="black" 
-                  className="bi bi-pause-fill" 
-                  viewBox="0 0 16 16">
-                  <path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5m5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5" />
-                  
-                </svg>
-              ) : (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="50"
-                  height="50"
-                  fill="black"
-                  className="bi bi-play-fill"
-                  viewBox="0 0 16 16"
-                >
-                  <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393" />
-                </svg>
-              )
-            }
-          />
-
+          >
+            {isPlaying ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" fill="black" viewBox="0 0 16 16">
+                <path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5m5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" fill="black" viewBox="0 0 16 16">
+                <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393" />
+              </svg>
+            )}
+          </Button>
         </div>
+
+       
         <Button
-          variant="outlined"
           onClick={handleSkip}
           className={styles.controlButton}
-          endIcon={<ArrowRight />}
+          style={{ padding: 0, width: '50px', height: '50px' }} 
         >
-          10
+          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24">
+            <path fill="none" d="M0 0h24v24H0z" />
+            <path d="M11.99 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8" />
+            <text x="12" y="16" fontSize="6" textAnchor="middle" fill="black">10</text> 
+          </svg>
         </Button>
+
 
         {/* Playback Speed */}
         <FormControl size="small">
