@@ -73,7 +73,7 @@ export function AudioControls() {
     <Box className={styles.audioControls}>
       {/* Control Panel */}
       <Box className={styles.controlPanel}>
-      
+
 
         <Button
           onClick={handleRewind}
@@ -112,16 +112,16 @@ export function AudioControls() {
           </Button>
         </div>
 
-       
+
         <Button
           onClick={handleSkip}
           className={styles.controlButton}
-          style={{ padding: 0, width: '50px', height: '50px' }} 
+          style={{ padding: 0, width: '50px', height: '50px' }}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24">
             <path fill="none" d="M0 0h24v24H0z" />
             <path d="M11.99 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8" />
-            <text x="12" y="16" fontSize="6" textAnchor="middle" fill="black">10</text> 
+            <text x="12" y="16" fontSize="6" textAnchor="middle" fill="black">10</text>
           </svg>
         </Button>
 
@@ -157,7 +157,7 @@ export function AudioControls() {
       </Box>
 
       {/* Progress bar */}
-      <Box className={styles.timeDisplay}>
+      {/* <Box className={styles.timeDisplay}>
         <Typography variant="body2" className={styles.timePlayed}>
           {formatTime(timePlayed)}
         </Typography>
@@ -171,6 +171,28 @@ export function AudioControls() {
           -{formatTime(timeRemaining)}
         </Typography>
       </Box>
+  */}
+      <Box className={styles.timeDisplay}>
+        <Typography className={styles.timePlayed}>
+          {formatTime(timePlayed)}
+        </Typography>
+        <Box className={styles.progressBar} style={{ width: '1000px' }}>
+          <Box
+            className={styles.progress}
+            sx={{
+              width: `${fractionComplete * 100}%`,
+              backgroundColor: 'black',
+            }}
+          />
+        </Box>
+        <Typography className={styles.timeRemaining}>
+          -{formatTime(timeRemaining)}
+        </Typography>
+      </Box>
+
+
+
+
     </Box>
   );
 }
