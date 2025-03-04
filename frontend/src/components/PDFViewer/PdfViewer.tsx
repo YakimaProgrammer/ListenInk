@@ -1,6 +1,6 @@
-import { ViewSidebar } from '@mui/icons-material';
-import { IconButton } from '@mui/material';
-import styles from './PdfViewer.module.scss';
+import { ViewSidebar } from "@mui/icons-material";
+import { IconButton } from "@mui/material";
+import styles from "./PdfViewer.module.scss";
 
 export interface PDFViewerProps {
   scale: number;
@@ -10,22 +10,27 @@ export interface PDFViewerProps {
 export function PdfViewer({ scale, src }: PDFViewerProps) {
   return (
     <div className={styles.pdfViewer}>
+      {/* Entire PDF Viewer Box */}
+
       <div className={styles.pdfLeftSideView}>
+        {/* Left SideBar View */}
         <IconButton className={styles.sideMenuToggle}>
-          <ViewSidebar />
+          <i className="bi bi-layout-text-sidebar"></i>
         </IconButton>
       </div>
+
       <div className={styles.pdfExample}>
+        {/* PDF Content Display Page by Page as Image*/}
         <img
           src={src}
           style={{
             transform: `scale(${scale})`,
-            transformOrigin: 'center',
-            transition: 'transform 0.2s ease',
+            transformOrigin: "center",
+            transition: "transform 0.2s ease",
           }}
           alt="PDF preview"
         />
       </div>
     </div>
   );
-};
+}

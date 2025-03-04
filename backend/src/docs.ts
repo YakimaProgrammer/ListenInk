@@ -1,9 +1,25 @@
 import { Router, Request, Response } from "express";
-import { DocId, Document, DocumentValidator, Err } from "./types";
-import { PrismaClient } from '@prisma/client';
+import { Bookmark, BookmarkSchema, DocId, Document, DocumentSchema, Err, NaturalNumber } from "./types";
+import { PrismaClient, Prisma } from '@prisma/client';
 import { Readable } from "stream";
+import { APIError } from "./error";
 
 const prisma = new PrismaClient();
+
+async function maxDocOrder(tx: Prisma.TransactionClient, categoryId: string): Promise<number | null> {
+  const result = await tx.document.aggregate({
+    where: { categoryId },
+    _max: { order: true },
+  });
+  return result._max.order;
+}
+async function maxBookmarkOrder(tx: Prisma.TransactionClient, documentId: string): Promise<number | null> {
+  const result = await tx.bookmark.aggregate({
+    where: { documentId },
+    _max: { order: true },
+  });
+  return result._max.order;
+}
 
 // This router holds all of the /api/v1/docs routes.
 // I'm using a router primarily to skip having to type
@@ -21,9 +37,10 @@ router.get("/", async (req: Request, res: Response<Document[]>) => {
       },
     },
     include: {
-      bookmarks: true,
+      bookmarks: { orderBy: { order: "asc" } },
       category: true
     },
+    orderBy: { order: "asc" }
   });
 
   res.status(200).send(docs);
@@ -33,86 +50,365 @@ router.get("/:docid/stream", (_req: Request, res: Response<string>) => { // `POS
   res.status(200).send("todo...");
 });
 
-// Eventually, this will be refined such that only properties that make sense to modify (name, bookmarks) are mutable
-// Right now, this does double-duty for modifying bookmarks. imo, this should be its own resource
 router.patch("/:docid", async (req: Request, res: Response<Document | Err>) => { // `PATCH /api/v1/docs/<docid>`
-  const doc: Document | null = await prisma.document.findUnique({
-    where: {
-      id: req.params.docid
-    },
-    include: {
-      bookmarks: true,
-      category: true
-    }
-  });
-
-  if (doc === null || doc.category.userId !== req.cookies.userId) {
-    res.status(404).send({err: "Not found!"});
-  } else {
-    try {
-      // This should scare you
-      const patched: Document = DocumentValidator.parse({...doc, ...req.body});
-
-      const docBookmarks = doc.bookmarks.map(b => b.id);
-      const patchedBookmarks = patched.bookmarks.map(b => b.id);
-      const deletedBookmarks = docBookmarks.filter(b => patchedBookmarks.includes(b));
+  try {
+    const ret: Document = await prisma.$transaction(async (tx) => {
+      const docId = req.params.docId;
       
-      const ret: Document = await prisma.document.update({
+      // Fetch the document along with its current category.
+      const doc = await tx.document.findUnique({
+	where: { id: docId },
+	include: { category: true },
+      });
+
+      if (doc === null || doc.category.userId !== req.cookies.userId) {
+	throw new APIError({err: "Not found!"});
+      }
+
+      // Parse the request from the user
+      const partial = DocumentSchema.omit({ id: true, numpages: true, s3key: true, bookmarks: true, completed: true }).partial().safeParse(req.body);
+      if (!partial.success) {
+	throw new APIError({ err: partial.error.message });
+      }
+    
+      const oldCategoryId = doc.categoryId;
+      const newCategoryId = partial.data.categoryId;
+      const oldOrder = doc.order;
+      let newPosition;
+      const movingToNewCategory = newCategoryId !== undefined && oldCategoryId !== newCategoryId;
+
+      // Anonymous block
+      {
+	const res = NaturalNumber.safeParse(partial.data.order);
+	if (res.success) {
+	  newPosition = res.data;
+	} else {
+	  throw new APIError({err: "`order` must be a natural number!"});
+	}
+      };
+      
+      const { order: _, ...deltaData } = partial.data;
+    
+      if (movingToNewCategory) {
+	const max = await maxDocOrder(tx, newCategoryId);
+	if (max === null) {
+	  throw new Error(`Unable to get the maximum order value for category ${newCategoryId}`);
+	}
+	// newPosition comes from partial.data.order which cannot be less than zero by the schema
+	if (newPosition !== undefined && newPosition > max) {
+	  throw new APIError({ err: "Tried to move a Document out of bounds!" });
+	}
+	
+	// 1. In the old category, decrement order for all docs with order > oldOrder.
+	await tx.document.updateMany({
+          where: {
+            categoryId: oldCategoryId,
+            order: { gt: oldOrder },
+          },
+          data: { order: { decrement: 1 } },
+	});
+      
+	// 2. In the new category, increment order for all docs with order >= newPosition.
+	if (newPosition !== undefined) {
+	  await tx.document.updateMany({
+            where: {
+              categoryId: newCategoryId,
+              order: { gte: newPosition },
+            },
+            data: { order: { increment: 1 } },
+	  });
+	} else { 
+	  newPosition = max;
+	}
+      
+	// 3. Update the moving document to its new category and new order.
+	return await tx.document.update({
+          where: { id: docId },
+          data: { categoryId: newCategoryId, order: newPosition, ...deltaData },
+	  include: { bookmarks: true }
+	});
+      } else {
+	// Moving within the same category.
+	const max = await maxDocOrder(tx, oldCategoryId);
+	if (max === null) {
+	  throw new Error(`Unable to get the maximum order value for category ${oldCategoryId}`);
+	}
+	// newPosition comes from partial.data.order which cannot be less than zero by the schema
+	if (newPosition !== undefined && newPosition > max) {
+	  throw new APIError({ err: "Tried to move a Document out of bounds!" });
+	}
+	
+	if (newPosition === undefined) {
+	  newPosition = max;
+	}
+
+	if (newPosition < oldOrder) {
+          // Moving up: Increment order for docs between newPosition and oldOrder (inclusive newPosition, exclusive oldOrder).
+          await tx.document.updateMany({
+            where: {
+              categoryId: oldCategoryId,
+              order: { gte: newPosition, lt: oldOrder },
+            },
+            data: { order: { increment: 1 } },
+          });
+	} else if (newPosition > oldOrder) {
+          // Moving down: Decrement order for docs between oldOrder and newPosition (exclusive oldOrder, inclusive newPosition).
+          await tx.document.updateMany({
+            where: {
+              categoryId: oldCategoryId,
+              order: { gt: oldOrder, lte: newPosition },
+            },
+            data: { order: { decrement: 1 } },
+          });
+	} // else newPosition === oldOrder: do nothing 
+      
+	// Finally, update the moving document's order.
+	return await tx.document.update({
+          where: { id: docId },
+          data: { order: newPosition, ...deltaData },
+	  include: { bookmarks: true }
+	});
+      }
+    });
+    res.status(200).send(ret)
+  } catch (e: unknown) {
+    if (e instanceof APIError) {
+      res.status(400).send(e.details);
+    } else {
+      res.status(500).send({err: "An unknown error occured!"});
+    }
+  }
+});
+
+router.patch("/:docid/bookmarks/:id", async (req: Request, res: Response<Bookmark | Err>) => {
+  try {
+    const bookmark: Bookmark = await prisma.$transaction(async (tx) => {
+      const id = req.params.id;
+      const docId = req.params.docid;
+      let newOrder: number | undefined = undefined;
+
+      const maxOrder = await maxBookmarkOrder(tx, docId);
+      if (maxOrder === null) {
+	throw new Error(`Unable to get the max order value for bookmark ${id}`);
+      }
+      
+      const doc = await tx.document.findUnique({
 	where: {
-	  id: req.params.docid
+	  id: docId
 	},
 	include: {
 	  bookmarks: true,
 	  category: true
-	},
-	data: {
-	  ...patched,
-	  bookmarks: {
-	    deleteMany: deletedBookmarks.map(b => ({id : b})),
-	    upsert: patched.bookmarks.map(b => ({ where: { id: b.id }, create: b, update: b }))
-	  },
-	  category: undefined
 	}
       });
+      if (doc === null || doc.category.userId !== req.cookies.userId) {
+	throw new APIError({ err: "Not found!" });
+      }
+      const oldBookmark = doc.bookmarks.find(b => b.id === id);
+      if (oldBookmark === undefined) {
+	throw new APIError({ err: "Tried to update a Bookmark that does not exist!" });
+      }
+      
+      const partial = BookmarkSchema.omit({ id: true, documentId: true }).partial().safeParse(req.body);
+      if (!partial.success) {
+	throw new APIError({ err: partial.error.message });
+      }
+      if (partial.data.page !== undefined) {
+	if (partial.data.page > doc.numpages) {
+	  throw new APIError({ err: "Cannot create a bookmark the points beyond the number of pages in the document!" });
+	}
+      }
+      if (partial.data.order !== undefined) {
+	if (partial.data.order > maxOrder) {
+	  throw new APIError({ err: "Cannot move a bookmark out of bounds! " });
+	}
+	newOrder = partial.data.order;
+      }
 
-      res.status(200).send(ret);
-    } catch (e) {
+      if (newOrder !== undefined) {
+	if (newOrder > oldBookmark.order) {
+	  await tx.bookmark.updateMany({
+	    where: {
+	      documentId: docId,
+	      order: { gt: oldBookmark.order, lte: newOrder }
+	    },
+	    data: { order: { decrement: 1 }}
+	  });
+	} else if (newOrder < oldBookmark.order) {
+	  await tx.bookmark.updateMany({
+	    where: {
+	      documentId: docId,
+	      order: { gte: newOrder, lt: oldBookmark.order }
+	    },
+	    data: { order: { increment: 1 }}
+	  });
+	}
+      }
+
+      const { order: _, ...deltaData } = partial.data;
+      return await tx.bookmark.update({
+	where: { id },
+	data: { order: newOrder, ...deltaData }
+      });
+    });
+
+    res.status(200).send(bookmark);
+  } catch (e: unknown) {
+    if (e instanceof APIError) {
+      res.status(400).send(e.details);
+    } else {
       console.error(e);
-      res.status(400).send({err : "Something when wrong!"});
+      res.status(500).send({ err: "An unknown error occured!" })
+    }
+  }
+});
+
+router.post("/:docid/bookmarks", async (req: Request, res: Response<Bookmark | Err>) => {
+  try {
+    const bookmark: Bookmark = await prisma.$transaction(async (tx) => {
+      const docId = req.params.docid;
+      const doc = await tx.document.findUnique({
+	where: {
+	  id: docId
+	},
+	include: {
+	  bookmarks: true,
+	  category: true
+	}
+      });
+      if (doc === null || doc.category.userId !== req.cookies.userId) {
+	throw new APIError({ err: "Not found!" });
+      }
+      const maxOrder = await maxBookmarkOrder(tx, docId);
+      if (maxOrder === null) {
+	throw new Error(`Unable to get the maximum order value for bookmarks associated with Document ${docId}`);
+      }
+      const partial = BookmarkSchema.omit({ id: true, documentId: true }).partial({ order: true }).safeParse(req.body);
+      if (!partial.success) {
+	throw new APIError({ err: partial.error.message });
+      }
+      if (partial.data.order !== undefined) {
+	if (partial.data.order > maxOrder + 1) {
+	  throw new APIError({ err: "Cannot create a bookmark out of bounds! "});
+	}
+	if (partial.data.order < maxOrder + 1) {
+	  await tx.bookmark.updateMany({
+	    where: {
+	      documentId: docId,
+	      order: { gte: partial.data.order }
+	    },
+	    data: { order: { increment: 1 }}
+	  });
+	}
+      }
+      
+      return await tx.bookmark.create({
+	data: {
+	  ...partial.data,
+	  order: partial.data.order ?? (maxOrder + 1),
+	  documentId: docId
+	}
+      });
+    });
+
+    res.status(200).send(bookmark);
+  } catch (e: unknown) {
+    if (e instanceof APIError) {
+      res.status(400).send(e.details);
+    } else {
+      res.status(500).send({ err: "An unexpected error occured!" });
+    }
+  }
+});
+
+router.delete("/:docid/bookmarks/:id", async (req: Request, res: Response<Err | undefined>) => {
+  try {
+    await prisma.$transaction(async (tx) => {
+      const docId = req.params.docid;
+      const id = req.params.id;
+      const doc = await tx.document.findUnique({
+	where: {
+	  id: docId
+	},
+	include: {
+	  bookmarks: true,
+	  category: true
+	}
+      });
+      if (doc === null || doc.category.userId !== req.cookies.userId) {
+	throw new APIError({ err: "Not found!" });
+      }
+      const oldBookmark = doc.bookmarks.find(b => b.id === id);
+      if (oldBookmark === undefined) {
+	throw new APIError({ err: `No such bookmark with id ${id} exists on document ${docId}!`});
+      }
+      await tx.bookmark.delete({
+	where: { id }
+      });
+      await tx.bookmark.updateMany({
+	where: {
+	  documentId: docId,
+	  order: { gt: oldBookmark.order }
+	},
+	data: { order: { decrement: 1 } }
+      });
+    });
+
+    res.status(204).send();
+  } catch (e: unknown) {
+    if (e instanceof APIError) {
+      res.status(400).send(e.details);
+    } else {
+      res.status(500).send({ err: "An unexpected error occured!" });
     }
   }
 });
 
 router.delete("/:docid", async (req: Request, res: Response<Document | Err>) => {
-  const doc: Document | null = await prisma.document.findUnique({
-    where: {
-      id: req.params.docid
-    },
-    include: {
-      bookmarks: true,
-      category: true
-    }
-  });
-
-  if (doc === null || doc.category.userId !== req.cookies.userId) {
-    res.status(404).send({err: "Not found!"});
-  } else {
-    await prisma.document.delete({
-      where: {
-	id: req.params.docid
+  try {
+    await prisma.$transaction(async (tx) => {
+      const docId = req.params.docid;
+      const doc = await tx.document.findUnique({
+	where: {
+	  id: docId
+	},
+	include: {
+	  bookmarks: true,
+	  category: true
+	}
+      });
+      if (doc === null || doc.category.userId !== req.cookies.userId) {
+	throw new APIError({ err: "Not found!" });
       }
+      await tx.document.delete({
+	where: { id: docId }
+      });
+      await tx.document.updateMany({
+	where: {
+	  id: docId,
+	  order: { gt: doc.order }
+	},
+	data: { order: { decrement: 1 } }
+      });
     });
+
     res.status(204).send();
+  } catch (e: unknown) {
+    if (e instanceof APIError) {
+      res.status(400).send(e.details);
+    } else {
+      res.status(500).send({ err: "An unexpected error occured!" });
+    }
   }
 });
 
 router.get("/:docid", async (req: Request, res: Response<Document | Err>) => { // `GET /api/v1/docs/<id>`
-  const doc: Document | null = await prisma.document.findUnique({
+  const doc = await prisma.document.findUnique({
     where: {
       id: req.params.docid
     },
     include: {
-      bookmarks: true,
+      bookmarks: { orderBy: { order: "asc" } },
       category: true
     }
   });
@@ -139,14 +435,14 @@ router.get("/:docid/pages/:pagenum/image", async (req: Request, res: Response) =
   if (doc === null || doc.category.userId !== req.cookies.userId) {
     res.status(404).send({err: "Not found!"});
   } else {
-    const response = await fetch(`https://picsum.photos/id/${req.params.pagenum}/1080/1920`);
+    const response = await fetch(`https://s3.magnusfulton.com/com.listenink/${doc.s3key}/${req.params.pagenum}.jpg`);
     res.setHeader('Content-Type', response.headers.get('content-type') ?? "image/jpeg");
     res.status(200);
     if (response.body === null) {
       res.send();
-     } else {
+    } else {
       Readable.fromWeb(response.body).pipe(res);
-     }
+    }
   }
 });
 
@@ -163,7 +459,14 @@ router.get("/:docid/pages/:pagenum/audio", async (req: Request, res: Response) =
   if (doc === null || doc.category.userId !== req.cookies.userId) {
     res.status(404).send({err: "Not found!"});
   } else {
-    res.status(200).sendFile("src/dev/bee movie intro.opus");
+    const response = await fetch(`https://s3.magnusfulton.com/com.listenink/${doc.s3key}/${req.params.pagenum}.mp3`);
+    res.setHeader('Content-Type', response.headers.get('content-type') ?? "audio/mpeg");
+    res.status(200);
+    if (response.body === null) {
+      res.send();
+    } else {
+      Readable.fromWeb(response.body).pipe(res);
+    }
   }
 });
 
@@ -180,6 +483,14 @@ router.get("/:docid/pages/:pagenum/text", async (req: Request, res: Response) =>
   if (doc === null || doc.category.userId !== req.cookies.userId) {
     res.status(404).send({err: "Not found!"});
   } else {
-    res.status(200).sendFile("src/dev/alice in wonderland.hocr");
+    const response = await fetch(`https://s3.magnusfulton.com/com.listenink/${doc.s3key}/${req.params.pagenum}.hocr`);
+    res.setHeader('Content-Type', response.headers.get('content-type') ?? "text/vnd.hocr+html");
+    res.status(200);
+    if (response.body === null) {
+      res.send();
+    } else {
+      Readable.fromWeb(response.body).pipe(res);
+    }
   }
 });
+

@@ -6,14 +6,21 @@ import { AudioControls } from "@/components/AudioControls";
 import { useDocument } from "@/components/WithDocument";
 import styles from "./index.module.scss";
 import PDFDropModal from "@/components/PDFDropModal";
+import { AppDispatch, RootState, setPdfDropModal } from "@/store";
+import { connect, ConnectedProps } from "react-redux";
 
-interface ContentProps {
-  sidebarOpen: boolean;
-}
+const mapState = (state: RootState) => ({
+  sidebarOpen: state.ui.sidebarOpen
+});
 
-export function Content({ sidebarOpen }: ContentProps) {
+const mapDispatch = (dispatch: AppDispatch) => ({
+  setPdfModalOpen: (open: boolean) => dispatch(setPdfDropModal(open))
+});
+const connector = connect(mapState, mapDispatch);
+type PropsFromRedux = ConnectedProps<typeof connector>;
+
+function ContentComponent({ sidebarOpen, setPdfModalOpen }: PropsFromRedux) {
   const doc = useDocument();
-  const [pdfModalOpen, setPdfModalOpen] = useState(false);
 
   useEffect(() => {
     let dragCounter = 0;
@@ -71,10 +78,9 @@ export function Content({ sidebarOpen }: ContentProps) {
         </p>
       )}
 
-      <PDFDropModal
-        open={pdfModalOpen}
-        onClose={() => setPdfModalOpen(false)}
-      />
+      <PDFDropModal />
     </main>
   );
 }
+
+export const Content = connector(ContentComponent); 

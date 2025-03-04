@@ -12,7 +12,8 @@ api.use("/categories", category);
 
 // Register the api endpoints with the app
 const app: Express = express();
-app.use(cookieParser())
+app.use(express.json());
+app.use(cookieParser());
 app.use("/api/v1", api);
 
 // Serve the app

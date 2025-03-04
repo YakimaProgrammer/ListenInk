@@ -9,7 +9,6 @@ import {
   ListItemText,
   Collapse,
   TextField,
-  IconButton,
   Menu,
   MenuItem,
   Box,
@@ -17,27 +16,19 @@ import {
 import {
   KeyboardArrowRight,
   KeyboardArrowDown,
-  ArrowUpward,
-  ArrowDownward,
   Edit,
   Delete,
   Palette,
 } from "@mui/icons-material";
-import { connect, ConnectedProps } from "react-redux";
+import { connect, ConnectedProps, useDispatch } from "react-redux";
 import { useNavigate, useParams } from "react-router";
 import { Conditional } from "@/components/Conditional";
-import { RootState } from "@/store";
 import {
-  ReshapedCategory,
-  ReducedDoc,
-  renameCategory,
-  renameDocument,
+    AppDispatch,
+  RootState,
   deleteCategory,
-  deleteDocument,
-  changeCategoryColor,
-  reorderCategories,
-  moveDocument,
-} from "@/store/slices/categories";
+  deleteDocument
+} from "@/store";
 import { urlFor } from "@/pages/urlfor";
 import {
   useState,
@@ -45,6 +36,8 @@ import {
   MouseEvent as ReactMouseEvent,
   DragEvent,
 } from "react";
+import { Category, Document } from "@/types";
+import { EnhancedDocument, selectCategories, updateDocument, upsertCategory } from "@/store/slices/categories";
 
 /** The palette for changing category colors. */
 const categoryColors = [
@@ -62,32 +55,25 @@ const categoryColors = [
 
 /** Maps global Redux state into props. */
 const mapStateToProps = (state: RootState) => {
-  const reason =
-    state.categories.status === "failure"
-      ? state.categories.message
-      : undefined;
-  const categories =
-    state.categories.status === "success" ? state.categories.categories : [];
-
   return {
-    reason,
-    categories,
+    categories: selectCategories(state),
     status: state.categories.status,
-  };
+    reason: state.categories.status === "failure" ? state.categories.message : undefined
+  }
 };
 const connector = connect(mapStateToProps);
 type PropsFromRedux = ConnectedProps<typeof connector>;
 
 function CategoriesComponent({ reason, status, categories }: PropsFromRedux) {
+  const cats = Object.values(categories).filter((c?: Category): c is Category => c !== undefined);
   return (
     <Conditional status={status} reason={reason}>
       <List>
-        {categories.map((cat, index) => (
+        {cats.map(cat => (
           <CategoryRow
             key={cat.id}
             category={cat}
-            index={index}
-            total={categories.length}
+            total={cats.length}
           />
         ))}
       </List>
@@ -98,14 +84,14 @@ export const Categories = connector(CategoriesComponent);
 
 /** Represents a single Category row + nested documents. */
 interface CategoryRowProps {
-  category: ReshapedCategory;
-  index: number;
+  category: Category & { documents: EnhancedDocument[] };
   total: number;
 }
-function CategoryRow({ category, index, total }: CategoryRowProps) {
+function CategoryRow({ category, total }: CategoryRowProps) {
   const { docId } = useParams();
   const navigate = useNavigate();
-
+  const dispatch = useDispatch<AppDispatch>();
+  
   // Whether category is "open."
   const [open, setOpen] = useState(false);
   // If user selected a doc here, forcibly open
@@ -154,7 +140,7 @@ function CategoryRow({ category, index, total }: CategoryRowProps) {
   // DRAG & DROP with a custom drag preview
   const handleDragStart = (
     e: DragEvent<HTMLButtonElement>,
-    doc: ReducedDoc
+    doc: EnhancedDocument
   ) => {
     e.dataTransfer.setData("docId", doc.id);
     e.dataTransfer.setData("sourceCatId", category.id);
@@ -190,11 +176,10 @@ function CategoryRow({ category, index, total }: CategoryRowProps) {
     const sourceCatId = e.dataTransfer.getData("sourceCatId");
     if (!docId2 || !sourceCatId) return;
     if (sourceCatId === category.id) return; // no move if same cat
-    window.store.dispatch(
-      moveDocument({
+    dispatch(
+      updateDocument({
         docId: docId2,
-        sourceCategoryId: sourceCatId,
-        targetCategoryId: category.id,
+        categoryId: category.id,
       })
     );
   };
@@ -236,8 +221,8 @@ function CategoryRow({ category, index, total }: CategoryRowProps) {
   const commitCatRename = () => {
     const trimmed = catName.trim();
     if (trimmed && trimmed !== category.name) {
-      window.store.dispatch(
-        renameCategory({ categoryId: category.id, newName: trimmed })
+      dispatch(
+        upsertCategory({ categoryId: category.id, name: trimmed })
       );
     }
     setEditingCat(false);
@@ -246,7 +231,7 @@ function CategoryRow({ category, index, total }: CategoryRowProps) {
   const commitDocRename = (docId: string) => {
     const trimmed = docName.trim();
     if (trimmed) {
-      window.store.dispatch(renameDocument({ docId, newName: trimmed }));
+      dispatch(updateDocument({ docId, name: trimmed }));
     }
     setEditingDocId(null);
   };
@@ -255,9 +240,9 @@ function CategoryRow({ category, index, total }: CategoryRowProps) {
   const handleDelete = () => {
     if (!ctxMenu) return;
     if (ctxMenu.itemType === "category") {
-      window.store.dispatch(deleteCategory(ctxMenu.itemId));
+      dispatch(deleteCategory({ id: ctxMenu.itemId }));
     } else {
-      window.store.dispatch(deleteDocument(ctxMenu.itemId));
+      dispatch(deleteDocument({ id: ctxMenu.itemId }));
     }
     setCtxMenu(null);
   };
@@ -268,8 +253,8 @@ function CategoryRow({ category, index, total }: CategoryRowProps) {
     setCtxMenu(null);
   };
   const pickColor = (c: string) => {
-    window.store.dispatch(
-      changeCategoryColor({ categoryId: category.id, color: c })
+    dispatch(
+      upsertCategory({ categoryId: category.id, color: c })
     );
     setColorMenuCoords(null);
   };
@@ -277,27 +262,19 @@ function CategoryRow({ category, index, total }: CategoryRowProps) {
   // (4) REORDER categories up/down
   const handleMoveUp = (e: ReactMouseEvent) => {
     e.stopPropagation();
-    if (index < 1) return;
-    const catAbove = getCatAtIndex(index - 1);
-    if (!catAbove) return;
-    window.store.dispatch(
-      reorderCategories({
+    dispatch(
+      upsertCategory({
         categoryId: category.id,
-        referenceCategoryId: catAbove.id,
-        position: "before",
+        order: category.order + 1
       })
     );
   };
   const handleMoveDown = (e: ReactMouseEvent) => {
     e.stopPropagation();
-    if (index >= total - 1) return;
-    const catBelow = getCatAtIndex(index + 1);
-    if (!catBelow) return;
-    window.store.dispatch(
-      reorderCategories({
+    dispatch(
+      upsertCategory({
         categoryId: category.id,
-        referenceCategoryId: catBelow.id,
-        position: "after",
+        order: category.order - 1
       })
     );
   };
@@ -307,7 +284,7 @@ function CategoryRow({ category, index, total }: CategoryRowProps) {
     setEditingCat(true);
     setCatName(category.name);
   };
-  const handleDocDoubleClick = (doc: ReducedDoc) => {
+  const handleDocDoubleClick = (doc: EnhancedDocument) => {
     setEditingDocId(doc.id);
     setDocName(doc.name);
   };
@@ -461,11 +438,4 @@ function CategoryRow({ category, index, total }: CategoryRowProps) {
       </Menu>
     </div>
   );
-
-  /** Helper to get the category above/below for reorder. */
-  function getCatAtIndex(i: number): ReshapedCategory | undefined {
-    const st = window.store.getState();
-    if (st.categories.status !== "success") return undefined;
-    return st.categories.categories[i];
-  }
 }

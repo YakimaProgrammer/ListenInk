@@ -1,8 +1,7 @@
-import { configureStore } from "@reduxjs/toolkit";
-import categoriesReducer from "./slices/categories";
-import authReducer from "./slices/auth";
+import { configureStore } from '@reduxjs/toolkit'
+import categoriesReducer, { fetchDocuments } from "./slices/categories";
+import authReducer, { fetchProfile } from "./slices/auth";
 import uiReducer from "./slices/ui";
-import { fetchData } from "./thunks";
 
 export const store = configureStore({
   reducer: {
@@ -12,28 +11,40 @@ export const store = configureStore({
   },
 });
 
-declare global {
-  interface Window {
-    store: typeof store;
-  }
-}
-window.store = store;
-
 // Infer the `RootState` and `AppDispatch` types from the store itself
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
 
-export { setCreds, fail as authFail } from "./slices/auth";
-export { setCategories, fail as docsFail } from "./slices/categories";
 export {
   setSidebar,
   setCategory,
   setQuery,
   setSearchDialog,
-  setIsPlaying,
-  setPlaybackPos,
-  setPlaybackSpeed,
-  setPlaybackEnd,
+  setPdfDropModal,
+  setPdfDropStatus,
 } from "./slices/ui";
 
-window.addEventListener("load", () => store.dispatch(fetchData()));
+export type {
+  PDFDropStatus
+} from "./slices/ui";
+
+export {
+  setIsPlaying,
+  setPlaybackSpeed,
+  updateBookmark,
+  updateDocument,
+  upsertCategory,
+  createDocument,
+  deleteCategory,
+  deleteDocument
+} from "./slices/categories";
+
+window.addEventListener("load",  async () => {
+  try {
+    //fetchProfiles populates the auth slice and sets the necessary cookies for fetchDocuments
+    await store.dispatch(fetchProfile()).unwrap();
+    await store.dispatch(fetchDocuments()).unwrap();
+  } catch (err) {
+    console.error("Error during page load:", err);
+  }
+});

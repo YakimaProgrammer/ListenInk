@@ -15,21 +15,16 @@ import { connect, ConnectedProps } from "react-redux";
 import { useNavigate } from "react-router";
 import { JSX } from "react";
 import { Search, Close, Description } from "@mui/icons-material";
-import { ReducedDoc, ReshapedCategory } from "@/store/slices/categories";
 import { urlFor } from "@/pages/urlfor";
+import { EnhancedDocument } from "@/store/slices/categories";
+import { Document } from "@/types";
 
 import style from "./index.module.scss";
 
 const mapStateToProps = (state: RootState) => ({
   query: state.ui.searchQuery,
   open: state.ui.searchDialogOpen,
-  docs:
-    state.categories.status === "success"
-      ? state.categories.categories.reduce(
-          (acc: ReducedDoc[], c: ReshapedCategory) => acc.concat(c.documents),
-          []
-        )
-      : [],
+  docs: state.categories.status === "success" ? Object.values(state.categories.documents).filter((d): d is EnhancedDocument => d !== undefined) : []
 });
 
 const mapDispatchToProps = (dispatch: AppDispatch) => ({
@@ -52,17 +47,17 @@ function SearchDialogComponent({
 
   // Add doc.text search
   const hits = docs
-    .filter((d: ReducedDoc) => {
+    .filter((d: EnhancedDocument) => {
       const titleMatch = d.name.toLowerCase().includes(query.toLowerCase());
-      const textMatch =
-        d.text?.toLowerCase().includes(query.toLowerCase()) ?? false;
+      // @TODO
+      const textMatch = true // d.text?.toLowerCase().includes(query.toLowerCase()) ?? false;
       return titleMatch || textMatch;
     })
     .slice(0, NUM_RESULTS);
 
   const results: JSX.Element[] = [];
   for (let i = 0; i < NUM_RESULTS; i++) {
-    const d = hits[i];
+    let d: Document | undefined = hits[i];
     results.push(
       <ListItemButton
         key={i}
@@ -91,22 +86,24 @@ function SearchDialogComponent({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           fullWidth
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search />
-              </InputAdornment>
-            ),
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton
-                  onClick={query === "" ? close : () => setQuery("")}
-                  size="small"
-                >
-                  <Close />
-                </IconButton>
-              </InputAdornment>
-            ),
+          slotProps={{
+            input: {
+	      startAdornment: (
+		<InputAdornment position="start">
+                  <Search />
+		</InputAdornment>
+              ),
+              endAdornment: (
+		<InputAdornment position="end">
+                  <IconButton
+                    onClick={query === "" ? close : () => setQuery("")}
+                    size="small"
+                  >
+                    <Close />
+                  </IconButton>
+		</InputAdornment>
+              ),
+	    }
           }}
         />
         <List>{results}</List>

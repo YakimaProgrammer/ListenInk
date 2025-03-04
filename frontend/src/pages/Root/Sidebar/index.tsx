@@ -15,33 +15,35 @@ import { DrawerHeader } from "@/components/DrawerHeader";
 import { Categories } from "../Categories";
 import styles from "./index.module.scss";
 import { connect, ConnectedProps } from "react-redux";
-import { AppDispatch, RootState, setSidebar } from "@/store";
-import {
-  attachPdfToDocument,
-  addNewDocument,
-  renameDocument,
-  setCurDocument,
-  addCategory,
-} from "@/store/slices/categories";
-
-interface SidebarOwnProps {
-  sidebarOpen: boolean;
-  closeSidebar: () => void;
-  openDialog: () => void; // for the search dialog
-}
+import { AppDispatch, createDocument, RootState, setSearchDialog, setSidebar, upsertCategory } from "@/store";
+import { useNavigate } from "react-router";
+import { urlFor } from "@/pages/urlfor";
+import { useDocument } from "@/components/WithDocument";
 
 // If you want to read something from Redux, do so here
-const mapStateToProps = (state: RootState) => ({});
-const mapDispatchToProps = (dispatch: AppDispatch) => ({});
+const mapStateToProps = (state: RootState) => ({
+  sidebarOpen: state.ui.sidebarOpen
+});
+const mapDispatchToProps = (dispatch: AppDispatch) => ({
+  createNewCategory: () => dispatch(upsertCategory({ name: "New Category", color: "#888888" })),
+  closeSidebar: () => dispatch(setSidebar(false)),
+  openDialog: () => dispatch(setSearchDialog(true)),
+  createDoc: (file: File, categoryId?: string) => dispatch(createDocument({ file, categoryId }))
+});
+  
 const connector = connect(mapStateToProps, mapDispatchToProps);
 type PropsFromRedux = ConnectedProps<typeof connector>;
-type SidebarProps = SidebarOwnProps & PropsFromRedux;
 
 function SidebarComponent({
   sidebarOpen,
   closeSidebar,
   openDialog,
-}: SidebarProps) {
+  createNewCategory,
+  createDoc
+}: PropsFromRedux) {
+  const navigate = useNavigate();
+  const activeDocument = useDocument();
+
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   // For the "Upload" button
@@ -51,74 +53,29 @@ function SidebarComponent({
     setAnchorEl(e.currentTarget);
   };
   const handleCloseMenu = () => setAnchorEl(null);
-
-  // Actually create a new doc
-  const handleCreateDocument = () => {
-    // We'll dispatch the "addNewDocument" action from our categories slice
-    window.store.dispatch(
-      addNewDocument({ name: "New Document" }) // you can pass text if you want
-    );
-    handleCloseMenu();
-  };
-
-  // Create a new category
-  const handleCreateCategory = () => {
-    // We'll dispatch "addCategory"
-    // color is optional, or default #888
-    window.store.dispatch(
-      addCategory({ name: "New Category", color: "#888888" })
-    );
-    handleCloseMenu();
-  };
-
   // When user clicks the Upload icon
   const handleUploadClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
+      handleCloseMenu()
     }
   };
 
   // Actually handle the file input
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = ""; // reset so we can re-upload same file if needed
     if (!file) return;
-
-    if (file.type !== "application/pdf") {
-      alert("Only PDF files are allowed!");
-      return;
-    }
-    const newName = file.name.replace(/\.pdf$/i, "");
-    // If we have a "current doc", see if it has a PDF
-    const st = window.store.getState();
-    const curDocId = st.categories.curDocumentId; // might be null
-
-    if (curDocId && st.categories.pdfByDocId[curDocId]) {
-      // The doc has a PDF => create a new doc
-      const newDocName = newName || "UploadedDoc";
-      window.store.dispatch(addNewDocument({ name: newDocName }));
-      // The new doc is presumably the last doc in the "Uncategorized"?
-      // or get doc ID from your slice logic
-      // we can generate an ID manually if we want
-      const newDocId = "doc-" + Date.now();
-      window.store.dispatch(setCurDocument(newDocId));
-      window.store.dispatch(attachPdfToDocument({ docId: newDocId, file }));
-      alert(`Created new doc "${newDocName}" from PDF (existing doc had PDF).`);
-    } else if (curDocId) {
-      // doc has no PDF => attach + rename
-      window.store.dispatch(attachPdfToDocument({ docId: curDocId, file }));
-      window.store.dispatch(renameDocument({ docId: curDocId, newName }));
-      alert(`Attached PDF to current doc + renamed to "${newName}".`);
-    } else {
-      // No current doc => create a brand new doc
-      const newDocName = newName || "UploadedDoc";
-      window.store.dispatch(addNewDocument({ name: newDocName }));
-      const newDocId = "doc-" + Date.now();
-      window.store.dispatch(setCurDocument(newDocId));
-      window.store.dispatch(attachPdfToDocument({ docId: newDocId, file }));
-      alert(`Created new doc "${newDocName}" and attached PDF.`);
+    const doc = await createDoc(file, activeDocument?.id);
+    if (typeof doc.payload !== "string" && doc.payload !== undefined) {
+      navigate(urlFor("docs", doc.payload.id));
     }
   };
+
+  const handleCategoryClick = () => {
+    createNewCategory();
+    handleCloseMenu();
+  }
 
   return (
     <Drawer
@@ -157,10 +114,10 @@ function SidebarComponent({
           open={Boolean(anchorEl)}
           onClose={handleCloseMenu}
         >
-          <MenuItem onClick={handleCreateDocument}>
+          <MenuItem onClick={handleUploadClick}>
             Create New Document
           </MenuItem>
-          <MenuItem onClick={handleCreateCategory}>
+          <MenuItem onClick={handleCategoryClick}>
             Create New Category
           </MenuItem>
         </Menu>

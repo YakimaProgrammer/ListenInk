@@ -22,6 +22,8 @@ model Category {
 
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   userId    String
+  
+  order     Int        // Defines order within the user's categories
 }
 
 model Document {
@@ -34,13 +36,16 @@ model Document {
 
   category    Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   categoryId  String
+  
+  order       Int        // Defines order within the category
 }
 
 model Bookmark {
   id          String     @id @default(nanoid())
   page        Int
-  audiotime   Int        // in milliseconds
-
+  audiotime   Int        // in seconds
   document    Document   @relation(fields: [documentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   documentId  String
+  
+  order       Int        // Defines order within the document
 }
