@@ -36,7 +36,7 @@ import {
   MouseEvent as ReactMouseEvent,
   DragEvent,
 } from "react";
-import { Category, Document } from "@/types";
+import { Category } from "@/types";
 import { EnhancedDocument, selectCategories, updateDocument, upsertCategory } from "@/store/slices/categories";
 
 /** The palette for changing category colors. */
@@ -260,6 +260,7 @@ function CategoryRow({ category, total }: CategoryRowProps) {
   };
 
   // (4) REORDER categories up/down
+  /*
   const handleMoveUp = (e: ReactMouseEvent) => {
     e.stopPropagation();
     dispatch(
@@ -278,6 +279,7 @@ function CategoryRow({ category, total }: CategoryRowProps) {
       })
     );
   };
+  */
 
   // Double-click rename logic (same as context-rename):
   const handleCatDoubleClick = () => {

@@ -1,5 +1,5 @@
 // --- frontend/src/pages/Root/Content/index.tsx ---
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { DrawerHeader } from "@/components/DrawerHeader";
 import { PDFViewer } from "@/components/PDFViewer";
 import { AudioControls } from "@/components/AudioControls";
@@ -60,7 +60,7 @@ function ContentComponent({ sidebarOpen, setPdfModalOpen }: PropsFromRedux) {
       window.removeEventListener("dragover", handleDragOver);
       window.removeEventListener("drop", handleDrop);
     };
-  }, []);
+  }, [setPdfModalOpen]);
 
   return (
     <main className={`${styles.main} ${sidebarOpen ? styles.mainOpen : ""}`}>

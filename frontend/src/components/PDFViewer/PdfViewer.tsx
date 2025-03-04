@@ -1,4 +1,3 @@
-import { ViewSidebar } from "@mui/icons-material";
 import { IconButton } from "@mui/material";
 import styles from "./PdfViewer.module.scss";
 

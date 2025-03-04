@@ -1,6 +1,6 @@
 import { connect, ConnectedProps } from "react-redux";
 import Box from "@mui/material/Box";
-import { AppDispatch, RootState, setSearchDialog, setSidebar } from "@/store";
+import { AppDispatch, RootState, setSidebar } from "@/store";
 
 import styles from "./index.module.scss";
 
