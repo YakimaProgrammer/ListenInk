@@ -17,7 +17,7 @@ import {
   RootState,
   setIsPlaying,
   setPlaybackSpeed,
-  updateBookmark
+  upsertBookmark
 } from "@/store";
 import { PlaybackSpeed } from "@/store/slices/categories";
 import style from "./index.module.scss";
@@ -45,7 +45,7 @@ function mapDispatchToProps(dispatch: AppDispatch, ownProps: InjectedProps) {
   return {
     setIsPlaying: (isPlaying: boolean) => dispatch(setIsPlaying({id: ownProps.docId, isPlaying })),
     setPlaybackSpeed: (playbackSpeed: PlaybackSpeed) => dispatch(setPlaybackSpeed({id: ownProps.docId, playbackSpeed })),
-    setPlaybackPos: (pos: number) => dispatch(updateBookmark({ docId: ownProps.docId, time: pos }))
+    setPlaybackPos: (pos: number) => dispatch(upsertBookmark({ docId: ownProps.docId, time: pos }))
   };
 }
 const connector = connect(mapStateToProps, mapDispatchToProps);

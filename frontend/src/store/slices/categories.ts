@@ -69,7 +69,7 @@ export const categoriesSlice = createSlice({
       });
 
     builder
-      .addCase(updateBookmark.fulfilled, (state, action: PayloadAction<Bookmark>) => {
+      .addCase(upsertBookmark.fulfilled, (state, action: PayloadAction<Bookmark>) => {
 	if (state.status === "success") {
 	  const doc = state.documents[action.payload.documentId];
 	  if (doc === undefined) {
@@ -90,7 +90,7 @@ export const categoriesSlice = createSlice({
 	  console.error("[ERROR] Cannot reconcile client state with server state! Server accepted a bookmark modification, but the client does not have a valid document list!");
 	}
       })
-      .addCase(updateBookmark.rejected, (_, action: PayloadAction<string | undefined>) => {
+      .addCase(upsertBookmark.rejected, (_, action: PayloadAction<string | undefined>) => {
 	console.error(`[ERROR] An error occured when modifying a bookmark: ${action.payload}`);
       });
 
@@ -235,7 +235,7 @@ const BookmarkOrErrSchema = z.union([BookmarkSchema, ErrSchema]);
  * @param bookmarkId - optional; either a bookmarkId or the relative index of a bookmark. If omitted or if it points to a nonexistant bookmark, the field is ignored and a new bookmark is created.
  * @returns a new `Bookmark`
  */
-export const updateBookmark = createAsyncThunk<
+export const upsertBookmark = createAsyncThunk<
   Bookmark,
   UpdateBookmarkProps,
   { rejectValue: string, state: RootState }

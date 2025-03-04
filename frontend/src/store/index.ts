@@ -31,7 +31,7 @@ export type {
 export {
   setIsPlaying,
   setPlaybackSpeed,
-  updateBookmark,
+  upsertBookmark,
   updateDocument,
   upsertCategory,
   createDocument,
