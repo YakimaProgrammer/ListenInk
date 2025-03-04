@@ -1,29 +1,32 @@
 .audioControls {
   width: 100%;
-  padding: 20px;
+  padding-bottom: 20px;
   font-family: Arial, sans-serif;
 }
 
 .timeDisplay {
-  display: flex;
+  
   justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;
 }
 
 .progressBar {
-  flex-grow: 1;
   height: 10px;
   background: #ddd;
-  margin: 0 10px;
   position: relative;
+  width: 1000px;
 }
 
 .progress {
   height: 100%;
-  background: #007bff;
+  background: transparent;
+  background-color: black;
   width: 0;
+  height: 100%;
 }
+
+
 
 .controlPanel {
   display: flex;
@@ -37,6 +40,7 @@
   padding: 10px;
   font-size: 16px;
   cursor: pointer;
+  background: white;
 }
 
 .playbackSpeed {
@@ -46,8 +50,8 @@
 /* --- frontend/src/components/AudioControls/index.module.scss --- */
 
 .audioControls {
-  width: 100%;
-  padding: 20px;
+  width: 97%;
+
   font-family: Arial, sans-serif;
 }
 
@@ -79,6 +83,6 @@
 
 .progress {
   height: 100%;
-  background: #007bff;
+  background: white;
   width: 0;
 }

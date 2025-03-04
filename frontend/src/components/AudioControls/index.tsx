@@ -7,10 +7,8 @@ import {
   MenuItem,
   Select,
   SelectChangeEvent,
-  Slider,
   Typography,
 } from "@mui/material";
-import { ArrowLeft, ArrowRight, Pause, PlayArrow } from "@mui/icons-material";
 import { InjectedProps, withDocument } from "@/components/WithDocument";
 import {
   AppDispatch,
@@ -20,7 +18,7 @@ import {
   upsertBookmark
 } from "@/store";
 import { PlaybackSpeed } from "@/store/slices/categories";
-import style from "./index.module.scss";
+import styles from "./index.module.scss";
 
 interface AudioControlsState {
   duration?: number;
@@ -63,10 +61,6 @@ function isPlaybackSpeed(speed: string): speed is PlaybackSpeed {
     default:
       return false;
   }
-}
-
-function clamp(num: number, min: number, max: number): number {
-  return Math.min(Math.max(num, min), max);
 }
 
 function formatTime(seconds?: number) {
@@ -195,95 +189,120 @@ class AudioControlsComponent extends Component<PropsFromRedux, AudioControlsStat
 
   render() {
     const { playbackPos, playbackSpeed, isPlaying, currentPage, docId } = this.props;
-    const timeRemaining = this.state.duration === undefined ? undefined : clamp(this.state.duration - playbackPos, 0, this.state.duration);
-
-    const fractionComplete = this.state.duration === undefined 
-      ? 0 
-      : clamp((playbackPos / this.state.duration) * 100, 0, 100);
+    const fractionComplete = this.state.duration === undefined ? 0 : playbackPos / this.state.duration;
+    const timePlayed = Math.floor(playbackPos);
+    const timeRemaining = this.state.duration === undefined ? 0 : this.state.duration - timePlayed;
     
-    return (
-      <Box className={style.audioControls}>
+  return (
+    <Box className={styles.audioControls}>
+      {/* Control Panel */}
+      <Box className={styles.controlPanel}>
 	<audio
-	  ref={this.audioRef}
-	  src={`/api/v1/docs/${docId}/pages/${currentPage}/audio`}
-	/>
-	{/* Control Panel */}
-	<Box className={style.controlPanel}>
-	  <Button
-            variant="outlined"
-            onClick={this.handleRewind}
-            className={style.controlButton}
-            startIcon={<ArrowLeft />}
-	  >
-            10
-	  </Button>
-	  <Button
+          ref={this.audioRef}
+          src={`/api/v1/docs/${docId}/pages/${currentPage}/audio`}
+        />
+        <Button
+          onClick={this.handleRewind}
+          className={styles.controlButton}
+          style={{ padding: 0, width: '50px', height: '50px' }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24">
+            <path d="M11.99,5V1l-5,5l5,5V7c3.31,0,6,2.69,6,6s-2.69,6-6,6s-6-2.69-6-6h-2c0,4.42,3.58,8,8,8s8-3.58,8-8S16.41,5,11.99,5z" />
+            <text x="12" y="16" fontSize="6" textAnchor="middle" fill="black">10</text> {/* The text */}
+          </svg>
+        </Button>
+
+
+        {/* Play/Pause Button */}
+        <div>
+          <Button
             variant="contained"
             onClick={this.handlePlayPause}
-            className={style.playPauseButton}
-            startIcon={isPlaying ? <Pause /> : <PlayArrow />}
-	  >
-            {isPlaying ? "Pause" : "Play"}
-	  </Button>
-	  <Button
-            variant="outlined"
-            onClick={this.handleSkip}
-            className={style.controlButton}
-            endIcon={<ArrowRight />}
-	  >
-            10
-	  </Button>
+            style={{
+              backgroundColor: 'transparent',
+              boxShadow: 'none',
+              padding: 0,
+              minWidth: 'auto',
+              height: 'auto',
+            }}
+          >
+            {isPlaying ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" fill="black" viewBox="0 0 16 16">
+                <path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5m5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" fill="black" viewBox="0 0 16 16">
+                <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393" />
+              </svg>
+            )}
+          </Button>
+        </div>
 
-	  {/* Playback Speed */}
-	  <FormControl size="small">
-            <Select
-              value={playbackSpeed}
-              onChange={this.handlePlaybackSpeedChange}
-            >
-              <MenuItem value={"0.5"}>0.5x</MenuItem>
-              <MenuItem value={"1"}>1x</MenuItem>
-              <MenuItem value={"1.25"}>1.25x</MenuItem>
-              <MenuItem value={"1.5"}>1.5x</MenuItem>
-              <MenuItem value={"2"}>2x</MenuItem>
-            </Select>
-	  </FormControl>
 
-	  {/* Volume Slider */}
-	  <Box display="flex" alignItems="center" ml={2}>
-            <Typography variant="body2" mr={1}>
-              Vol
-            </Typography>
-            <Slider
-              value={this.state.volume * 100}
-              onChange={this.handleVolumeChange}
-              aria-label="Volume"
-              min={0}
-              max={100}
-              sx={{ width: 100 }}
-            />
-	  </Box>
-	</Box>
+        <Button
+          onClick={this.handleSkip}
+          className={styles.controlButton}
+          style={{ padding: 0, width: '50px', height: '50px' }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24">
+            <path fill="none" d="M0 0h24v24H0z" />
+            <path d="M11.99 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8" />
+            <text x="12" y="16" fontSize="6" textAnchor="middle" fill="black">10</text>
+          </svg>
+        </Button>
 
-	{/* Progress bar */}
-	<Box className={style.timeDisplay}>
-	  <Typography variant="body2" className={style.timePlayed}>
-            {formatTime(playbackPos)}
-	  </Typography>
-	  <Box
-            className={style.progressBar}
-            onClick={this.handlePlaybarClick}
-	  >
-            <Box
-              className={style.progress}
-              style={{ width: `${fractionComplete}%` }}
-            />
-	  </Box>
-	  <Typography variant="body2" className={style.timeRemaining}>
-            -{formatTime(timeRemaining)}
-	  </Typography>
-	</Box>
+
+        {/* Playback Speed */}
+        <FormControl size="small">
+          <Select
+            value={playbackSpeed}
+            onChange={this.handlePlaybackSpeedChange}
+          >
+            <MenuItem value={"0.5"}>0.5x</MenuItem>
+            <MenuItem value={"1"}>1x</MenuItem>
+            <MenuItem value={"1.25"}>1.25x</MenuItem>
+            <MenuItem value={"1.5"}>1.5x</MenuItem>
+            <MenuItem value={"2"}>2x</MenuItem>
+          </Select>
+        </FormControl>
+
+        {/* Volume Slider */}
+        {/* <Box display="flex" alignItems="center" ml={2}>
+          <Typography variant="body2" mr={1}>
+            Vol
+          </Typography>
+          <Slider
+            value={volume}
+            onChange={handleVolumeChange}
+            aria-label="Volume"
+            min={0}
+            max={100}
+            sx={{ width: 100 }}
+          />
+        </Box> */}
       </Box>
-    );
+
+      {/* Progress bar */}
+  
+      <Box className={styles.timeDisplay}>
+        <Typography className={styles.timePlayed}>
+          {formatTime(timePlayed)}
+        </Typography>
+        <Box className={styles.progressBar} style={{ width: '1000px' }}>
+          <Box
+            className={styles.progress}
+            style={{
+              width: `${fractionComplete * 100}%`,
+              backgroundColor: 'black',
+            }}
+          />
+        </Box>
+        <Typography className={styles.timeRemaining}>
+          -{formatTime(timeRemaining)}
+        </Typography>
+      </Box>
+    </Box>
+  );
   }
 }
 
