@@ -62,7 +62,7 @@ export function PdfTopView({
       {/* Box for the top bar */}
       <Box
         sx={{
-          width: 1000,
+          width: 1040,
           height: 40,
           backgroundColor: "#dee7eb",
           borderTopLeftRadius: 16,
