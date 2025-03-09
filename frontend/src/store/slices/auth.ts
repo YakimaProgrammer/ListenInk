@@ -42,55 +42,46 @@ export const fetchProfile = createAsyncThunk<
   void,
   { rejectValue: string }
 >("data/fetchCreds", async (_, { rejectWithValue }) => {
-  const maxAttempts = 3;
-  let attempt = 0;
+  try {
+    const hasCookie = document.cookie.includes("userId");
+    const req = await fetch("/api/v1/auth", {
+      method: hasCookie ? "GET" : "POST",
+    });
+    const resp = UserOrErrSchema.safeParse(await req.json());
 
-  while (attempt < maxAttempts) {
-    attempt++;
-    try {
-      const hasCookie = document.cookie.includes("userId");
-      console.log(`Auth attempt ${attempt}, has cookie: ${hasCookie}`);
-
-      // Use our apiClient instead of fetch directly
-      const req = await apiClient("auth", {
-        method: hasCookie ? "GET" : "POST",
-      });
-
-      console.log("Auth response status:", req.status);
-
-      const data = await req.json();
-      const resp = UserOrErrSchema.safeParse(data);
-
-      if (resp.success) {
-        if ("err" in resp.data) {
-          console.error(resp.data.err);
-          // If this is the last attempt, reject with the error
-          if (attempt >= maxAttempts) {
-            return rejectWithValue(resp.data.err);
-          }
-        } else {
-          return resp.data;
-        }
+    if (resp.success) {
+      if ("err" in resp.data) {
+        console.warn("[AUTH] Session expired. Attempting re-authentication.");
+        document.cookie =
+          "userId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"; // Clear invalid cookies
+        return await reAuthenticate();
       } else {
-        console.error(resp.error.message);
-        if (attempt >= maxAttempts) {
-          return rejectWithValue("Could not parse user profile info!");
-        }
+        return resp.data;
       }
-    } catch (err) {
-      console.error(err);
-      if (attempt >= maxAttempts) {
-        return rejectWithValue("Error retrieving user profile info!");
-      }
+    } else {
+      console.error(resp.error.message);
+      return rejectWithValue("Could not parse user profile info!");
     }
-
-    // Wait before retrying
-    if (attempt < maxAttempts) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-    }
+  } catch (err) {
+    console.error(err);
+    return rejectWithValue("Error retrieving user profile info!");
   }
-
-  return rejectWithValue("Max attempts reached");
 });
+
+async function reAuthenticate(): Promise<User> {
+  const req = await fetch("/api/v1/auth", { method: "POST" }); // Force a new session
+  const resp = UserOrErrSchema.safeParse(await req.json());
+
+  if (resp.success) {
+    if ("err" in resp.data) {
+      throw new Error("[AUTH] Failed to re-authenticate: " + resp.data.err);
+    } else {
+      console.log("[AUTH] Successfully re-authenticated.");
+      return resp.data;
+    }
+  } else {
+    throw new Error("[AUTH] Re-authentication failed.");
+  }
+}
 
 export default authSlice.reducer;
