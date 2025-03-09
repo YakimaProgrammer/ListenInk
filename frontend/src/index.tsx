@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, RouterProvider } from "react-router";
 import { StyledEngineProvider } from "@mui/material/styles";
 import { Provider } from "react-redux";
 import { store } from "./store";
