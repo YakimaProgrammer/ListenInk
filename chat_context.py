@@ -5,7 +5,8 @@ pwd = os.getcwd()
 folder_path = pwd
 
 include = []
-exclude = [".git", "node_modules", "hocr", "package-lock"]
+exclude = [".git", "node_modules", "hocr",
+           "package-lock", "txt", ".md", ".db"]
 
 
 for root, _, files in os.walk(folder_path):
