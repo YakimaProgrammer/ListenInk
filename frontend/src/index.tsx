@@ -21,7 +21,7 @@ let router = createBrowserRouter([
   },
   {
     path: urlFor("docs", ":docId"),
-    Component: Root
+    Component: Root,
   },
   {
     path: "/auth",
@@ -30,13 +30,13 @@ let router = createBrowserRouter([
 ]);
 
 const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
+  document.getElementById("root") as HTMLElement
 );
 root.render(
   <React.StrictMode>
     <StyledEngineProvider injectFirst>
       <Provider store={store}>
-	<RouterProvider router={router} />
+        <RouterProvider router={router} />
       </Provider>
     </StyledEngineProvider>
   </React.StrictMode>
