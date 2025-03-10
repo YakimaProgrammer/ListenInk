@@ -22,8 +22,10 @@ async function maxDocOrder(
     where: { categoryId },
     _max: { order: true },
   });
-  return result._max.order;
+  // If no documents exist in this category, default order is 0.
+  return result._max.order ?? 0;
 }
+
 async function maxBookmarkOrder(
   tx: Prisma.TransactionClient,
   documentId: string
@@ -41,12 +43,10 @@ async function maxBookmarkOrder(
 export const router = Router();
 router.post("/", (_req: Request, res: Response<DocId>) => {
   // `POST /api/v1/docs`
-  res
-    .status(200)
-    .send({
-      document_id:
-        "c9663ed1fc2373ca8cb16ce8bcb4faae781ae8e1e1976803b7a756f81f309b60",
-    });
+  res.status(200).send({
+    document_id:
+      "c9663ed1fc2373ca8cb16ce8bcb4faae781ae8e1e1976803b7a756f81f309b60",
+  });
 });
 
 router.get("/", async (req: Request, res: Response<Document[]>) => {
@@ -75,19 +75,20 @@ router.patch("/:docid", async (req: Request, res: Response<Document | Err>) => {
   // `PATCH /api/v1/docs/<docid>`
   try {
     const ret: Document = await prisma.$transaction(async (tx) => {
-      const docId = req.params.docId;
+      const docId = req.params.docid;
+      console.log("PATCH: docId =", docId);
 
       // Fetch the document along with its current category.
       const doc = await tx.document.findUnique({
         where: { id: docId },
         include: { category: true },
       });
-
       if (doc === null || doc.category.userId !== req.cookies.userId) {
+        console.error("Document not found or user mismatch.");
         throw new APIError({ err: "Not found!" });
       }
 
-      // Parse the request from the user
+      // Parse the request from the user.
       const partial = DocumentSchema.omit({
         id: true,
         numpages: true,
@@ -98,43 +99,49 @@ router.patch("/:docid", async (req: Request, res: Response<Document | Err>) => {
         .partial()
         .safeParse(req.body);
       if (!partial.success) {
+        console.error("Partial parse error:", partial.error);
         throw new APIError({ err: partial.error.message });
       }
 
       const oldCategoryId = doc.categoryId;
       const newCategoryId = partial.data.categoryId;
       const oldOrder = doc.order;
-      let newPosition;
+      let newPosition: number;
       const movingToNewCategory =
         newCategoryId !== undefined && oldCategoryId !== newCategoryId;
 
-      // Anonymous block
+      // Check if an order is provided; if not, default to the current document order.
       {
-        const res = NaturalNumber.safeParse(partial.data.order);
-        if (res.success) {
-          newPosition = res.data;
+        if (partial.data.order !== undefined) {
+          const parseResult = NaturalNumber.safeParse(partial.data.order);
+          if (parseResult.success) {
+            newPosition = parseResult.data;
+          } else {
+            console.error("Order parse failed:", partial.data.order);
+            throw new APIError({ err: "`order` must be a natural number!" });
+          }
         } else {
-          throw new APIError({ err: "`order` must be a natural number!" });
+          newPosition = doc.order;
         }
       }
+
+      console.log("Old Order:", oldOrder);
+      console.log("New Category ID:", newCategoryId);
+      console.log("New Position (computed):", newPosition);
 
       const { order: _, ...deltaData } = partial.data;
 
       if (movingToNewCategory) {
         const max = await maxDocOrder(tx, newCategoryId);
-        if (max === null) {
-          throw new Error(
-            `Unable to get the maximum order value for category ${newCategoryId}`
-          );
-        }
-        // newPosition comes from partial.data.order which cannot be less than zero by the schema
-        if (newPosition !== undefined && newPosition > max) {
+        console.log("Max order in target category:", max);
+        if (max === null || newPosition > max) {
+          console.error("New position out of bounds:", newPosition, max);
           throw new APIError({
             err: "Tried to move a Document out of bounds!",
           });
         }
 
-        // 1. In the old category, decrement order for all docs with order > oldOrder.
+        // Decrement orders in old category
         await tx.document.updateMany({
           where: {
             categoryId: oldCategoryId,
@@ -143,46 +150,39 @@ router.patch("/:docid", async (req: Request, res: Response<Document | Err>) => {
           data: { order: { decrement: 1 } },
         });
 
-        // 2. In the new category, increment order for all docs with order >= newPosition.
-        if (newPosition !== undefined) {
-          await tx.document.updateMany({
-            where: {
-              categoryId: newCategoryId,
-              order: { gte: newPosition },
-            },
-            data: { order: { increment: 1 } },
-          });
-        } else {
-          newPosition = max;
-        }
+        // Increment orders in new category
+        await tx.document.updateMany({
+          where: {
+            categoryId: newCategoryId,
+            order: { gte: newPosition },
+          },
+          data: { order: { increment: 1 } },
+        });
 
-        // 3. Update the moving document to its new category and new order.
-        return await tx.document.update({
+        const updatedDoc = await tx.document.update({
           where: { id: docId },
           data: { categoryId: newCategoryId, order: newPosition, ...deltaData },
           include: { bookmarks: true },
         });
+        console.log("Document updated in new category:", updatedDoc);
+        return updatedDoc;
       } else {
         // Moving within the same category.
         const max = await maxDocOrder(tx, oldCategoryId);
-        if (max === null) {
-          throw new Error(
-            `Unable to get the maximum order value for category ${oldCategoryId}`
+        console.log("Max order in same category:", max);
+        if (max === null || newPosition > max) {
+          console.error(
+            "New position out of bounds (same category):",
+            newPosition,
+            max
           );
-        }
-        // newPosition comes from partial.data.order which cannot be less than zero by the schema
-        if (newPosition !== undefined && newPosition > max) {
           throw new APIError({
             err: "Tried to move a Document out of bounds!",
           });
         }
 
-        if (newPosition === undefined) {
-          newPosition = max;
-        }
-
         if (newPosition < oldOrder) {
-          // Moving up: Increment order for docs between newPosition and oldOrder (inclusive newPosition, exclusive oldOrder).
+          // Moving up.
           await tx.document.updateMany({
             where: {
               categoryId: oldCategoryId,
@@ -191,7 +191,7 @@ router.patch("/:docid", async (req: Request, res: Response<Document | Err>) => {
             data: { order: { increment: 1 } },
           });
         } else if (newPosition > oldOrder) {
-          // Moving down: Decrement order for docs between oldOrder and newPosition (exclusive oldOrder, inclusive newPosition).
+          // Moving down.
           await tx.document.updateMany({
             where: {
               categoryId: oldCategoryId,
@@ -199,18 +199,20 @@ router.patch("/:docid", async (req: Request, res: Response<Document | Err>) => {
             },
             data: { order: { decrement: 1 } },
           });
-        } // else newPosition === oldOrder: do nothing
+        }
 
-        // Finally, update the moving document's order.
-        return await tx.document.update({
+        const updatedDoc = await tx.document.update({
           where: { id: docId },
           data: { order: newPosition, ...deltaData },
           include: { bookmarks: true },
         });
+        console.log("Document updated in same category:", updatedDoc);
+        return updatedDoc;
       }
     });
     res.status(200).send(ret);
   } catch (e: unknown) {
+    console.error("Error in PATCH endpoint:", e);
     if (e instanceof APIError) {
       res.status(400).send(e.details);
     } else {
