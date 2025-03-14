@@ -10,3 +10,12 @@
 .mainOpen {
   margin-left: 0;
 }
+
+// pdfViewerPosition style
+// is used to center the pdf
+// viewer.
+.pdfViewerPosition {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}

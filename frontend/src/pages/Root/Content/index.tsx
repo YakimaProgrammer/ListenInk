@@ -10,11 +10,11 @@ import { AppDispatch, RootState, setPdfDropModal } from "@/store";
 import { connect, ConnectedProps } from "react-redux";
 
 const mapState = (state: RootState) => ({
-  sidebarOpen: state.ui.sidebarOpen
+  sidebarOpen: state.ui.sidebarOpen,
 });
 
 const mapDispatch = (dispatch: AppDispatch) => ({
-  setPdfModalOpen: (open: boolean) => dispatch(setPdfDropModal(open))
+  setPdfModalOpen: (open: boolean) => dispatch(setPdfDropModal(open)),
 });
 const connector = connect(mapState, mapDispatch);
 type PropsFromRedux = ConnectedProps<typeof connector>;
@@ -65,10 +65,15 @@ function ContentComponent({ sidebarOpen, setPdfModalOpen }: PropsFromRedux) {
   return (
     <main className={`${styles.main} ${sidebarOpen ? styles.mainOpen : ""}`}>
       <DrawerHeader />
+
       {/* If doc is selected, show PDF + Audio. Else show empty. */}
+      {/* makes sure that the pdfViewer is centered */}
       {doc ? (
         <>
-          <PDFViewer />
+          <div className={styles.pdfViewerPosition}>
+            <PDFViewer />
+          </div>
+
           <AudioControls />
         </>
       ) : (
@@ -83,4 +88,4 @@ function ContentComponent({ sidebarOpen, setPdfModalOpen }: PropsFromRedux) {
   );
 }
 
-export const Content = connector(ContentComponent); 
+export const Content = connector(ContentComponent);
