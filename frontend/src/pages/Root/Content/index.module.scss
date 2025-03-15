@@ -1,6 +1,23 @@
 @use "src/styles/drawer";
 
+// Hard standard for
+// width and height of the
+// pdfViewer component wrapper
+// box.
+// Height of the box:
+$pdfViewerWrapperHeight: 450px;
+
+// Audio control size standard
+// Padding top for the audio control
+$audioPaddingTop: 10px;
+$audioMaxHeightRatio: 30vh;
+
+// Changes:
 .main {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   flex-grow: 1;
   padding: 24px;
   transition: margin 0.3s ease-out;
@@ -15,7 +32,25 @@
 // is used to center the pdf
 // viewer.
 .pdfViewerPosition {
+  // inner component display
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
+
+  // max height of the pdfViewer
+  height: $pdfViewerWrapperHeight;
+}
+
+.audioControlPosition {
+  // inner component display
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  flex-grow: 1; // audio control can take up the remaining space.
+
+  // max height of the audio control
+  max-height: $audioMaxHeightRatio;
+  padding-top: $audioPaddingTop;
 }

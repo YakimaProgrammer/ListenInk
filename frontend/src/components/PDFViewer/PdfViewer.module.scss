@@ -1,6 +1,9 @@
+$pdfViewerHeight: 390px;
+$pdfContentWidth: 1000px;
+
 .pdfViewer {
   width: 100%;
-  height: 460px;
+  height: $pdfViewerHeight;
   background-color: transparent;
   border-radius: 0;
   display: flex;
@@ -9,7 +12,7 @@
 
 .pdfLeftSideView {
   width: 40px;
-  height: 460px;
+  height: $pdfViewerHeight;
   background-color: #dee7eb;
   display: flex;
   flex-direction: column;
@@ -22,8 +25,8 @@
 }
 
 .pdfExample {
-  width: 1000px;
-  height: 460px;
+  width: $pdfContentWidth;
+  height: $pdfViewerHeight;
   background-color: transparent;
   display: flex;
   flex-direction: row;
