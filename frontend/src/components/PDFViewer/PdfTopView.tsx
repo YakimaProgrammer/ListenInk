@@ -28,13 +28,13 @@ export function PdfTopView({
   zoomLevel,
   onPageChange,
   onZoomChange,
-  openSearchDialog
+  openSearchDialog,
 }: PdfTopViewProps) {
   // Holding users to the strict input validation requirements sucks.
   // Let's transiently let them break those requirements
   const [transientPage, setTransientPage] = useState(`${currentPage}`);
   const [isValid, setIsValid] = useState(true);
-  
+
   // Reset transientPage when the external page changes. We trust this value
   useEffect(() => {
     setTransientPage(`${currentPage}`);
@@ -48,14 +48,18 @@ export function PdfTopView({
     setTransientPage(e.target.value);
 
     // A page must be between zero and the maximum number of pages and must be an integer
-    if (newPage >= 0 && newPage <= totalPages && newPage === Math.floor(newPage)) {
+    if (
+      newPage >= 0 &&
+      newPage <= totalPages &&
+      newPage === Math.floor(newPage)
+    ) {
       onPageChange(newPage);
       setIsValid(true);
     } else {
       setIsValid(false);
     }
   };
-  
+
   return (
     <div>
       {/* Entire Top Bar Section */}
@@ -71,6 +75,7 @@ export function PdfTopView({
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "flex-start",
+          boxShadow: "0px 5px 10px rgba(0, 0, 0, 0.3)",
         }}
       >
         {/* Search Icon for searching content */}
@@ -89,8 +94,8 @@ export function PdfTopView({
           <TextField
             size="small"
             value={transientPage}
-	    error={!isValid}
-	    onChange={handleChange}
+            error={!isValid}
+            onChange={handleChange}
             fullWidth={true}
             sx={{
               width: 60,

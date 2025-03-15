@@ -1,7 +1,12 @@
 .mainPdf {
+  // the style of elements inside
+  // line up
   display: flex;
   flex-direction: column;
-  height: 80%;
+
+  // content fill up the entire outer
+  // box defined in Root/Content/index.module.scss
+  height: 100%;
   width: 100%;
   background-color: white;
 }
