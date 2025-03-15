@@ -74,7 +74,9 @@ function ContentComponent({ sidebarOpen, setPdfModalOpen }: PropsFromRedux) {
             <PDFViewer />
           </div>
 
-          <AudioControls />
+          <div className={styles.audioControlPosition}>
+            <AudioControls />
+          </div>
         </>
       ) : (
         <p style={{ textAlign: "center", marginTop: "2rem" }}>
