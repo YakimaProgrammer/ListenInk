@@ -13,7 +13,7 @@ export const CategorySchema = z.object({
   color: z.string(),
   name: z.string(),
   id: id,
-  order: NaturalNumber
+  order: NaturalNumber,
 });
 export type Category = z.infer<typeof CategorySchema>;
 
@@ -22,7 +22,7 @@ export const BookmarkSchema = z.object({
   page: NaturalNumber,
   audiotime: z.number().finite().min(0),
   documentId: id,
-  order: NaturalNumber
+  order: NaturalNumber,
 });
 export type Bookmark = z.infer<typeof BookmarkSchema>;
 
@@ -34,8 +34,8 @@ export const DocumentSchema = z.object({
   id: id,
   completed: z.boolean(),
   categoryId: id,
-  order: NaturalNumber
-})
+  order: NaturalNumber,
+});
 export type Document = z.infer<typeof DocumentSchema>;
 
 export const ErrSchema = z.object({
@@ -46,6 +46,6 @@ export type Err = z.infer<typeof ErrSchema>;
 export const UserSchema = z.object({
   name: z.string(),
   id: id,
-  email: z.string().email()
+  email: z.string().email(),
 });
 export type User = z.infer<typeof UserSchema>;

@@ -1,6 +1,6 @@
 // --------------------------------------------------
 // File: src/pages/Root/Categories/index.tsx
-// Updated so RIGHT-CLICK rename mirrors double-click logic
+// Updated with debugging logs for react-dnd functionality
 // --------------------------------------------------
 
 import {
@@ -24,20 +24,21 @@ import { connect, ConnectedProps, useDispatch } from "react-redux";
 import { useNavigate, useParams } from "react-router";
 import { Conditional } from "@/components/Conditional";
 import {
-    AppDispatch,
+  AppDispatch,
   RootState,
   deleteCategory,
-  deleteDocument
+  deleteDocument,
 } from "@/store";
 import { urlFor } from "@/pages/urlfor";
-import {
-  useState,
-  useEffect,
-  MouseEvent as ReactMouseEvent,
-  DragEvent,
-} from "react";
+import { useState, useEffect, MouseEvent as ReactMouseEvent } from "react";
 import { Category } from "@/types";
-import { EnhancedDocument, selectCategories, updateDocument, upsertCategory } from "@/store/slices/categories";
+import {
+  EnhancedDocument,
+  selectCategories,
+  updateDocument,
+  upsertCategory,
+} from "@/store/slices/categories";
+import { useDrag, useDrop } from "react-dnd";
 
 /** The palette for changing category colors. */
 const categoryColors = [
@@ -54,33 +55,122 @@ const categoryColors = [
 ];
 
 /** Maps global Redux state into props. */
-const mapStateToProps = (state: RootState) => {
-  return {
-    categories: selectCategories(state),
-    status: state.categories.status,
-    reason: state.categories.status === "failure" ? state.categories.message : undefined
-  }
-};
+const mapStateToProps = (state: RootState) => ({
+  categories: selectCategories(state),
+  status: state.categories.status,
+  reason:
+    state.categories.status === "failure"
+      ? state.categories.message
+      : undefined,
+});
 const connector = connect(mapStateToProps);
 type PropsFromRedux = ConnectedProps<typeof connector>;
 
-function CategoriesComponent({ reason, status, categories }: PropsFromRedux) {
-  const cats = Object.values(categories).filter((c?: Category): c is Category => c !== undefined);
+export function CategoriesComponent({
+  reason,
+  status,
+  categories,
+}: PropsFromRedux) {
+  const cats = Object.values(categories).filter(
+    (c?: Category): c is Category => c !== undefined
+  );
   return (
     <Conditional status={status} reason={reason}>
       <List>
-        {cats.map(cat => (
-          <CategoryRow
-            key={cat.id}
-            category={cat}
-            total={cats.length}
-          />
+        {cats.map((cat) => (
+          <CategoryRow key={cat.id} category={cat} total={cats.length} />
         ))}
       </List>
     </Conditional>
   );
 }
 export const Categories = connector(CategoriesComponent);
+
+/** A separate component for each draggable document item */
+interface DocumentItemProps {
+  doc: EnhancedDocument;
+  categoryId: string;
+  selected: boolean;
+  onClick: () => void;
+  onContextMenu: (e: React.MouseEvent, docId: string) => void;
+  onDoubleClick: () => void;
+  editingDocId: string | null;
+  docName: string;
+  setDocName: (name: string) => void;
+  commitDocRename: (docId: string) => void;
+}
+
+function DocumentItem({
+  doc,
+  categoryId,
+  selected,
+  onClick,
+  onContextMenu,
+  onDoubleClick,
+  editingDocId,
+  docName,
+  setDocName,
+  commitDocRename,
+}: DocumentItemProps) {
+  const [{ isDragging }, dragRef] = useDrag({
+    type: "DOCUMENT",
+    item: { docId: doc.id, sourceCatId: categoryId },
+    collect: (monitor: { isDragging: () => any }) => {
+      const dragging = monitor.isDragging();
+      console.log(`DocumentItem (${doc.id}): monitor.isDragging = ${dragging}`);
+      return { isDragging: dragging };
+    },
+  });
+
+  return (
+    <ListItemButton
+      key={doc.id}
+      selected={selected}
+      onClick={onClick}
+      onContextMenu={(e) => onContextMenu(e, doc.id)}
+      onDoubleClick={onDoubleClick}
+      sx={{ pl: 6 }}
+    >
+      {editingDocId === doc.id ? (
+        <TextField
+          variant="standard"
+          autoFocus
+          value={docName}
+          onChange={(e) => setDocName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              commitDocRename(doc.id);
+            }
+          }}
+          sx={{ maxWidth: 200 }}
+        />
+      ) : (
+        <ListItemText
+          primary={doc.name}
+          sx={{
+            maxWidth: 200,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        />
+      )}
+      <button
+        ref={(node: HTMLButtonElement | null) => {
+          void dragRef(node);
+        }}
+        style={{
+          marginLeft: "auto",
+          cursor: "grab",
+          background: "transparent",
+          border: "none",
+          opacity: isDragging ? 0.5 : 1,
+        }}
+      >
+        <span style={{ color: "#999" }}>⋮⋮</span>
+      </button>
+    </ListItemButton>
+  );
+}
 
 /** Represents a single Category row + nested documents. */
 interface CategoryRowProps {
@@ -91,25 +181,22 @@ function CategoryRow({ category, total }: CategoryRowProps) {
   const { docId } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  
+
   // Whether category is "open."
   const [open, setOpen] = useState(false);
-  // If user selected a doc here, forcibly open
   const hasSelectedDoc = category.documents.some((d) => d.id === docId);
   const isOpen = open || hasSelectedDoc;
 
-  // For inline rename of category
+  // Inline rename for category
   const [editingCat, setEditingCat] = useState(false);
-  // We keep local catName in sync with Redux changes *when not editing*
   const [catName, setCatName] = useState(category.name);
   useEffect(() => {
     if (!editingCat) setCatName(category.name);
   }, [category.name, editingCat]);
 
-  // For inline rename of docs
+  // Inline rename for documents
   const [editingDocId, setEditingDocId] = useState<string | null>(null);
   const [docName, setDocName] = useState("");
-  // Each time we switch which doc is editing, or doc changes in Redux, re-sync
   useEffect(() => {
     if (!editingDocId) return;
     const d = category.documents.find((doc) => doc.id === editingDocId);
@@ -124,67 +211,45 @@ function CategoryRow({ category, total }: CategoryRowProps) {
     itemId: string;
   } | null>(null);
 
-  // For color picker anchored at a custom position
+  // For color picker position
   const [colorMenuCoords, setColorMenuCoords] = useState<{
     x: number;
     y: number;
   } | null>(null);
 
-  // Close context on any left-click
   useEffect(() => {
     const close = () => setCtxMenu(null);
     window.addEventListener("click", close);
     return () => window.removeEventListener("click", close);
   }, []);
 
-  // DRAG & DROP with a custom drag preview
-  const handleDragStart = (
-    e: DragEvent<HTMLButtonElement>,
-    doc: EnhancedDocument
-  ) => {
-    e.dataTransfer.setData("docId", doc.id);
-    e.dataTransfer.setData("sourceCatId", category.id);
+  // Set up drop target for documents using react-dnd.
+  const [, dropRef] = useDrop({
+    accept: "DOCUMENT",
+    drop: (item: { docId: string; sourceCatId: string }) => {
+      console.log(
+        `CategoryRow (${category.id}): drop callback called with item: `,
+        item
+      );
+      if (item.sourceCatId === category.id) {
+        console.log(
+          "CategoryRow: dropped item is from the same category, ignoring."
+        );
+        return;
+      }
+      dispatch(updateDocument({ docId: item.docId, categoryId: category.id }));
+    },
+    collect: (monitor: { isOver: () => any; canDrop: () => any }) => {
+      const isOver = monitor.isOver();
+      const canDrop = monitor.canDrop();
+      console.log(
+        `CategoryRow (${category.id}): drop monitor state - isOver: ${isOver}, canDrop: ${canDrop}`
+      );
+      return {};
+    },
+  });
 
-    // Create a hidden DOM element so setDragImage can show it
-    const dragIcon = document.createElement("div");
-    dragIcon.style.fontSize = "13px";
-    dragIcon.style.padding = "6px 8px";
-    dragIcon.style.backgroundColor = "#333";
-    dragIcon.style.color = "#fff";
-    dragIcon.style.borderRadius = "4px";
-    dragIcon.innerText = `Dragging: ${doc.name}`;
-    dragIcon.style.position = "absolute";
-    dragIcon.style.top = "-9999px";
-    dragIcon.style.left = "-9999px";
-    document.body.appendChild(dragIcon);
-
-    // Use the hidden element as the drag image
-    e.dataTransfer.setDragImage(dragIcon, 0, 0);
-
-    // Remove it when drag ends
-    e.currentTarget.addEventListener("dragend", () => {
-      document.body.removeChild(dragIcon);
-    });
-  };
-
-  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-  };
-  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const docId2 = e.dataTransfer.getData("docId");
-    const sourceCatId = e.dataTransfer.getData("sourceCatId");
-    if (!docId2 || !sourceCatId) return;
-    if (sourceCatId === category.id) return; // no move if same cat
-    dispatch(
-      updateDocument({
-        docId: docId2,
-        categoryId: category.id,
-      })
-    );
-  };
-
-  // Right-click context
+  // Right-click context handler
   const handleContextMenu = (
     e: ReactMouseEvent,
     itemType: "category" | "document",
@@ -199,11 +264,9 @@ function CategoryRow({ category, total }: CategoryRowProps) {
     });
   };
 
-  // (1) RENAME from context menu
+  // Rename handler
   const handleRename = () => {
-    console.log("Context menu rename triggered:", ctxMenu);
     if (!ctxMenu) return;
-
     if (ctxMenu.itemType === "category") {
       setEditingCat(true);
       setCatName(category.name);
@@ -217,17 +280,14 @@ function CategoryRow({ category, total }: CategoryRowProps) {
     setCtxMenu(null);
   };
 
-  // Actually rename category
+  // Commit renames
   const commitCatRename = () => {
     const trimmed = catName.trim();
     if (trimmed && trimmed !== category.name) {
-      dispatch(
-        upsertCategory({ categoryId: category.id, name: trimmed })
-      );
+      dispatch(upsertCategory({ categoryId: category.id, name: trimmed }));
     }
     setEditingCat(false);
   };
-
   const commitDocRename = (docId: string) => {
     const trimmed = docName.trim();
     if (trimmed) {
@@ -236,7 +296,7 @@ function CategoryRow({ category, total }: CategoryRowProps) {
     setEditingDocId(null);
   };
 
-  // (2) DELETE
+  // Delete handler
   const handleDelete = () => {
     if (!ctxMenu) return;
     if (ctxMenu.itemType === "category") {
@@ -247,41 +307,17 @@ function CategoryRow({ category, total }: CategoryRowProps) {
     setCtxMenu(null);
   };
 
-  // (3) CHANGE COLOR
+  // Change color handler
   const handleChangeColor = (mouseX: number, mouseY: number) => {
     setColorMenuCoords({ x: mouseX, y: mouseY });
     setCtxMenu(null);
   };
   const pickColor = (c: string) => {
-    dispatch(
-      upsertCategory({ categoryId: category.id, color: c })
-    );
+    dispatch(upsertCategory({ categoryId: category.id, color: c }));
     setColorMenuCoords(null);
   };
 
-  // (4) REORDER categories up/down
-  /*
-  const handleMoveUp = (e: ReactMouseEvent) => {
-    e.stopPropagation();
-    dispatch(
-      upsertCategory({
-        categoryId: category.id,
-        order: category.order + 1
-      })
-    );
-  };
-  const handleMoveDown = (e: ReactMouseEvent) => {
-    e.stopPropagation();
-    dispatch(
-      upsertCategory({
-        categoryId: category.id,
-        order: category.order - 1
-      })
-    );
-  };
-  */
-
-  // Double-click rename logic (same as context-rename):
+  // Double-click rename
   const handleCatDoubleClick = () => {
     setEditingCat(true);
     setCatName(category.name);
@@ -292,7 +328,12 @@ function CategoryRow({ category, total }: CategoryRowProps) {
   };
 
   return (
-    <div onDragOver={handleDragOver} onDrop={handleDrop}>
+    // Wrap the entire category row in a drop target. Use a callback ref.
+    <div
+      ref={(node: HTMLDivElement | null) => {
+        void dropRef(node);
+      }}
+    >
       {/* Category row */}
       <ListItemButton
         onClick={() => setOpen(!isOpen)}
@@ -301,7 +342,6 @@ function CategoryRow({ category, total }: CategoryRowProps) {
         sx={{ display: "flex", gap: 1 }}
       >
         {isOpen ? <KeyboardArrowDown /> : <KeyboardArrowRight />}
-
         {editingCat ? (
           <TextField
             variant="standard"
@@ -309,9 +349,7 @@ function CategoryRow({ category, total }: CategoryRowProps) {
             value={catName}
             onChange={(e) => setCatName(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                commitCatRename();
-              }
+              if (e.key === "Enter") commitCatRename();
             }}
             sx={{ maxWidth: 160 }}
           />
@@ -330,50 +368,19 @@ function CategoryRow({ category, total }: CategoryRowProps) {
 
       <Collapse in={isOpen}>
         {category.documents.map((doc) => (
-          <ListItemButton
+          <DocumentItem
             key={doc.id}
+            doc={doc}
+            categoryId={category.id}
             selected={doc.id === docId}
             onClick={() => navigate(urlFor("docs", doc.id))}
             onContextMenu={(e) => handleContextMenu(e, "document", doc.id)}
             onDoubleClick={() => handleDocDoubleClick(doc)}
-            sx={{ pl: 6 }}
-          >
-            {editingDocId === doc.id ? (
-              <TextField
-                variant="standard"
-                autoFocus
-                value={docName}
-                onChange={(e) => setDocName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    commitDocRename(doc.id);
-                  }
-                }}
-                sx={{ maxWidth: 200 }}
-              />
-            ) : (
-              <ListItemText
-                primary={doc.name}
-                sx={{
-                  maxWidth: 200,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              />
-            )}
-            <button
-              style={{
-                marginLeft: "auto",
-                cursor: "grab",
-                background: "transparent",
-                border: "none",
-              }}
-              draggable
-              onDragStart={(ev) => handleDragStart(ev, doc)}
-            >
-              <span style={{ color: "#999" }}>⋮⋮</span>
-            </button>
-          </ListItemButton>
+            editingDocId={editingDocId}
+            docName={docName}
+            setDocName={setDocName}
+            commitDocRename={commitDocRename}
+          />
         ))}
       </Collapse>
 
@@ -441,3 +448,5 @@ function CategoryRow({ category, total }: CategoryRowProps) {
     </div>
   );
 }
+
+export default connector(CategoriesComponent);

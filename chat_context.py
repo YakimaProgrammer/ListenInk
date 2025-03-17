@@ -4,8 +4,8 @@ pwd = os.getcwd()
 
 folder_path = pwd
 
-include = []
-exclude = [".git", "node_modules", "hocr", "package-lock"]
+include = ["backend/src"]
+exclude = [".git", "prisma", "node_modules", "hocr", "dist", "package-lock"]
 
 
 for root, _, files in os.walk(folder_path):
@@ -15,7 +15,7 @@ for root, _, files in os.walk(folder_path):
         blank = not include and not exclude  # false
         inc = any(i in file_path for i in include)
         exc = not any(i in file_path for i in exclude)
-        if blank or inc or exc:
+        if blank or (inc and exc) or (not exclude and include) or (not include and exclude):
             print(f"File: {file_path}\n```")
             try:
                 with open(file_path, 'r', encoding='utf-8') as file:
