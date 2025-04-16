@@ -8,7 +8,7 @@ import { urlFor } from "./pages/urlfor";
 
 // Components
 import { Root } from "./pages/Root";
-import { Auth } from "./pages/Auth";
+import { Login } from "./pages/Login";
 
 // A global css file, but we use css modules for this project for namespacing
 import "./index.css";
@@ -17,15 +17,15 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 let router = createBrowserRouter([
   {
     path: "/",
-    Component: Root,
+    Component: Root
   },
   {
     path: urlFor("docs", ":docId"),
     Component: Root
   },
   {
-    path: "/auth",
-    Component: Auth,
+    path: "/login",
+    Component: Login,
   },
 ]);
 
