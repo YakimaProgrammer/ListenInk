@@ -21,7 +21,7 @@ app.use(session({
   secret: secrets,
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: true }
+  // TODO: cookie: { secure: true }
 }));
 app.use(passport.initialize());
 app.use(passport.session());

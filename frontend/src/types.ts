@@ -45,7 +45,21 @@ export type Err = z.infer<typeof ErrSchema>;
 
 export const UserSchema = z.object({
   name: z.string(),
-  id: id,
-  email: z.string().email()
+  id: z.string(), // Kludge - for users, an id is either a nanoid for a local user or a prefixed external id for identity providers. I really don't wanna deal with multiple tables just to map user ids when there is no clear benefit.
+  email: z.string().email(),
+  profile_picture: z.string().url()
+  
 });
 export type User = z.infer<typeof UserSchema>;
+
+export const LoginResult = z.discriminatedUnion("success", [
+  z.object({
+    success: z.literal(true),
+    user: UserSchema,
+  }),
+  z.object({
+    success: z.literal(false),
+    message: z.string()
+  }),
+]);
+export type LoginResult = z.infer<typeof LoginResult>;

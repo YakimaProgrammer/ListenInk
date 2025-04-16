@@ -2,7 +2,7 @@ import passport from "passport";
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Router, Request, Response, NextFunction } from "express";
 import { PrismaClient } from '@prisma/client';
-import { Err, User } from "./types";
+import { Err, LoginResult, User } from "./types";
 import google_keys from "./secrets/google_secret_keys.json";
 
 const prisma = new PrismaClient();
@@ -82,6 +82,40 @@ router.get("/", ensureAuthenticated, (req, res: Response<User | Err>) => {
   }
 });
 
-router.get("/google/callback", passport.authenticate('google', { failureRedirect: '/login' }), (_req, res) => {
-  res.redirect("/");
+router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
+
+router.get(
+  "/google/callback", 
+  passport.authenticate("google",{
+    successRedirect: "/api/v1/auth/login/success",
+    failureRedirect: "/api/v1/auth/login/failed",
+  })
+);
+
+router.post('/logout', (req, res, next) => {
+  req.logout((err) => {
+    if (err) { return next(err); }
+    res.redirect('/');
+  });
+});
+
+router.get("/login/success", (req, res: Response<LoginResult>) => {
+  if(req.user) {
+    res.status(200).json({
+      success: true,
+      user: req.user
+    });
+  } else {
+    res.status(500).json({
+      success: false,
+      message: "Server error: user should be logged in by now",
+    });
+  }
+});
+
+router.get("/login/failed", (_, res: Response<LoginResult>) => {
+  res.status(401).json({
+    success: false,
+    message: "failure",
+  });
 });
