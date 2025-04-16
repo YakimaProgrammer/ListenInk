@@ -32,8 +32,14 @@
     "@aws-sdk/client-s3": "^3.709.0",
     "@prisma/client": "^6.2.1",
     "@types/cookie-parser": "^1.4.8",
+    "@types/express-session": "^1.18.1",
+    "@types/passport": "^1.0.17",
+    "@types/passport-google-oauth20": "^2.0.16",
     "cookie-parser": "^1.4.7",
     "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
     "pdf2image": "^1.2.3",
     "tmp-promise": "^3.0.3"
   }
