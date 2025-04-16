@@ -8,7 +8,7 @@ datasource db {
 }
 
 model User {
-  id          String     @id @default(nanoid())
+  id          String     @id @default(nanoid()) // I'm widening this type to String, but the default is still a nanoid
   name        String
   email       String     @unique
   profile_picture String
