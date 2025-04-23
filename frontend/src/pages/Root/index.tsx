@@ -1,7 +1,10 @@
+// src/pages/Root/index.tsx
 import { connect, ConnectedProps } from "react-redux";
 import Box from "@mui/material/Box";
 import { AppDispatch, RootState, setSidebar } from "@/store";
-import { Profile } from "@/components/Profile"; // Import Profile directly
+import { Profile } from "@/components/Profile";
+import { Menu as MenuIcon } from "@mui/icons-material";
+import { IconButton, Tooltip } from "@mui/material";
 
 import styles from "./index.module.scss";
 
@@ -32,7 +35,22 @@ type PropsFromRedux = ConnectedProps<typeof connector>;
 function RootComponent({ sidebarOpen, openSidebar }: PropsFromRedux) {
   return (
     <Box className={styles.root}>
-      {/* Remove MenuBar */}
+      {/* Add menu button that only appears when sidebar is closed */}
+      {!sidebarOpen && (
+        <div className={styles.floatingMenu}>
+          <Tooltip title="Open Sidebar">
+            <IconButton
+              onClick={openSidebar}
+              className={styles.menuButton}
+              size="medium"
+              color="primary"
+            >
+              <MenuIcon />
+            </IconButton>
+          </Tooltip>
+        </div>
+      )}
+
       <Sidebar />
       <Content />
       <SearchDialog />

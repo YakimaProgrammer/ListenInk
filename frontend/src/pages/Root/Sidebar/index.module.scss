@@ -1,13 +1,176 @@
+// src/pages/Root/Sidebar/index.module.scss
 @use "src/styles/drawer";
+
+// Color variables
+$sidebar-bg: #f8f9fa;
+$sidebar-text: #1d3557;
+$sidebar-hover: #e9ecef;
+$sidebar-active: #dee2e6;
+$sidebar-border: #e0e0e0;
+$primary-accent: #457b9d;
+$secondary-accent: #a8dadc;
 
 .drawer {
   width: drawer.$drawer-width;
   flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
 }
 
 .drawerPaper {
   width: drawer.$drawer-width;
   box-sizing: border-box;
-  background-color: #efeeee;
+  background-color: $sidebar-bg;
+  border-right: 1px solid $sidebar-border;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+
+  // Add subtle pattern background
+  background-image: linear-gradient(
+    rgba(255, 255, 255, 0.7) 1px,
+    transparent 1px
+  );
+  background-size: 100% 30px;
 }
 
+// Enhanced header styles
+.headerContainer {
+  padding: 12px 8px;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  border-bottom: 1px solid $sidebar-border;
+}
+
+// App title/logo area
+.titleArea {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 0 8px;
+  
+  .appTitle {
+    font-weight: 600;
+    font-size: 18px;
+    color: $sidebar-text;
+    margin-left: 8px;
+    letter-spacing: 0.5px;
+  }
+  
+  .logoIcon {
+    color: $primary-accent;
+  }
+}
+
+// Button group styles
+.actionButtons {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 4px;
+  
+  .iconButton {
+    color: $sidebar-text;
+    border-radius: 8px;
+    padding: 8px;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background-color: $sidebar-hover;
+      color: $primary-accent;
+      transform: translateY(-1px);
+    }
+  }
+}
+
+// Category section styles
+.categoriesContainer {
+  margin-top: 16px;
+  overflow-y: auto;
+  height: calc(100vh - 130px);
+  
+  // Custom scrollbar
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+  }
+}
+
+// Category item styles
+.categoryItem {
+  border-radius: 6px;
+  margin: 0 8px 4px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background-color: $sidebar-hover;
+  }
+  
+  &.active {
+    background-color: $sidebar-active;
+  }
+  
+  .categoryLabel {
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+    padding: 8px 10px;
+  }
+  
+  .categoryIcon {
+    margin-right: 8px;
+    color: inherit;
+  }
+}
+
+// Document item styles
+.documentItem {
+  padding: 6px 8px 6px 32px;
+  margin: 2px 8px 2px 16px;
+  border-radius: 4px;
+  position: relative;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background-color: $sidebar-hover;
+  }
+  
+  &.active {
+    // background-color: $secondary-accent;
+    color: $sidebar-text;
+    font-weight: 500;
+  }
+  
+  .docIcon {
+    font-size: 14px;
+    margin-right: 6px;
+    opacity: 0.7;
+  }
+  
+  .dragHandle {
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  
+  &:hover .dragHandle {
+    opacity: 0.7;
+  }
+}
+
+// Fade-in animation for items
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animated {
+  animation: fadeIn 0.3s ease forwards;
+}

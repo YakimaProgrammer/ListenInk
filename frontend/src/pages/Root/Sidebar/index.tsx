@@ -1,6 +1,4 @@
-// --------------------------------------------------
-// File: src/pages/Root/Sidebar/index.tsx
-// --------------------------------------------------
+// src/pages/Root/Sidebar/index.tsx
 import { useRef, useState, MouseEvent, ChangeEvent } from "react";
 import {
   Drawer,
@@ -9,28 +7,49 @@ import {
   Box,
   Menu,
   MenuItem,
+  Typography,
+  Tooltip,
 } from "@mui/material";
-import { ChevronLeft, Search, Upload, Add } from "@mui/icons-material";
+import {
+  ChevronLeft,
+  Search,
+  Upload,
+  Add,
+  Book,
+  AutoStories,
+  FolderSpecial,
+  Description,
+} from "@mui/icons-material";
 import { DrawerHeader } from "@/components/DrawerHeader";
 import { Categories } from "../Categories";
 import styles from "./index.module.scss";
 import { connect, ConnectedProps } from "react-redux";
-import { AppDispatch, createDocument, RootState, setSearchDialog, setSidebar, upsertCategory } from "@/store";
+import {
+  AppDispatch,
+  createDocument,
+  RootState,
+  setSearchDialog,
+  setSidebar,
+  upsertCategory,
+} from "@/store";
 import { useNavigate } from "react-router";
 import { urlFor } from "@/pages/urlfor";
 import { useDocument } from "@/components/WithDocument";
 
-// If you want to read something from Redux, do so here
+// Redux connection
 const mapStateToProps = (state: RootState) => ({
-  sidebarOpen: state.ui.sidebarOpen
+  sidebarOpen: state.ui.sidebarOpen,
 });
+
 const mapDispatchToProps = (dispatch: AppDispatch) => ({
-  createNewCategory: () => dispatch(upsertCategory({ name: "New Category", color: "#888888" })),
+  createNewCategory: () =>
+    dispatch(upsertCategory({ name: "New Category", color: "#457b9d" })),
   closeSidebar: () => dispatch(setSidebar(false)),
   openDialog: () => dispatch(setSearchDialog(true)),
-  createDoc: (file: File, categoryId?: string) => dispatch(createDocument({ file, categoryId }))
+  createDoc: (file: File, categoryId?: string) =>
+    dispatch(createDocument({ file, categoryId })),
 });
-  
+
 const connector = connect(mapStateToProps, mapDispatchToProps);
 type PropsFromRedux = ConnectedProps<typeof connector>;
 
@@ -39,7 +58,7 @@ function SidebarComponent({
   closeSidebar,
   openDialog,
   createNewCategory,
-  createDoc
+  createDoc,
 }: PropsFromRedux) {
   const navigate = useNavigate();
   const activeDocument = useDocument();
@@ -52,16 +71,18 @@ function SidebarComponent({
   const handleAddClick = (e: MouseEvent<HTMLElement>) => {
     setAnchorEl(e.currentTarget);
   };
+
   const handleCloseMenu = () => setAnchorEl(null);
+
   // When user clicks the Upload icon
   const handleUploadClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
-      handleCloseMenu()
+      handleCloseMenu();
     }
   };
 
-  // Actually handle the file input
+  // Handle file input
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = ""; // reset so we can re-upload same file if needed
@@ -75,7 +96,7 @@ function SidebarComponent({
   const handleCategoryClick = () => {
     createNewCategory();
     handleCloseMenu();
-  }
+  };
 
   return (
     <Drawer
@@ -85,18 +106,63 @@ function SidebarComponent({
       open={sidebarOpen}
       classes={{ paper: styles.drawerPaper }}
     >
-      <DrawerHeader>
-        {/* Search Dialog */}
-        <IconButton onClick={openDialog}>
-          <Search />
-        </IconButton>
+      {/* Custom Header */}
+      <Box className={styles.headerContainer}>
+        {/* App Title/Logo */}
+        <Box className={styles.titleArea}>
+          <AutoStories className={styles.logoIcon} />
+          <Typography className={styles.appTitle}>ListenInk</Typography>
+        </Box>
 
-        {/* Upload PDF */}
-        <IconButton onClick={handleUploadClick}>
-          <Upload />
-        </IconButton>
+        {/* Action Buttons */}
+        <Box className={styles.actionButtons}>
+          <Box>
+            {/* Search Dialog */}
+            <Tooltip title="Search Documents">
+              <IconButton
+                onClick={openDialog}
+                className={styles.iconButton}
+                size="small"
+              >
+                <Search />
+              </IconButton>
+            </Tooltip>
 
-        {/* Hidden <input> for PDF upload */}
+            {/* Upload PDF */}
+            <Tooltip title="Upload PDF">
+              <IconButton
+                onClick={handleUploadClick}
+                className={styles.iconButton}
+                size="small"
+              >
+                <Upload />
+              </IconButton>
+            </Tooltip>
+
+            {/* Add new doc/cat */}
+            <Tooltip title="Add New">
+              <IconButton
+                onClick={handleAddClick}
+                className={styles.iconButton}
+                size="small"
+              >
+                <Add />
+              </IconButton>
+            </Tooltip>
+          </Box>
+
+          <Tooltip title="Close Sidebar">
+            <IconButton
+              onClick={closeSidebar}
+              className={styles.iconButton}
+              size="small"
+            >
+              <ChevronLeft />
+            </IconButton>
+          </Tooltip>
+        </Box>
+
+        {/* Hidden file input */}
         <input
           type="file"
           accept="application/pdf"
@@ -105,33 +171,44 @@ function SidebarComponent({
           onChange={handleFileChange}
         />
 
-        {/* Add new doc/cat */}
-        <IconButton onClick={handleAddClick}>
-          <Add />
-        </IconButton>
+        {/* Add Menu */}
         <Menu
           anchorEl={anchorEl}
           open={Boolean(anchorEl)}
           onClose={handleCloseMenu}
+          PaperProps={{
+            elevation: 3,
+            sx: {
+              borderRadius: "8px",
+              mt: 1,
+              "& .MuiMenuItem-root": {
+                px: 2,
+                py: 1,
+                borderRadius: "4px",
+                mx: 1,
+                my: 0.5,
+                fontSize: "14px",
+              },
+            },
+          }}
         >
           <MenuItem onClick={handleUploadClick}>
+            <Description fontSize="small" sx={{ mr: 1 }} />
             Create New Document
           </MenuItem>
           <MenuItem onClick={handleCategoryClick}>
+            <FolderSpecial fontSize="small" sx={{ mr: 1 }} />
             Create New Category
           </MenuItem>
         </Menu>
-
-        <Box sx={{ flexGrow: 1 }} />
-        <IconButton onClick={closeSidebar}>
-          <ChevronLeft />
-        </IconButton>
-      </DrawerHeader>
+      </Box>
 
       <Divider />
 
-      {/* Let <Categories /> handle right-click rename, drag, reorder, etc. */}
-      <Categories />
+      {/* Categories with enhanced styling will be handled in the Categories component */}
+      <Box className={styles.categoriesContainer}>
+        <Categories />
+      </Box>
     </Drawer>
   );
 }

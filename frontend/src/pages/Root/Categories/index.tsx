@@ -3,6 +3,7 @@
 // Updated so RIGHT-CLICK rename mirrors double-click logic
 // --------------------------------------------------
 
+// src/pages/Root/Categories/index.tsx
 import {
   List,
   ListItemButton,
@@ -12,6 +13,8 @@ import {
   Menu,
   MenuItem,
   Box,
+  Tooltip,
+  Typography,
 } from "@mui/material";
 import {
   KeyboardArrowRight,
@@ -19,15 +22,19 @@ import {
   Edit,
   Delete,
   Palette,
+  Description,
+  Folder,
+  FolderOpen,
+  DragIndicator,
 } from "@mui/icons-material";
 import { connect, ConnectedProps, useDispatch } from "react-redux";
 import { useNavigate, useParams } from "react-router";
 import { Conditional } from "@/components/Conditional";
 import {
-    AppDispatch,
+  AppDispatch,
   RootState,
   deleteCategory,
-  deleteDocument
+  deleteDocument,
 } from "@/store";
 import { urlFor } from "@/pages/urlfor";
 import {
@@ -37,7 +44,13 @@ import {
   DragEvent,
 } from "react";
 import { Category } from "@/types";
-import { EnhancedDocument, selectCategories, updateDocument, upsertCategory } from "@/store/slices/categories";
+import {
+  EnhancedDocument,
+  selectCategories,
+  updateDocument,
+  upsertCategory,
+} from "@/store/slices/categories";
+import styles from "../Sidebar/index.module.scss";
 
 /** The palette for changing category colors. */
 const categoryColors = [
@@ -58,22 +71,28 @@ const mapStateToProps = (state: RootState) => {
   return {
     categories: selectCategories(state),
     status: state.categories.status,
-    reason: state.categories.status === "failure" ? state.categories.message : undefined
-  }
+    reason:
+      state.categories.status === "failure"
+        ? state.categories.message
+        : undefined,
+  };
 };
 const connector = connect(mapStateToProps);
 type PropsFromRedux = ConnectedProps<typeof connector>;
 
 function CategoriesComponent({ reason, status, categories }: PropsFromRedux) {
-  const cats = Object.values(categories).filter((c?: Category): c is Category => c !== undefined);
+  const cats = Object.values(categories).filter(
+    (c?: Category): c is Category => c !== undefined
+  );
   return (
     <Conditional status={status} reason={reason}>
-      <List>
-        {cats.map(cat => (
+      <List sx={{ padding: 0 }}>
+        {cats.map((cat, index) => (
           <CategoryRow
             key={cat.id}
             category={cat}
             total={cats.length}
+            index={index}
           />
         ))}
       </List>
@@ -86,12 +105,14 @@ export const Categories = connector(CategoriesComponent);
 interface CategoryRowProps {
   category: Category & { documents: EnhancedDocument[] };
   total: number;
+  index: number;
 }
-function CategoryRow({ category, total }: CategoryRowProps) {
+
+function CategoryRow({ category, total, index }: CategoryRowProps) {
   const { docId } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  
+
   // Whether category is "open."
   const [open, setOpen] = useState(false);
   // If user selected a doc here, forcibly open
@@ -149,7 +170,7 @@ function CategoryRow({ category, total }: CategoryRowProps) {
     const dragIcon = document.createElement("div");
     dragIcon.style.fontSize = "13px";
     dragIcon.style.padding = "6px 8px";
-    dragIcon.style.backgroundColor = "#333";
+    dragIcon.style.backgroundColor = "#457b9d";
     dragIcon.style.color = "#fff";
     dragIcon.style.borderRadius = "4px";
     dragIcon.innerText = `Dragging: ${doc.name}`;
@@ -170,6 +191,7 @@ function CategoryRow({ category, total }: CategoryRowProps) {
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
   };
+
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const docId2 = e.dataTransfer.getData("docId");
@@ -201,7 +223,6 @@ function CategoryRow({ category, total }: CategoryRowProps) {
 
   // (1) RENAME from context menu
   const handleRename = () => {
-    console.log("Context menu rename triggered:", ctxMenu);
     if (!ctxMenu) return;
 
     if (ctxMenu.itemType === "category") {
@@ -221,9 +242,7 @@ function CategoryRow({ category, total }: CategoryRowProps) {
   const commitCatRename = () => {
     const trimmed = catName.trim();
     if (trimmed && trimmed !== category.name) {
-      dispatch(
-        upsertCategory({ categoryId: category.id, name: trimmed })
-      );
+      dispatch(upsertCategory({ categoryId: category.id, name: trimmed }));
     }
     setEditingCat(false);
   };
@@ -252,128 +271,163 @@ function CategoryRow({ category, total }: CategoryRowProps) {
     setColorMenuCoords({ x: mouseX, y: mouseY });
     setCtxMenu(null);
   };
+
   const pickColor = (c: string) => {
-    dispatch(
-      upsertCategory({ categoryId: category.id, color: c })
-    );
+    dispatch(upsertCategory({ categoryId: category.id, color: c }));
     setColorMenuCoords(null);
   };
-
-  // (4) REORDER categories up/down
-  /*
-  const handleMoveUp = (e: ReactMouseEvent) => {
-    e.stopPropagation();
-    dispatch(
-      upsertCategory({
-        categoryId: category.id,
-        order: category.order + 1
-      })
-    );
-  };
-  const handleMoveDown = (e: ReactMouseEvent) => {
-    e.stopPropagation();
-    dispatch(
-      upsertCategory({
-        categoryId: category.id,
-        order: category.order - 1
-      })
-    );
-  };
-  */
 
   // Double-click rename logic (same as context-rename):
   const handleCatDoubleClick = () => {
     setEditingCat(true);
     setCatName(category.name);
   };
+
   const handleDocDoubleClick = (doc: EnhancedDocument) => {
     setEditingDocId(doc.id);
     setDocName(doc.name);
   };
 
   return (
-    <div onDragOver={handleDragOver} onDrop={handleDrop}>
+    <div
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+      className={`${styles.animated}`}
+      style={{ animationDelay: `${index * 0.05}s` }}
+    >
       {/* Category row */}
-      <ListItemButton
-        onClick={() => setOpen(!isOpen)}
-        onContextMenu={(e) => handleContextMenu(e, "category", category.id)}
-        onDoubleClick={handleCatDoubleClick}
-        sx={{ display: "flex", gap: 1 }}
+      <Box
+        className={`${styles.categoryItem} ${
+          hasSelectedDoc ? styles.active : ""
+        }`}
       >
-        {isOpen ? <KeyboardArrowDown /> : <KeyboardArrowRight />}
+        <ListItemButton
+          onClick={() => setOpen(!isOpen)}
+          onContextMenu={(e) => handleContextMenu(e, "category", category.id)}
+          onDoubleClick={handleCatDoubleClick}
+          className={styles.categoryLabel}
+          disableRipple
+          sx={{
+            color: category.color,
+            padding: "8px 12px",
+          }}
+        >
+          {isOpen ? (
+            <FolderOpen className={styles.categoryIcon} />
+          ) : (
+            <Folder className={styles.categoryIcon} />
+          )}
 
-        {editingCat ? (
-          <TextField
-            variant="standard"
-            autoFocus
-            value={catName}
-            onChange={(e) => setCatName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                commitCatRename();
-              }
-            }}
-            sx={{ maxWidth: 160 }}
-          />
-        ) : (
-          <ListItemText
-            primary={category.name}
-            sx={{
-              color: category.color,
-              maxWidth: 200,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          />
-        )}
-      </ListItemButton>
-
-      <Collapse in={isOpen}>
-        {category.documents.map((doc) => (
-          <ListItemButton
-            key={doc.id}
-            selected={doc.id === docId}
-            onClick={() => navigate(urlFor("docs", doc.id))}
-            onContextMenu={(e) => handleContextMenu(e, "document", doc.id)}
-            onDoubleClick={() => handleDocDoubleClick(doc)}
-            sx={{ pl: 6 }}
-          >
-            {editingDocId === doc.id ? (
-              <TextField
-                variant="standard"
-                autoFocus
-                value={docName}
-                onChange={(e) => setDocName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    commitDocRename(doc.id);
-                  }
-                }}
-                sx={{ maxWidth: 200 }}
-              />
-            ) : (
-              <ListItemText
-                primary={doc.name}
-                sx={{
-                  maxWidth: 200,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              />
-            )}
-            <button
-              style={{
-                marginLeft: "auto",
-                cursor: "grab",
-                background: "transparent",
-                border: "none",
+          {editingCat ? (
+            <TextField
+              variant="standard"
+              autoFocus
+              value={catName}
+              onChange={(e) => setCatName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  commitCatRename();
+                }
               }}
-              draggable
-              onDragStart={(ev) => handleDragStart(ev, doc)}
+              sx={{
+                maxWidth: 160,
+                "& .MuiInput-root": {
+                  fontSize: "15px",
+                },
+              }}
+            />
+          ) : (
+            <Typography
+              sx={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                fontWeight: 500,
+                fontSize: "15px",
+              }}
             >
-              <span style={{ color: "#999" }}>⋮⋮</span>
-            </button>
-          </ListItemButton>
+              {category.name}
+            </Typography>
+          )}
+        </ListItemButton>
+      </Box>
+
+      <Collapse in={isOpen} timeout="auto" unmountOnExit>
+        {category.documents.map((doc, docIndex) => (
+          <Box
+            key={doc.id}
+            className={`${styles.documentItem} ${
+              doc.id === docId ? styles.active : ""
+            } ${styles.animated}`}
+            style={{ animationDelay: `${docIndex * 0.03 + 0.1}s` }}
+          >
+            <ListItemButton
+              selected={doc.id === docId}
+              onClick={() => navigate(urlFor("docs", doc.id))}
+              onContextMenu={(e) => handleContextMenu(e, "document", doc.id)}
+              onDoubleClick={() => handleDocDoubleClick(doc)}
+              disableRipple
+              sx={{
+                padding: "4px 6px",
+                borderRadius: "4px",
+              }}
+            >
+              <Description className={styles.docIcon} fontSize="small" />
+
+              {editingDocId === doc.id ? (
+                <TextField
+                  variant="standard"
+                  autoFocus
+                  value={docName}
+                  onChange={(e) => setDocName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      commitDocRename(doc.id);
+                    }
+                  }}
+                  sx={{
+                    maxWidth: 160,
+                    "& .MuiInput-root": {
+                      fontSize: "14px",
+                    },
+                  }}
+                />
+              ) : (
+                <Typography
+                  sx={{
+                    fontSize: "14px",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    flex: 1,
+                  }}
+                >
+                  {doc.name}
+                </Typography>
+              )}
+
+              <Tooltip title="Drag to move">
+                <button
+                  className={styles.dragHandle}
+                  style={{
+                    marginLeft: "auto",
+                    cursor: "grab",
+                    background: "transparent",
+                    border: "none",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                  draggable
+                  onDragStart={(ev) => handleDragStart(ev, doc)}
+                >
+                  <DragIndicator
+                    fontSize="small"
+                    sx={{ color: "#999", fontSize: "16px" }}
+                  />
+                </button>
+              </Tooltip>
+            </ListItemButton>
+          </Box>
         ))}
       </Collapse>
 
@@ -385,9 +439,19 @@ function CategoryRow({ category, total }: CategoryRowProps) {
         anchorPosition={
           ctxMenu ? { top: ctxMenu.mouseY, left: ctxMenu.mouseX } : undefined
         }
+        PaperProps={{
+          elevation: 3,
+          sx: {
+            borderRadius: "8px",
+            "& .MuiMenuItem-root": {
+              fontSize: "14px",
+              padding: "6px 16px",
+            },
+          },
+        }}
       >
         <MenuItem onClick={handleRename}>
-          <Edit sx={{ mr: 1 }} fontSize="small" /> Rename
+          <Edit sx={{ mr: 1, fontSize: "18px" }} fontSize="small" /> Rename
         </MenuItem>
         {ctxMenu?.itemType === "category" && (
           <MenuItem
@@ -395,11 +459,12 @@ function CategoryRow({ category, total }: CategoryRowProps) {
               handleChangeColor(ctxMenu.mouseX, ctxMenu.mouseY + 8)
             }
           >
-            <Palette sx={{ mr: 1 }} fontSize="small" /> Change Color
+            <Palette sx={{ mr: 1, fontSize: "18px" }} fontSize="small" /> Change
+            Color
           </MenuItem>
         )}
         <MenuItem onClick={handleDelete}>
-          <Delete sx={{ mr: 1 }} fontSize="small" /> Delete
+          <Delete sx={{ mr: 1, fontSize: "18px" }} fontSize="small" /> Delete
         </MenuItem>
       </Menu>
 
@@ -413,6 +478,10 @@ function CategoryRow({ category, total }: CategoryRowProps) {
             ? { top: colorMenuCoords.y, left: colorMenuCoords.x }
             : undefined
         }
+        PaperProps={{
+          elevation: 3,
+          sx: { borderRadius: "8px" },
+        }}
       >
         <Box
           sx={{
@@ -426,12 +495,20 @@ function CategoryRow({ category, total }: CategoryRowProps) {
             <Box
               key={c}
               sx={{
-                width: 24,
-                height: 24,
+                width: 28,
+                height: 28,
                 borderRadius: "50%",
                 backgroundColor: c,
                 cursor: "pointer",
-                ":hover": { transform: "scale(1.1)" },
+                transition: "all 0.2s ease",
+                border:
+                  c === category.color
+                    ? "2px solid #000"
+                    : "2px solid transparent",
+                ":hover": {
+                  transform: "scale(1.15)",
+                  boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+                },
               }}
               onClick={() => pickColor(c)}
             />

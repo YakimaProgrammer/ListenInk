@@ -13,3 +13,28 @@
   padding: 5px;
   box-shadow: 0 2px 8px rgba(29, 53, 87, 0.2); // Using $dark-blue with transparency
 }
+
+.floatingMenu {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  z-index: 100;
+  border-radius: 50%;
+  padding: 5px;
+  box-shadow: 0 2px 8px rgba(29, 53, 87, 0.2);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  animation: fadeIn 0.3s ease;
+}
+
+.menuButton {
+  background-color: white !important;
+  &:hover {
+    background-color: #f1faee !important;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
