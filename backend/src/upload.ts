@@ -1,10 +1,7 @@
 // The following code is a kludge for showcase. In production, I would likely recompute progress from S3 based on which database entries are still pending for the scale we are currently operating at
-import { readFile, writeFile } from "fs/promises";
-import { join } from "path";
-import { PDFDocument } from "pdf-lib";
-import { dir } from "tmp";
 import { OpenAI } from "openai";
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { pdfToPng, PngPageOutput } from "pdf-to-png-converter";
 
 import { openaiKey } from "./secrets/openai.json";
 import { accessKey, secretKey } from "./secrets/s3credentials.json";
@@ -21,25 +18,28 @@ const s3 = new S3Client({
 
 const BUCKET = "com.listenink";
 
-// Yields ownership of a stream of files to the caller
-async function* splitPDFPages(tempPath: string, pdfPath: string): AsyncGenerator<[number, string], void, unknown> {
-  const inputPdfBytes = await readFile(pdfPath);
-  const pdfDoc = await PDFDocument.load(inputPdfBytes);
-  const pageCount = pdfDoc.getPageCount();
-  
-  for (let i = 0; i < pageCount; i++) {
-    const newPdf = await PDFDocument.create();
-    const [copiedPage] = await newPdf.copyPages(pdfDoc, [i]);
-    newPdf.addPage(copiedPage);
+// Does everything entirely in memory. This should horrify you
+async function pdfPipeline(id: string, pdf: Buffer) {
+  // Run this at the same time as everything else
+  const uploadTask = putToBucket(BUCKET, `${id}/src.pdf`, pdf);
 
-    const pdfBytes = await newPdf.save();
-    const tempFilePath = join(tempPath, `page-${i + 1}.pdf`);
-    await writeFile(tempFilePath, pdfBytes);
-    yield Promise.resolve<[number, string]>([i, tempFilePath]);
-  }
+  // Wait for pages to be rasterized
+  const pages = await pdfToPng(pdf, { disableFontFace: false });
+
+  await Promise.all(pages.map((p, i) => processPage(p, i, id)));
+  await uploadTask;
 }
 
-async function ocrPage(pdfPath: string): Promise<Buffer<ArrayBufferLike>> {
+async function processPage(page: PngPageOutput, pageNum: number, id: string) {
+  const content = await ocrPage(page.content);
+  // Concurrently with tts generation
+  const uploadContentTask = putToBucket(BUCKET, `${id}/${pageNum}.txt`, Buffer.from(content));
+  const mp3 = await tts(content);
+  await putToBucket(BUCKET, `${id}/${pageNum}.mp3`, mp3);
+  await uploadContentTask;
+}
+
+async function ocrPage(pdf: Buffer): Promise<string> {
   const resp = await openai.responses.create({
     model: 'gpt-4o-mini',
     instructions: 'Transcribe this page in a way that would be natural to read aloud, outputting only the content on the page.',
@@ -50,7 +50,7 @@ async function ocrPage(pdfPath: string): Promise<Buffer<ArrayBufferLike>> {
           {
             "type": "input_file",
             "filename": "page.pdf",
-            "file_data": (await readFile(pdfPath)).toString("base64")
+            "file_data": pdf.toString("base64")
           }
         ]
       }
@@ -58,7 +58,7 @@ async function ocrPage(pdfPath: string): Promise<Buffer<ArrayBufferLike>> {
   });
 
   // Errors are impossible because I said so
-  return Buffer.from(resp.output_text);
+  return resp.output_text;
 }
 
 async function tts(content: string): Promise<Buffer<ArrayBufferLike>> {
