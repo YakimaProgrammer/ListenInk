@@ -215,6 +215,12 @@ class AudioControlsComponent extends Component<
 
     return (
       <Box className={styles.audioControls}>
+        {/* Hidden audio element */}
+        <audio
+          ref={this.audioRef}
+          src={`/api/v1/docs/${docId}/pages/${currentPage}/audio`}
+        />
+
         <div className={styles.progressContainer}>
           <Typography className={styles.timePlayed}>
             {formatTime(timePlayed)}
