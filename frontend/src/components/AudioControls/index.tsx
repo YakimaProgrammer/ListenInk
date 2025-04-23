@@ -15,7 +15,7 @@ import {
   RootState,
   setIsPlaying,
   setPlaybackSpeed,
-  upsertBookmark
+  upsertBookmark,
 } from "@/store";
 import { PlaybackSpeed } from "@/store/slices/categories";
 import styles from "./index.module.scss";
@@ -33,17 +33,22 @@ function mapStateToProps(state: RootState, ownProps: InjectedProps) {
       playbackPos: doc?.bookmarks.at(0)?.audiotime ?? 0,
       playbackSpeed: doc?.playbackSpeed ?? "1",
       currentPage: doc?.bookmarks.at(0)?.page ?? 0,
-      docId: doc?.id
+      docId: doc?.id,
     };
   } else {
-    throw new Error("Impossible state reached - withDocuments() asserts that documents are loaded!")
+    throw new Error(
+      "Impossible state reached - withDocuments() asserts that documents are loaded!"
+    );
   }
 }
 function mapDispatchToProps(dispatch: AppDispatch, ownProps: InjectedProps) {
   return {
-    setIsPlaying: (isPlaying: boolean) => dispatch(setIsPlaying({id: ownProps.docId, isPlaying })),
-    setPlaybackSpeed: (playbackSpeed: PlaybackSpeed) => dispatch(setPlaybackSpeed({id: ownProps.docId, playbackSpeed })),
-    setPlaybackPos: (pos: number) => dispatch(upsertBookmark({ docId: ownProps.docId, time: pos }))
+    setIsPlaying: (isPlaying: boolean) =>
+      dispatch(setIsPlaying({ id: ownProps.docId, isPlaying })),
+    setPlaybackSpeed: (playbackSpeed: PlaybackSpeed) =>
+      dispatch(setPlaybackSpeed({ id: ownProps.docId, playbackSpeed })),
+    setPlaybackPos: (pos: number) =>
+      dispatch(upsertBookmark({ docId: ownProps.docId, time: pos })),
   };
 }
 const connector = connect(mapStateToProps, mapDispatchToProps);
@@ -67,15 +72,18 @@ function formatTime(seconds?: number) {
   if (seconds !== undefined) {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   } else {
     return "--:--";
   }
 }
 
-class AudioControlsComponent extends Component<PropsFromRedux, AudioControlsState> {
+class AudioControlsComponent extends Component<
+  PropsFromRedux,
+  AudioControlsState
+> {
   audioRef: RefObject<HTMLAudioElement | null>;
-  
+
   constructor(props: PropsFromRedux) {
     super(props);
     this.state = { duration: undefined, volume: 0.5 };
@@ -85,9 +93,9 @@ class AudioControlsComponent extends Component<PropsFromRedux, AudioControlsStat
   componentDidMount() {
     const audio = this.audioRef.current;
     if (audio !== null) {
-      audio.addEventListener('timeupdate', this.handleTimeUpdate);
-      audio.addEventListener('ended', this.handleEnded);
-      audio.addEventListener('loadedmetadata', this.handleLoadedMetadata);
+      audio.addEventListener("timeupdate", this.handleTimeUpdate);
+      audio.addEventListener("ended", this.handleEnded);
+      audio.addEventListener("loadedmetadata", this.handleLoadedMetadata);
       audio.currentTime = this.props.playbackPos;
       audio.volume = this.state.volume;
     }
@@ -112,9 +120,9 @@ class AudioControlsComponent extends Component<PropsFromRedux, AudioControlsStat
   componentWillUnmount() {
     const audio = this.audioRef.current;
     if (audio !== null) {
-      audio.removeEventListener('timeupdate', this.handleTimeUpdate);
-      audio.removeEventListener('ended', this.handleEnded);
-      audio.removeEventListener('loadedmetadata', this.handleLoadedMetadata);
+      audio.removeEventListener("timeupdate", this.handleTimeUpdate);
+      audio.removeEventListener("ended", this.handleEnded);
+      audio.removeEventListener("loadedmetadata", this.handleLoadedMetadata);
     }
   }
 
@@ -123,8 +131,8 @@ class AudioControlsComponent extends Component<PropsFromRedux, AudioControlsStat
     if (audio !== null) {
       // Debounce a little bit so we don't spam the server
       if (Math.abs(audio.currentTime - this.props.playbackPos) > 1) {
-	// audio.currentTime is in seconds
-	this.props.setPlaybackPos(audio.currentTime);
+        // audio.currentTime is in seconds
+        this.props.setPlaybackPos(audio.currentTime);
       }
 
       // Sometimes we can get the audio position right out of the gate, but other times we have to wait until we start playing for that data to be available
@@ -138,7 +146,11 @@ class AudioControlsComponent extends Component<PropsFromRedux, AudioControlsStat
 
   handleLoadedMetadata = () => {
     const audio = this.audioRef.current;
-    if (audio !== null && isFinite(audio.duration) && this.state.duration === undefined) {
+    if (
+      audio !== null &&
+      isFinite(audio.duration) &&
+      this.state.duration === undefined
+    ) {
       this.setState({ duration: audio.duration });
     }
   };
@@ -149,7 +161,9 @@ class AudioControlsComponent extends Component<PropsFromRedux, AudioControlsStat
 
   handleSkip = () => {
     if (this.state.duration !== undefined) {
-      this.props.setPlaybackPos(Math.min(this.state.duration, this.props.playbackPos + 10));
+      this.props.setPlaybackPos(
+        Math.min(this.state.duration, this.props.playbackPos + 10)
+      );
     }
   };
 
@@ -162,7 +176,10 @@ class AudioControlsComponent extends Component<PropsFromRedux, AudioControlsStat
     if (isPlaybackSpeed(speed)) {
       this.props.setPlaybackSpeed(speed);
     } else {
-      console.error("Error! Received impossible input from select element: ", speed);
+      console.error(
+        "Error! Received impossible input from select element: ",
+        speed
+      );
     }
   };
 
@@ -178,131 +195,146 @@ class AudioControlsComponent extends Component<PropsFromRedux, AudioControlsStat
       // Use that to calculate the new time to jump to
       this.props.setPlaybackPos(this.state.duration * (clickX / spanWidth));
     }
-  }
+  };
 
   handleVolumeChange = (_: Event, newValue: number | number[]) => {
     // I'm not sure what a `number[]` means in terms of the slider, so I'm going to ignore it
     if (!Array.isArray(newValue)) {
       this.setState({ volume: newValue / 100 });
     }
-  }
+  };
 
   render() {
-    const { playbackPos, playbackSpeed, isPlaying, currentPage, docId } = this.props;
-    const fractionComplete = this.state.duration === undefined ? 0 : playbackPos / this.state.duration;
+    const { playbackPos, playbackSpeed, isPlaying, currentPage, docId } =
+      this.props;
+    const fractionComplete =
+      this.state.duration === undefined ? 0 : playbackPos / this.state.duration;
     const timePlayed = Math.floor(playbackPos);
-    const timeRemaining = this.state.duration === undefined ? 0 : this.state.duration - timePlayed;
-    
-  return (
-    <Box className={styles.audioControls}>
-      {/* Control Panel */}
-      <Box className={styles.controlPanel}>
-	<audio
-          ref={this.audioRef}
-          src={`/api/v1/docs/${docId}/pages/${currentPage}/audio`}
-        />
-        <Button
-          onClick={this.handleRewind}
-          className={styles.controlButton}
-          style={{ padding: 0, width: '50px', height: '50px' }}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24">
-            <path d="M11.99,5V1l-5,5l5,5V7c3.31,0,6,2.69,6,6s-2.69,6-6,6s-6-2.69-6-6h-2c0,4.42,3.58,8,8,8s8-3.58,8-8S16.41,5,11.99,5z" />
-            <text x="12" y="16" fontSize="6" textAnchor="middle" fill="black">10</text> {/* The text */}
-          </svg>
-        </Button>
+    const timeRemaining =
+      this.state.duration === undefined ? 0 : this.state.duration - timePlayed;
 
+    return (
+      <Box className={styles.audioControls}>
+        <div className={styles.progressContainer}>
+          <Typography className={styles.timePlayed}>
+            {formatTime(timePlayed)}
+          </Typography>
 
-        {/* Play/Pause Button */}
-        <div>
+          {/* Rewind button */}
+          <Button onClick={this.handleRewind} className={styles.controlButton}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z" />
+              <text
+                x="8"
+                y="13"
+                fontSize="6"
+                fill="currentColor"
+                textAnchor="middle"
+              >
+                10
+              </text>
+            </svg>
+          </Button>
+
+          {/* Play/Pause Button */}
           <Button
             variant="contained"
             onClick={this.handlePlayPause}
-            style={{
-              backgroundColor: 'transparent',
-              boxShadow: 'none',
-              padding: 0,
-              minWidth: 'auto',
-              height: 'auto',
-            }}
+            className={styles.playPauseButton}
           >
             {isPlaying ? (
-              <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" fill="black" viewBox="0 0 16 16">
-                <path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5m5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
               </svg>
             ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" fill="black" viewBox="0 0 16 16">
-                <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M8 5v14l11-7z" />
               </svg>
             )}
           </Button>
-        </div>
 
+          {/* Forward button */}
+          <Button onClick={this.handleSkip} className={styles.controlButton}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z" />
+              <text
+                x="16"
+                y="13"
+                fontSize="6"
+                fill="currentColor"
+                textAnchor="middle"
+              >
+                10
+              </text>
+            </svg>
+          </Button>
 
-        <Button
-          onClick={this.handleSkip}
-          className={styles.controlButton}
-          style={{ padding: 0, width: '50px', height: '50px' }}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24">
-            <path fill="none" d="M0 0h24v24H0z" />
-            <path d="M11.99 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8" />
-            <text x="12" y="16" fontSize="6" textAnchor="middle" fill="black">10</text>
-          </svg>
-        </Button>
+          {/* Progress bar */}
+          <Box className={styles.progressBar} onClick={this.handlePlaybarClick}>
+            <Box
+              className={styles.progress}
+              style={{
+                width: `${fractionComplete * 100}%`,
+              }}
+            />
+          </Box>
 
-
-        {/* Playback Speed */}
-        <FormControl size="small">
-          <Select
-            value={playbackSpeed}
-            onChange={this.handlePlaybackSpeedChange}
-          >
-            <MenuItem value={"0.5"}>0.5x</MenuItem>
-            <MenuItem value={"1"}>1x</MenuItem>
-            <MenuItem value={"1.25"}>1.25x</MenuItem>
-            <MenuItem value={"1.5"}>1.5x</MenuItem>
-            <MenuItem value={"2"}>2x</MenuItem>
-          </Select>
-        </FormControl>
-
-        {/* Volume Slider */}
-        {/* <Box display="flex" alignItems="center" ml={2}>
-          <Typography variant="body2" mr={1}>
-            Vol
+          <Typography className={styles.timeRemaining}>
+            -{formatTime(timeRemaining)}
           </Typography>
-          <Slider
-            value={volume}
-            onChange={handleVolumeChange}
-            aria-label="Volume"
-            min={0}
-            max={100}
-            sx={{ width: 100 }}
-          />
-        </Box> */}
-      </Box>
 
-      {/* Progress bar */}
-  
-      <Box className={styles.timeDisplay}>
-        <Typography className={styles.timePlayed}>
-          {formatTime(timePlayed)}
-        </Typography>
-        <Box className={styles.progressBar} style={{ width: '1000px' }}>
-          <Box
-            className={styles.progress}
-            style={{
-              width: `${fractionComplete * 100}%`,
-              backgroundColor: 'black',
-            }}
-          />
-        </Box>
-        <Typography className={styles.timeRemaining}>
-          -{formatTime(timeRemaining)}
-        </Typography>
+          {/* Speed control */}
+          <FormControl size="small">
+            <Select
+              value={playbackSpeed}
+              onChange={this.handlePlaybackSpeedChange}
+              sx={{
+                fontSize: "12px",
+                height: "30px",
+                minWidth: "60px",
+                color: "#1d3557",
+                ".MuiOutlinedInput-notchedOutline": {
+                  borderColor: "rgba(29, 53, 87, 0.3)",
+                },
+                "&:hover .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "rgba(29, 53, 87, 0.5)",
+                },
+              }}
+            >
+              <MenuItem value={"0.5"}>0.5x</MenuItem>
+              <MenuItem value={"1"}>1x</MenuItem>
+              <MenuItem value={"1.25"}>1.25x</MenuItem>
+              <MenuItem value={"1.5"}>1.5x</MenuItem>
+              <MenuItem value={"2"}>2x</MenuItem>
+            </Select>
+          </FormControl>
+        </div>
       </Box>
-    </Box>
-  );
+    );
   }
 }
 

@@ -1,88 +1,104 @@
+// Your color palette
+$dark-blue: #1d3557;
+$pale: #ffffff;
+$light-blue: #a8dadc;
+$medium-blue: #457b9d;
+
 .audioControls {
-  width: 100%;
-  padding-bottom: 20px;
-  font-family: Arial, sans-serif;
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  max-width: 800px;
+  padding: 6px 15px; // Reduced from 10px to 6px
+  background-color: rgba($pale, 0.92);
+  backdrop-filter: blur(10px);
+  border-radius: 30px;
+  z-index: 20;
+  box-shadow: 0 4px 12px rgba($dark-blue, 0.2);
 }
-
-.timeDisplay {
-  
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.progressBar {
-  height: 10px;
-  background: #ddd;
-  position: relative;
-  width: 1000px;
-}
-
-.progress {
-  height: 100%;
-  background: transparent;
-  background-color: black;
-  width: 0;
-  height: 100%;
-}
-
-
 
 .controlPanel {
   display: flex;
+  align-items: center;
+  gap: 15px;
   justify-content: center;
-  align-items: center;
-  gap: 10px;
-}
-
-.controlButton,
-.playPauseButton {
-  padding: 10px;
-  font-size: 16px;
-  cursor: pointer;
-  background: white;
-}
-
-.playbackSpeed {
-  padding: 5px;
-}
-  
-/* --- frontend/src/components/AudioControls/index.module.scss --- */
-
-.audioControls {
-  width: 97%;
-
-  font-family: Arial, sans-serif;
-}
-
-.controlPanel {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-.controlButton,
-.playPauseButton {
-  /* your custom button styling can go here */
+  padding: 0 10px;
 }
 
 .timeDisplay {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+}
+
+// New layout with progress bar inline with controls
+.progressContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
 }
 
 .progressBar {
   flex-grow: 1;
-  height: 10px;
-  background: #ddd;
-  margin: 0 10px;
+  height: 4px; // Thinner progress bar
+  background: rgba($light-blue, 0.5);
+  margin: 0 15px;
   position: relative;
+  border-radius: 2px;
+  cursor: pointer;
+  overflow: hidden;
 }
 
 .progress {
   height: 100%;
-  background: white;
-  width: 0;
+  background: $medium-blue;
+  border-radius: 2px;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 10px;
+    background-color: $dark-blue;
+    border-radius: 50%;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+  }
+}
+
+.timePlayed, .timeRemaining {
+  font-family: 'Roboto', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: $dark-blue;
+  min-width: 40px;
+}
+
+.playPauseButton {
+  background-color: $medium-blue !important;
+  color: $pale !important;
+  width: 36px !important; // Reduced from 40px
+  height: 36px !important; // Reduced from 40px
+  min-width: 36px !important; // Add this to prevent stretching
+  padding: 6px !important; // Add explicit padding to control inner content
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  
+  &:hover {
+    background-color: $dark-blue !important;
+  }
+}
+
+.controlButton {
+  color: $dark-blue;
+  
+  &:hover {
+    color: $medium-blue;
+  }
 }

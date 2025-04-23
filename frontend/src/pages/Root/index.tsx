@@ -1,6 +1,7 @@
 import { connect, ConnectedProps } from "react-redux";
 import Box from "@mui/material/Box";
 import { AppDispatch, RootState, setSidebar } from "@/store";
+import { Profile } from "@/components/Profile"; // Import Profile directly
 
 import styles from "./index.module.scss";
 
@@ -25,20 +26,21 @@ const mapDispatchToProps = (dispatch: AppDispatch) => ({
   openSidebar: () => dispatch(setSidebar(true)),
 });
 
-// Get inferred props from connect()
 const connector = connect(mapStateToProps, mapDispatchToProps);
 type PropsFromRedux = ConnectedProps<typeof connector>;
 
-function RootComponent({
-  sidebarOpen,
-  openSidebar,
-}: PropsFromRedux) {
+function RootComponent({ sidebarOpen, openSidebar }: PropsFromRedux) {
   return (
     <Box className={styles.root}>
-      <MenuBar sidebarOpen={sidebarOpen} setOpen={openSidebar} />
+      {/* Remove MenuBar */}
       <Sidebar />
       <Content />
       <SearchDialog />
+
+      {/* Floating Profile in top right */}
+      <div className={styles.floatingProfile}>
+        <Profile />
+      </div>
     </Box>
   );
 }

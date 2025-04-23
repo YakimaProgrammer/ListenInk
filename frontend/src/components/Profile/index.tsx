@@ -32,7 +32,14 @@ export const Profile: FC = () => {
   return (
     <div>
       {/* Avatar Button */}
-      <IconButton onClick={handleMenuClick}>
+      <IconButton
+        onClick={handleMenuClick}
+        sx={{
+          padding: 0, // Remove padding
+          margin: 0, // Remove margin
+          // "&:hover": { backgroundColor: "transparent" }, // Remove hover background
+        }}
+      >
         <Avatar
           src="/logo512.png"
           alt="Profile"

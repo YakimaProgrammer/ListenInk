@@ -1,45 +1,102 @@
-$pdfViewerHeight: 390px;
-$pdfContentWidth: 1000px;
+// Your color palette
+$dark-blue: #1d3557;
+$pale: #f1faee;
+$light-blue: #a8dadc;
+$medium-blue: #457b9d;
+
+$pdfViewerHeight: calc(100vh - 50px);
 
 .pdfViewer {
   width: 100%;
-  height: $pdfViewerHeight;
-  background-color: transparent;
-  border-radius: 0;
+  height: 100%;
+  background-color: $pale;
   display: flex;
-  flex-direction: row;
+  position: relative;
 }
 
-.pdfLeftSideView {
-  width: 40px;
-  height: $pdfViewerHeight;
-  background-color: #dee7eb;
+.pdfScrollContainer {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: $medium-blue $pale;
+  
+  &::-webkit-scrollbar {
+    width: 10px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: $pale;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background-color: $medium-blue;
+    border-radius: 6px;
+    border: 3px solid $pale;
+  }
+}
+
+.multiPageContainer {
   display: flex;
   flex-direction: column;
-  box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.3);
-}
-
-.sideMenuToggle {
-  position: relative;
-  top: 10px;
-}
-
-.pdfExample {
-  width: $pdfContentWidth;
-  height: $pdfViewerHeight;
-  background-color: transparent;
-  display: flex;
-  flex-direction: row;
   align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: auto;
-  box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.3);
+  padding: 0; /* Changed from 20px 0 to 0 */
+  gap: 30px;
 }
 
-.pdfContent {
-  width: 100%;
-  height: 460px;
-  background-color: pink;
-  box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.3);
+.pdfPage {
+  background-color: white;
+  box-shadow: 0 4px 10px rgba($dark-blue, 0.15);
+  width: 100%; /* Changed from 85% to 100% */
+  max-width: 100%; /* Changed from 800px to 100% */
+  padding: 0; /* Changed from 15px to 0 */
+  position: relative;
+  border-radius: 0; /* Changed from 4px to 0 */
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pageNumber {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background-color: rgba($medium-blue, 0.8);
+  color: $pale;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  box-shadow: 0 2px 4px rgba($dark-blue, 0.2);
+}
+
+// Optional scroll indicator
+.scrollIndicator {
+  position: absolute;
+  right: 15px;
+  bottom: 100px;
+  background-color: rgba($dark-blue, 0.8);
+  color: $pale;
+  padding: 10px;
+  border-radius: 20px;
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  
+  .indicator {
+    width: 4px;
+    height: 100px;
+    background-color: rgba($pale, 0.3);
+    border-radius: 2px;
+    position: relative;
+    
+    .progress {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background-color: $pale;
+      border-radius: 2px;
+    }
+  }
 }

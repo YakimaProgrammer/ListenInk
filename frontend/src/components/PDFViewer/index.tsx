@@ -2,7 +2,6 @@ import { connect, ConnectedProps } from "react-redux";
 import { AppDispatch, setSearchDialog, upsertBookmark } from "@/store";
 
 import { withDocument, InjectedProps } from "../WithDocument";
-import { PdfTopView } from "./PdfTopView";
 import { PdfViewer } from "./PdfViewer";
 import styles from "./index.module.scss";
 
@@ -23,20 +22,19 @@ function PDFViewerComponent({
   openSearchDialog,
   doc,
   setPage,
+  docId,
 }: PropsFromRedux) {
   const page = doc.bookmarks.at(0)?.page ?? 0;
 
   return (
     <div className={styles.mainPdf}>
-      <PdfTopView
-        currentPage={page}
+      <PdfViewer
+        scale={1}
+        docId={docId}
         totalPages={doc.numpages}
-        zoomLevel={100}
+        currentPage={page}
         onPageChange={setPage}
-        onZoomChange={() => {}}
-        openSearchDialog={openSearchDialog}
       />
-      <PdfViewer scale={1} src={`/api/v1/docs/${doc.id}/pages/${page}/image`} />
     </div>
   );
 }

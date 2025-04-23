@@ -1,56 +1,41 @@
 @use "src/styles/drawer";
 
-// Hard standard for
-// width and height of the
-// pdfViewer component wrapper
-// box.
-// Height of the box:
-$pdfViewerWrapperHeight: 450px;
-
-// Audio control size standard
-// Padding top for the audio control
-$audioPaddingTop: 10px;
-$audioMaxHeightRatio: 30vh;
-
-// Changes:
 .main {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   flex-grow: 1;
-  padding: 24px;
+  padding: 0; /* Changed from 24px to 0 */
   transition: margin 0.3s ease-out;
   margin-left: -(#{drawer.$drawer-width});
+  position: relative;
 }
 
 .mainOpen {
   margin-left: 0;
 }
-
 // pdfViewerPosition style
 // is used to center the pdf
 // viewer.
-.pdfViewerPosition {
-  // inner component display
+// New container for both PDF and Audio controls
+.pdfViewerContainer {
+  position: relative;
+  width: 100%;
+  height: 100vh; /* Changed from calc(100vh - 120px) to 100vh */
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-
-  // max height of the pdfViewer
-  height: $pdfViewerWrapperHeight;
 }
 
-.audioControlPosition {
-  // inner component display
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  flex-grow: 1; // audio control can take up the remaining space.
+// We can remove or simplify these since AudioControls is now positioned absolutely
+.pdfViewerPosition {
+  width: 100%;
+  height: 100%;
+}
 
-  // max height of the audio control
-  max-height: $audioMaxHeightRatio;
-  padding-top: $audioPaddingTop;
+// AudioControls has its own positioning now
+.audioControlPosition {
+  position: relative; // This is fine since AudioControls now has absolute positioning
 }

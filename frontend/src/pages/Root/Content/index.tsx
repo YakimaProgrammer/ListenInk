@@ -64,20 +64,15 @@ function ContentComponent({ sidebarOpen, setPdfModalOpen }: PropsFromRedux) {
 
   return (
     <main className={`${styles.main} ${sidebarOpen ? styles.mainOpen : ""}`}>
-      <DrawerHeader />
+      {/* <DrawerHeader /> */}
 
       {/* If doc is selected, show PDF + Audio. Else show empty. */}
       {/* makes sure that the pdfViewer is centered */}
       {doc ? (
-        <>
-          <div className={styles.pdfViewerPosition}>
-            <PDFViewer />
-          </div>
-
-          <div className={styles.audioControlPosition}>
-            <AudioControls />
-          </div>
-        </>
+        <div className={styles.pdfViewerContainer}>
+          <PDFViewer />
+          <AudioControls /> {/* This will now float over the PDF */}
+        </div>
       ) : (
         <p style={{ textAlign: "center", marginTop: "2rem" }}>
           No Document Selected. Drag & drop a PDF to create one, or pick from
