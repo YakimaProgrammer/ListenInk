@@ -1,5 +1,6 @@
 $pdfViewerHeight: 390px;
 $pdfContentWidth: 1000px;
+$backgroundColor: #dee7eb;
 
 .pdfViewer {
   width: 100%;
@@ -13,7 +14,7 @@ $pdfContentWidth: 1000px;
 .pdfLeftSideView {
   width: 40px;
   height: $pdfViewerHeight;
-  background-color: #dee7eb;
+  background-color: $backgroundColor;
   display: flex;
   flex-direction: column;
   box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.3);
@@ -29,9 +30,6 @@ $pdfContentWidth: 1000px;
   height: $pdfViewerHeight;
   background-color: transparent;
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
   position: relative;
   overflow: auto;
   box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.3);

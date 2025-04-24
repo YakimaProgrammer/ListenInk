@@ -1,5 +1,6 @@
 import { IconButton } from "@mui/material";
 import styles from "./PdfViewer.module.scss";
+import { useRef, useState } from "react";
 
 export interface PDFViewerProps {
   scale: number;
@@ -7,6 +8,19 @@ export interface PDFViewerProps {
 }
 
 export function PdfViewer({ scale, src }: PDFViewerProps) {
+  const displayPDfPageRef = useRef<HTMLImageElement>(null);
+  const [naturalSize, setNaturalSize] = useState({ width: 0, height: 0 });
+
+  const handlePdfPageOnLoad = () => {
+    const displayPdfPage = displayPDfPageRef.current;
+    if (displayPdfPage) {
+      setNaturalSize({
+        width: displayPdfPage.naturalWidth,
+        height: displayPdfPage.naturalHeight,
+      });
+    }
+  };
+
   return (
     <div className={styles.pdfViewer}>
       {/* Entire PDF Viewer Box */}
@@ -22,10 +36,11 @@ export function PdfViewer({ scale, src }: PDFViewerProps) {
         {/* PDF Content Display Page by Page as Image*/}
         <img
           src={src}
+          ref={displayPDfPageRef}
+          onLoad={handlePdfPageOnLoad}
           style={{
-            transform: `scale(${scale})`,
-            transformOrigin: "center",
-            transition: "transform 0.2s ease",
+            width: naturalSize.width * (scale / 100),
+            height: naturalSize.height * (scale / 100),
           }}
           alt="PDF preview"
         />
