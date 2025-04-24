@@ -2,9 +2,15 @@ import { Router, Request, Response } from "express";
 import { Bookmark, BookmarkSchema, DocId, Document, DocumentSchema, Err, NaturalNumber } from "./types";
 import { PrismaClient, Prisma } from '@prisma/client';
 import { Readable } from "stream";
+import multer from "multer";
+import { createHash } from "crypto";
+
 import { APIError } from "./error";
+import { pdfPipeline } from "./upload";
 
 const prisma = new PrismaClient();
+
+const uploadMiddleware = multer({ storage: multer.memoryStorage() });
 
 async function maxDocOrder(tx: Prisma.TransactionClient, categoryId: string): Promise<number | null> {
   const result = await tx.document.aggregate({
@@ -25,8 +31,54 @@ async function maxBookmarkOrder(tx: Prisma.TransactionClient, documentId: string
 // I'm using a router primarily to skip having to type
 // all of that again and again.
 export const router = Router();
-router.post("/", (_req: Request, res: Response<DocId>) => { // `POST /api/v1/docs`
-  res.status(200).send({"document_id": "c9663ed1fc2373ca8cb16ce8bcb4faae781ae8e1e1976803b7a756f81f309b60" });
+router.post("/", uploadMiddleware.fields([
+  { name: 'pdf', maxCount: 1 }
+]), async (req: Request, res: Response<DocId | Err>) => { // `POST /api/v1/docs`
+  const doc = await prisma.$transaction(async (tx) => {
+    const pdfFile = Array.isArray(req.files) ? req.files[0] : undefined;
+
+    if (pdfFile === undefined) {
+      res.status(400).send({ err: 'Missing PDF!' });
+      return;
+    }
+
+    const key = createHash("sha256").update(pdfFile.buffer).digest("hex");
+
+    const partial = DocumentSchema.omit({ id: true, numpages: true, s3key: true, bookmarks: true, completed: true }).partial({ order: true, categoryId: true }).safeParse(req.body);
+    const categories = await tx.category.findMany({
+      where: { userId: req.cookies.userId }
+    });
+
+    if (partial.success) {
+      const numpages = await pdfPipeline(key, pdfFile.buffer);
+      const categoryId =  categories[0].id;
+      
+      return await tx.document.create({
+	data: {
+	  categoryId,
+	  ...partial.data,
+	  s3key: key,
+	  completed: true,
+	  numpages,
+	  order: (await maxDocOrder(tx, categoryId) ?? 0) + 1,
+	  bookmarks: {
+	    create: {
+              page: 0,
+              audiotime: 0,
+              order: 0
+            }
+	  }
+	}
+      });
+    } else {
+      throw new APIError({ err: "Could not parse!" });
+    }
+  });
+  if (doc !== undefined) {
+    res.status(200).send({ document_id: doc.id });
+  } else {
+    res.status(500).send({ err: "So many things went wrong. Sorry "});
+  }
 });
 
 router.get("/", async (req: Request, res: Response<Document[]>) => {
