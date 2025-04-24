@@ -2,19 +2,69 @@ import { Router, Request, Response } from "express";
 import { Bookmark, BookmarkSchema, DocId, Document, DocumentSchema } from "./types";
 import { PrismaClient } from '@prisma/client';
 import { Readable } from "stream";
+import multer from "multer";
+import { createHash } from "crypto";
 import { APIError } from "./error";
 import { withAuth } from "./auth";
 import { reorderItems } from "./order";
+import { pdfPipeline } from "./upload";
 
 const prisma = new PrismaClient();
+const uploadMiddleware = multer({ storage: multer.memoryStorage() });
 
 // This router holds all of the /api/v1/docs routes.
 // I'm using a router primarily to skip having to type
 // all of that again and again.
 export const router = Router();
-router.post("/", withAuth<DocId>((_req, res) => { // `POST /api/v1/docs`
-  res.status(200).send({success: true, data: {"document_id": "c9663ed1fc2373ca8cb16ce8bcb4faae781ae8e1e1976803b7a756f81f309b60"}});
-}));
+router.post("/", uploadMiddleware.fields([
+  { name: 'pdf', maxCount: 1 }
+]), async (req: Request, res: Response<DocId | Err>) => { // `POST /api/v1/docs`
+  const doc = await prisma.$transaction(async (tx) => {
+    const pdfFile = Array.isArray(req.files) ? req.files[0] : undefined;
+
+    if (pdfFile === undefined) {
+      res.status(400).send({ err: 'Missing PDF!' });
+      return;
+    }
+
+    const key = createHash("sha256").update(pdfFile.buffer).digest("hex");
+
+    const partial = DocumentSchema.omit({ id: true, numpages: true, s3key: true, bookmarks: true, completed: true }).partial({ order: true, categoryId: true }).safeParse(req.body);
+    const categories = await tx.category.findMany({
+      where: { userId: req.cookies.userId }
+    });
+
+    if (partial.success) {
+      const numpages = await pdfPipeline(key, pdfFile.buffer);
+      const categoryId =  categories[0].id;
+      
+      return await tx.document.create({
+	data: {
+	  categoryId,
+	  ...partial.data,
+	  s3key: key,
+	  completed: true,
+	  numpages,
+	  order: (await maxDocOrder(tx, categoryId) ?? 0) + 1,
+	  bookmarks: {
+	    create: {
+              page: 0,
+              audiotime: 0,
+              order: 0
+            }
+	  }
+	}
+      });
+    } else {
+      throw new APIError({ err: "Could not parse!" });
+    }
+  });
+  if (doc !== undefined) {
+    res.status(200).send({ document_id: doc.id });
+  } else {
+    res.status(500).send({ err: "So many things went wrong. Sorry "});
+  }
+});
 
 router.get("/", withAuth<Document[]>(async (req, res) => {
   const docs: Document[] = await prisma.document.findMany({

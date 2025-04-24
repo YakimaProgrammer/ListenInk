@@ -19,27 +19,32 @@ const s3 = new S3Client({
 const BUCKET = "com.listenink";
 
 // Does everything entirely in memory. This should horrify you
-async function pdfPipeline(id: string, pdf: Buffer) {
+export async function pdfPipeline(id: string, pdf: Buffer): Promise<number> {
   // Run this at the same time as everything else
-  const uploadTask = putToBucket(BUCKET, `${id}/src.pdf`, pdf);
+  const uploadTask = putToBucket(BUCKET, `${id}/src.pdf`, pdf, "application/pdf");
 
   // Wait for pages to be rasterized
   const pages = await pdfToPng(pdf, { disableFontFace: false });
 
   await Promise.all(pages.map((p, i) => processPage(p, i, id)));
   await uploadTask;
+
+  return pages.length;
 }
 
 async function processPage(page: PngPageOutput, pageNum: number, id: string) {
+  // Concurrently with everything else
+  const uploadPngTask = putToBucket(BUCKET, `${id}/${pageNum}.png`, page.content, "image/png");
   const content = await ocrPage(page.content);
   // Concurrently with tts generation
-  const uploadContentTask = putToBucket(BUCKET, `${id}/${pageNum}.txt`, Buffer.from(content));
+  const uploadContentTask = putToBucket(BUCKET, `${id}/${pageNum}.txt`, Buffer.from(content), "text/plain");
   const mp3 = await tts(content);
-  await putToBucket(BUCKET, `${id}/${pageNum}.mp3`, mp3);
+  await putToBucket(BUCKET, `${id}/${pageNum}.mp3`, mp3, "audio/mpeg");
   await uploadContentTask;
+  await uploadPngTask;
 }
 
-async function ocrPage(pdf: Buffer): Promise<string> {
+async function ocrPage(png: Buffer): Promise<string> {
   const resp = await openai.responses.create({
     model: 'gpt-4o-mini',
     instructions: 'Transcribe this page in a way that would be natural to read aloud, outputting only the content on the page.',
@@ -49,8 +54,8 @@ async function ocrPage(pdf: Buffer): Promise<string> {
         "content": [
           {
             "type": "input_file",
-            "filename": "page.pdf",
-            "file_data": pdf.toString("base64")
+            "filename": "page.png",
+            "file_data": png.toString("base64")
           }
         ]
       }
@@ -70,11 +75,12 @@ async function tts(content: string): Promise<Buffer<ArrayBufferLike>> {
   return Buffer.from(await resp.arrayBuffer());
 }
 
-async function putToBucket(bucketName: string, key: string, buffer: Buffer) {
+async function putToBucket(bucketName: string, key: string, buffer: Buffer, contentType: string) {
   const command = new PutObjectCommand({
     Bucket: bucketName,
     Key: key,
-    Body: buffer
+    Body: buffer,
+    ContentType: contentType
   });
 
   await s3.send(command);   
