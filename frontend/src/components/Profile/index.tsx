@@ -1,6 +1,5 @@
 import React, { FC, MouseEvent, useState } from "react";
 import { IconButton, Menu, MenuItem, Avatar } from "@mui/material";
-import styles from "./index.module.scss"; // Import the SCSS module
 
 /**
  * Profile component with a clickable avatar.
