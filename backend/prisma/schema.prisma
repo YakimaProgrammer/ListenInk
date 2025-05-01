@@ -8,7 +8,7 @@ datasource db {
 }
 
 model User {
-  id          String     @id @default(nanoid()) // I'm widening this type to String, but the default is still a nanoid
+  id          String     @id @default(nanoid()) // I'm widening this type to String, but the default zis still a nanoid
   name        String
   email       String     @unique
   profile_picture String
@@ -49,4 +49,11 @@ model Bookmark {
   documentId  String
   
   order       Int        // Defines order within the document
+}
+
+model Session {
+  id        String   @id
+  sid       String   @unique
+  data      String
+  expiresAt   DateTime
 }

@@ -3,16 +3,16 @@ import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Router, Request, Response, NextFunction } from "express";
 import { PrismaClient } from '@prisma/client';
 import { Err, LoginResult, User } from "./types";
-import google_keys from "./secrets/google_secret_keys.json";
+import { GOOGLE_SECRETS } from "./secrets.json";
 
 const prisma = new PrismaClient();
 
 export const router = Router();
 
 passport.use(new GoogleStrategy({
-    clientID: google_keys.web.client_id,
-    clientSecret: google_keys.web.client_secret,
-    callbackURL: "/api/v1/auth/google/callback" // Hard-coded because this must be synced in Google Cloud Console
+    clientID: GOOGLE_SECRETS.web.client_id,
+    clientSecret: GOOGLE_SECRETS.web.client_secret,
+    callbackURL: new URL(GOOGLE_SECRETS.web.redirect_uris[0]).pathname
   },
   async (_accessToken, _refreshToken, profile, cb) => {
     const mappedId: string = `google:${profile.id}`;
