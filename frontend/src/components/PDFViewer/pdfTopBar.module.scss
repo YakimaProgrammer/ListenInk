@@ -1,11 +1,29 @@
 $arrow-size: 15px;
 $overall-height: 40px;
 $icon-size: 40px;
+$dark-background: rgba(26, 26, 46, 0.85);
+$light-text: rgba(255, 255, 255, 0.9);
+
+.pdfTopBar {
+  background-color: $dark-background;
+  backdrop-filter: blur(15px);
+  border-radius: 16px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 
 /* styles for the simple search icon */
 .searchIcon {
   width: $icon-size;
   height: $icon-size;
+  color: $light-text;
+  transition: transform 0.2s ease;
+  
+  &:hover {
+    color: white;
+    transform: scale(1.1);
+  }
 }
 
 /* styles for the page number display section */
@@ -14,16 +32,64 @@ $icon-size: 40px;
   height: $overall-height;
   display: flex;
   align-items: center;
+  color: $light-text;
 
-  // styles for arrow button that moves
-  // to the next and previous page
   .arrowUpDown {
     width: $arrow-size;
     height: $arrow-size;
+    color: $light-text;
+  }
+  
+  .pageInput {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    
+    input {
+      color: white;
+    }
+  }
+  
+  .pageDivider, .pageTotal {
+    color: $light-text;
   }
 }
 
 .zoomControl {
   height: 40px;
   margin-left: 200px;
+  color: $light-text;
+  
+  span {
+    margin: 0 8px;
+  }
+  
+  button {
+    color: $light-text;
+    
+    &:hover {
+      color: white;
+      transform: scale(1.1);
+    }
+  }
+}
+
+.pageNumberContainer {
+  display: flex;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 2px 8px;
+  margin: 0 5px;
+}
+
+.pageDivider {
+  margin: 0 5px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.pageTotal {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
 }

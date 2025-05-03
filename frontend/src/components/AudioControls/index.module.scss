@@ -80,20 +80,20 @@ $medium-blue: #457b9d;
 }
 
 .playPauseButton {
-  background-color: rgba(255, 255, 255, 0.9) !important; // White button
-  color: rgba(60, 60, 70, 0.9) !important; // Dark icon for contrast
-  width: 40px !important; // Slightly larger
-  height: 40px !important;
-  min-width: 40px !important;
-  padding: 6px !important;
-  border-radius: 50% !important;
+  background-color: transparent !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  width: auto !important;
+  height: auto !important;
+  min-width: auto !important;
+  padding: 6px 12px !important;
+  border-radius: 8px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+  box-shadow: none !important;
   
   &:hover {
-    background-color: white !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
     transform: scale(1.05) !important;
   }
 }

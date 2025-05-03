@@ -3,7 +3,7 @@ import { connect, ConnectedProps } from "react-redux";
 import Box from "@mui/material/Box";
 import { AppDispatch, RootState, setSidebar } from "@/store";
 import { Profile } from "@/components/Profile";
-import { Menu as MenuIcon } from "@mui/icons-material";
+import { Menu as ChevronRight } from "@mui/icons-material";
 import { IconButton, Tooltip } from "@mui/material";
 
 import styles from "./index.module.scss";
@@ -13,7 +13,7 @@ import styles from "./index.module.scss";
 // This component kind of does its own thing (but is still very context dependent on <Root />
 import { SearchDialog } from "@/components/SearchDialog";
 // ... but these components are just layout abstractions for how stuff is laid out
-import { MenuBar } from "./MenuBar";
+// import { MenuBar } from "./MenuBar";
 import { Sidebar } from "./Sidebar";
 import { Content } from "./Content";
 // Should these all be grouped together? Probably!
@@ -45,7 +45,7 @@ function RootComponent({ sidebarOpen, openSidebar }: PropsFromRedux) {
               size="medium"
               color="primary"
             >
-              <MenuIcon />
+              <ChevronRight />
             </IconButton>
           </Tooltip>
         </div>

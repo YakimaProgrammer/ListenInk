@@ -8,6 +8,7 @@ import styles from "./index.module.scss";
 import PDFDropModal from "@/components/PDFDropModal";
 import { AppDispatch, RootState, setPdfDropModal } from "@/store";
 import { connect, ConnectedProps } from "react-redux";
+import { CloudUpload } from "@mui/icons-material";
 
 const mapState = (state: RootState) => ({
   sidebarOpen: state.ui.sidebarOpen,
@@ -74,10 +75,13 @@ function ContentComponent({ sidebarOpen, setPdfModalOpen }: PropsFromRedux) {
           <AudioControls /> {/* This will now float over the PDF */}
         </div>
       ) : (
-        <p style={{ textAlign: "center", marginTop: "2rem" }}>
-          No Document Selected. Drag & drop a PDF to create one, or pick from
-          the Sidebar.
-        </p>
+        <div className={styles.emptyStateMessage}>
+          <CloudUpload fontSize="large" />
+          <p>
+            No Document Selected. Drag & drop a PDF to create one, or pick from
+            the Sidebar.
+          </p>
+        </div>
       )}
 
       <PDFDropModal />

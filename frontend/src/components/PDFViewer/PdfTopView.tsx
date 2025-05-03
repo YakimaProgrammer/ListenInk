@@ -68,15 +68,12 @@ export function PdfTopView({
         sx={{
           width: 1040,
           height: 40,
-          backgroundColor: "#dee7eb",
-          borderTopLeftRadius: 16,
-          borderTopRightRadius: 16,
           display: "flex",
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "flex-start",
-          boxShadow: "0px 5px 10px rgba(0, 0, 0, 0.3)",
         }}
+        className={styles.pdfTopBar}
       >
         {/* Search Icon for searching content */}
         <IconButton className={styles.searchIcon} onClick={openSearchDialog}>
@@ -86,43 +83,38 @@ export function PdfTopView({
         {/* Page Number Display Section */}
         <div className={styles.pageNumberDisplayBox}>
           <IconButton onClick={() => onPageChange(currentPage + 1)}>
-            <KeyboardArrowUp
-              className={`${styles.pageNumberDisplayBox} ${styles.arrowUpDown}`}
-            />
+            <KeyboardArrowUp className={styles.arrowUpDown} />
           </IconButton>
 
-          <TextField
-            size="small"
-            value={transientPage}
-            error={!isValid}
-            onChange={handleChange}
-            fullWidth={true}
-            sx={{
-              width: 60,
-              "& .MuiInputBase-root": {
-                height: 20, // Force smaller height
-                fontFamily: "Roboto", // Change font
-                fontSize: "15px", // Reduce font size
-              },
-              borderRadius: 1, // this border radius is for the bgcolor that matches the input box
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          />
-          <span
-            style={{
-              width: 20,
-              height: 20,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontFamily: "Roboto",
-            }}
-          >
-            /
-          </span>
-          <span style={{ fontFamily: "Roboto" }}>{totalPages}</span>
+          <div className={styles.pageNumberContainer}>
+            <TextField
+              size="small"
+              value={transientPage}
+              error={!isValid}
+              onChange={handleChange}
+              className={styles.pageInput}
+              sx={{
+                width: 50,
+                "& .MuiInputBase-root": {
+                  height: 28,
+                  fontFamily: "Roboto",
+                  fontSize: "15px",
+                  backgroundColor: "rgba(255, 255, 255, 0.1)",
+                  borderRadius: "6px",
+                  padding: "0 8px",
+                },
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "rgba(255, 255, 255, 0.2)",
+                },
+                "& input": {
+                  color: "white",
+                  textAlign: "center",
+                },
+              }}
+            />
+            <span className={styles.pageDivider}>of</span>
+            <span className={styles.pageTotal}>{totalPages}</span>
+          </div>
 
           <IconButton onClick={() => onPageChange(currentPage - 1)}>
             <KeyboardArrowDown className={styles.arrowUpDown} />

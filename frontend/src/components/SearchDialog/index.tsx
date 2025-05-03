@@ -8,6 +8,7 @@ import {
   List,
   ListItemButton,
   ListItemIcon,
+  ListItemText,
   TextField,
   Typography,
 } from "@mui/material";
@@ -24,7 +25,12 @@ import style from "./index.module.scss";
 const mapStateToProps = (state: RootState) => ({
   query: state.ui.searchQuery,
   open: state.ui.searchDialogOpen,
-  docs: state.categories.status === "success" ? Object.values(state.categories.documents).filter((d): d is EnhancedDocument => d !== undefined) : []
+  docs:
+    state.categories.status === "success"
+      ? Object.values(state.categories.documents).filter(
+          (d): d is EnhancedDocument => d !== undefined
+        )
+      : [],
 });
 
 const mapDispatchToProps = (dispatch: AppDispatch) => ({
@@ -50,7 +56,7 @@ function SearchDialogComponent({
     .filter((d: EnhancedDocument) => {
       const titleMatch = d.name.toLowerCase().includes(query.toLowerCase());
       // @TODO
-      const textMatch = true // d.text?.toLowerCase().includes(query.toLowerCase()) ?? false;
+      const textMatch = true; // d.text?.toLowerCase().includes(query.toLowerCase()) ?? false;
       return titleMatch || textMatch;
     })
     .slice(0, NUM_RESULTS);
@@ -70,7 +76,7 @@ function SearchDialogComponent({
         className={!d ? style.hidden : ""}
       >
         <ListItemIcon>
-          <Description />
+          <Description style={{ color: "white" }} />
         </ListItemIcon>
         {d?.name}
       </ListItemButton>
@@ -78,37 +84,68 @@ function SearchDialogComponent({
   }
 
   return (
-    <Dialog open={open} onClose={close} maxWidth="md" fullWidth>
-      <DialogContent dividers>
+    <Dialog
+      open={open}
+      onClose={close}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{ className: style.searchDialog }}
+    >
+      <DialogContent dividers className={style.searchDialogContent}>
         <TextField
           variant="standard"
           placeholder="Search documents..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           fullWidth
+          className={style.searchInput}
           slotProps={{
             input: {
-	      startAdornment: (
-		<InputAdornment position="start">
+              startAdornment: (
+                <InputAdornment position="start">
                   <Search />
-		</InputAdornment>
+                </InputAdornment>
               ),
               endAdornment: (
-		<InputAdornment position="end">
+                <InputAdornment position="end">
                   <IconButton
                     onClick={query === "" ? close : () => setQuery("")}
                     size="small"
                   >
                     <Close />
                   </IconButton>
-		</InputAdornment>
+                </InputAdornment>
               ),
-	    }
+            },
           }}
         />
-        <List>{results}</List>
+        <List className={style.resultsList}>
+          {hits.map((doc, i) => (
+            <ListItemButton
+              key={i}
+              onClick={() => {
+                if (doc) {
+                  navigate(urlFor("docs", doc.id));
+                  close();
+                }
+              }}
+              className={!doc ? style.hidden : style.resultItem}
+            >
+              <ListItemIcon>
+                <Description style={{ color: "white" }} />
+              </ListItemIcon>
+              <ListItemText primary={doc?.name} />
+            </ListItemButton>
+          ))}
+        </List>
+
         {query && hits.length === 0 && (
-          <Typography variant="body2" textAlign="center" mt={2}>
+          <Typography
+            variant="body2"
+            textAlign="center"
+            mt={2}
+            className={style.noResults}
+          >
             No documents found
           </Typography>
         )}

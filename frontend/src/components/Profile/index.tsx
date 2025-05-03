@@ -35,16 +35,29 @@ export const Profile: FC = () => {
       <IconButton
         onClick={handleMenuClick}
         sx={{
-          padding: 0, // Remove padding
-          margin: 0, // Remove margin
-          // "&:hover": { backgroundColor: "transparent" }, // Remove hover background
+          padding: 0,
+          margin: 0,
+          backgroundColor: "rgba(255, 255, 255, 0.1)",
+          "&:hover": {
+            backgroundColor: "rgba(255, 255, 255, 0.15)",
+            transform: "scale(1.05)",
+          },
+          transition: "all 0.3s ease",
         }}
       >
         <Avatar
-          src="/logo512.png"
-          alt="Profile"
-          sx={{ width: 40, height: 40 }}
-        />
+          sx={{
+            width: 40,
+            height: 40,
+            backgroundColor: "rgba(30, 30, 45, 0.9)", // Dark background instead of purple
+            color: "white",
+            fontWeight: "bold",
+            fontSize: "18px",
+            border: "2px solid rgba(255, 255, 255, 0.2)",
+          }}
+        >
+          {/* Use first initial of the user or a custom icon */}U
+        </Avatar>
       </IconButton>
 
       {/* Dropdown Menu */}

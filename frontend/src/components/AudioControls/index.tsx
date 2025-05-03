@@ -249,19 +249,20 @@ class AudioControlsComponent extends Component<
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"
-              height="24"
-              viewBox="0 0 24 24"
+              height="27"
+              viewBox="0 0 24 27"
               fill="currentColor"
             >
               <path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z" />
               <text
-                x="8"
-                y="13"
+                x="12"
+                y="25"
                 fontSize="6"
-                fill="currentColor"
+                fill="white"
                 textAnchor="middle"
+                style={{ fontWeight: "bold" }}
               >
-                10
+                -10
               </text>
             </svg>
           </Button>
@@ -275,8 +276,8 @@ class AudioControlsComponent extends Component<
             {isPlaying ? (
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
+                width="24"
+                height="24"
                 viewBox="0 0 24 24"
                 fill="currentColor"
               >
@@ -285,8 +286,8 @@ class AudioControlsComponent extends Component<
             ) : (
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
+                width="24"
+                height="24"
                 viewBox="0 0 24 24"
                 fill="currentColor"
               >
@@ -300,19 +301,20 @@ class AudioControlsComponent extends Component<
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"
-              height="24"
-              viewBox="0 0 24 24"
+              height="27"
+              viewBox="0 0 24 27"
               fill="currentColor"
             >
               <path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z" />
               <text
-                x="16"
-                y="13"
+                x="12"
+                y="25"
                 fontSize="6"
-                fill="currentColor"
+                fill="white"
                 textAnchor="middle"
+                style={{ fontWeight: "bold" }}
               >
-                10
+                +10
               </text>
             </svg>
           </Button>
