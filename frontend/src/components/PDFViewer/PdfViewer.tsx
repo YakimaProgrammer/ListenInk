@@ -46,7 +46,12 @@ export function PdfViewer({
                 alt={`PDF page ${pageNum + 1}`}
                 loading="lazy"
               />
-              <div className={styles.pageNumber}>{pageNum + 1}</div>
+              <div
+                className={styles.pageNumber}
+                style={{ backgroundColor: "rgba(26, 26, 46, 0.85)" }}
+              >
+                {pageNum + 1}
+              </div>
             </div>
           ))}
         </div>

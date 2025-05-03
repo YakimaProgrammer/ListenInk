@@ -2,13 +2,13 @@
 @use "src/styles/drawer";
 
 // Color variables
-$sidebar-bg: #f8f9fa;
-$sidebar-text: #1d3557;
-$sidebar-hover: #e9ecef;
-$sidebar-active: #dee2e6;
-$sidebar-border: #e0e0e0;
-$primary-accent: #457b9d;
-$secondary-accent: #a8dadc;
+$sidebar-bg: #1a1a2e; // Darker background
+$sidebar-text: #e6e6e6; // Lighter text
+$sidebar-hover: #252542; // Darker hover
+$sidebar-active: #303056; // Darker active
+$sidebar-border: #2a2a46; // Darker border
+$primary-accent: #6c63ff; // More vibrant accent
+$secondary-accent: #a8dadc; // Keep this accent
 
 .drawer {
   width: drawer.$drawer-width;
@@ -22,22 +22,23 @@ $secondary-accent: #a8dadc;
   box-sizing: border-box;
   background-color: $sidebar-bg;
   border-right: 1px solid $sidebar-border;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
 
-  // Add subtle pattern background
-  background-image: linear-gradient(
-    rgba(255, 255, 255, 0.7) 1px,
-    transparent 1px
-  );
-  background-size: 100% 30px;
+  // Change the subtle pattern background
+  // background-image: linear-gradient(
+  //   rgba(255, 255, 255, 0.03) 1px,
+  //   transparent 1px
+  // );
+  // background-size: 100% 30px;
 }
+
 
 // Enhanced header styles
 .headerContainer {
-  padding: 12px 8px;
-  background-color: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  padding: 18px 12px;
+  background-color: rgba(0, 0, 0, 0.15);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08);
   border-bottom: 1px solid $sidebar-border;
 }
 
@@ -45,37 +46,35 @@ $secondary-accent: #a8dadc;
 .titleArea {
   display: flex;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   padding: 0 8px;
   
   .appTitle {
     font-weight: 600;
     font-size: 18px;
-    color: $sidebar-text;
-    margin-left: 8px;
+    color: white;
+    margin-left: 10px;
     letter-spacing: 0.5px;
   }
   
   .logoIcon {
     color: $primary-accent;
+    font-size: 24px;
   }
 }
 
+
 // Button group styles
 .actionButtons {
-  display: flex;
-  justify-content: space-between;
-  padding: 0 4px;
-  
   .iconButton {
-    color: $sidebar-text;
-    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.7);
+    border-radius: 10px;
     padding: 8px;
     transition: all 0.2s ease;
     
     &:hover {
-      background-color: $sidebar-hover;
-      color: $primary-accent;
+      background-color: rgba(255, 255, 255, 0.1);
+      color: white;
       transform: translateY(-1px);
     }
   }
@@ -83,86 +82,71 @@ $secondary-accent: #a8dadc;
 
 // Category section styles
 .categoriesContainer {
-  margin-top: 16px;
-  overflow-y: auto;
-  height: calc(100vh - 130px);
-  
-  // Custom scrollbar
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-  
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  
   &::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: rgba(255, 255, 255, 0.15);
     border-radius: 10px;
+    
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.25);
+    }
   }
 }
 
 // Category item styles
 .categoryItem {
-  border-radius: 6px;
-  margin: 0 8px 4px;
-  overflow: hidden;
+  border-radius: 8px;
+  margin: 0 8px 6px;
   transition: all 0.2s ease;
   
-  &:hover {
-    background-color: $sidebar-hover;
+  &:hover:not(.active) {
+    background-color: rgba(255, 255, 255, 0.09); // Toned down by 50%
+    transform: translateX(2px); // Subtle movement on hover
   }
   
   &.active {
-    background-color: $sidebar-active;
-  }
-  
-  .categoryLabel {
-    display: flex;
-    align-items: center;
-    font-weight: 500;
-    padding: 8px 10px;
-  }
-  
-  .categoryIcon {
-    margin-right: 8px;
-    color: inherit;
+    background-color: rgba(108, 99, 255, 0.125); // Toned down by 50%
+    
+    &:hover {
+      background-color: rgba(108, 99, 255, 0.175); // Toned down by 50%
+    }
   }
 }
 
 // Document item styles
 .documentItem {
-  padding: 6px 8px 6px 32px;
-  margin: 2px 8px 2px 16px;
+  padding: 0; // Remove padding from container
+  margin: 2px 8px 2px 24px;
   border-radius: 4px;
   position: relative;
   font-size: 14px;
   transition: all 0.2s ease;
+  color: rgba(255, 255, 255, 0.6);
   
-  &:hover {
-    background-color: $sidebar-hover;
-  }
+  // Remove any existing styling that might be causing double highlights
+  border: none;
+  outline: none;
   
-  &.active {
-    // background-color: $secondary-accent;
-    color: $sidebar-text;
-    font-weight: 500;
+  :global(.MuiListItemButton-root) {
+    &.active {
+      background-color: rgba(108, 99, 255, 0.125); // Toned down by 50%
+      color: white;
+      font-weight: 500;
+      
+      &:hover {
+        background-color: rgba(108, 99, 255, 0.175); // Toned down by 50%
+      }
+    }
+    
+    &:hover:not(.active) {
+      background-color: rgba(255, 255, 255, 0.09); // Toned down by 50%
+      transform: translateX(2px); // Subtle movement on hover
+    }
   }
-  
-  .docIcon {
-    font-size: 14px;
-    margin-right: 6px;
-    opacity: 0.7;
-  }
-  
-  .dragHandle {
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
-  
-  &:hover .dragHandle {
-    opacity: 0.7;
-  }
+}
+
+.docIcon {
+  margin-right: 10px;
+  color: rgba(255, 255, 255, 0.6); // Dimmer icon color
 }
 
 // Fade-in animation for items
@@ -173,4 +157,20 @@ $secondary-accent: #a8dadc;
 
 .animated {
   animation: fadeIn 0.3s ease forwards;
+}
+
+.documentName {
+  color: rgba(255, 255, 255, 0.7); // Ensuring the text color is dimmer
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.customLogo {
+  height: 40px; // Example: Set the height
+  width: auto; // Maintain aspect ratio
+  margin-right: 10px; // Add some space if needed
+  // Add any other styles like vertical-align if necessary
 }

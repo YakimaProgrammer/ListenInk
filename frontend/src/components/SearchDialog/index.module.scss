@@ -1,3 +1,57 @@
 .hidden {
     opacity: 0;
 }
+
+// Add these new styles
+.searchDialog {
+  background-color: rgba(26, 26, 46, 0.95);
+  border-radius: 16px;
+  backdrop-filter: blur(15px);
+}
+
+.searchInput {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  color: white;
+  padding: 10px 15px;
+  margin-bottom: 15px;
+  
+  input {
+    color: white;
+  }
+  
+  svg {
+    color: rgba(255, 255, 255, 0.7);
+  }
+}
+
+.resultsList {
+  padding: 0;
+}
+
+.resultItem {
+  border-radius: 8px;
+  margin: 4px 0;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: translateX(2px);
+  }
+}
+
+.noResults {
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 20px;
+}
+
+.searchDialogContent {
+    padding-right: 24px !important;
+    padding-left: 24px !important;
+    overflow-x: hidden;
+  }
+  
+  .resultsList {
+    width: 100%;
+    overflow-x: hidden;
+  }

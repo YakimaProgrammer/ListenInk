@@ -109,57 +109,52 @@ function SidebarComponent({
       {/* Custom Header */}
       <Box className={styles.headerContainer}>
         {/* App Title/Logo */}
-        <Box className={styles.titleArea}>
+        {/* <Box className={styles.titleArea}>
           <AutoStories className={styles.logoIcon} />
           <Typography className={styles.appTitle}>ListenInk</Typography>
+        </Box> */}
+        {/* App Title/Logo */}
+        <Box className={styles.titleArea}>
+          <img
+            src="/listenink_white.PNG"
+            alt="ListenInk Logo"
+            className={styles.customLogo}
+          />
         </Box>
 
         {/* Action Buttons */}
         <Box className={styles.actionButtons}>
-          <Box>
-            {/* Search Dialog */}
-            <Tooltip title="Search Documents">
-              <IconButton
-                onClick={openDialog}
-                className={styles.iconButton}
-                size="small"
-              >
-                <Search />
-              </IconButton>
-            </Tooltip>
+          <IconButton
+            onClick={openDialog}
+            className={styles.iconButton}
+            size="small"
+          >
+            <Search />
+          </IconButton>
 
-            {/* Upload PDF */}
-            <Tooltip title="Upload PDF">
-              <IconButton
-                onClick={handleUploadClick}
-                className={styles.iconButton}
-                size="small"
-              >
-                <Upload />
-              </IconButton>
-            </Tooltip>
+          {/* <IconButton
+            onClick={handleUploadClick}
+            className={styles.iconButton}
+            size="small"
+          >
+            <Upload />
+          </IconButton> */}
 
-            {/* Add new doc/cat */}
-            <Tooltip title="Add New">
-              <IconButton
-                onClick={handleAddClick}
-                className={styles.iconButton}
-                size="small"
-              >
-                <Add />
-              </IconButton>
-            </Tooltip>
-          </Box>
+          <IconButton
+            onClick={handleAddClick}
+            className={styles.iconButton}
+            size="small"
+          >
+            <Add />
+          </IconButton>
 
-          <Tooltip title="Close Sidebar">
-            <IconButton
-              onClick={closeSidebar}
-              className={styles.iconButton}
-              size="small"
-            >
-              <ChevronLeft />
-            </IconButton>
-          </Tooltip>
+          <IconButton
+            onClick={closeSidebar}
+            className={styles.iconButton}
+            size="small"
+          >
+            <ChevronLeft />
+          </IconButton>
         </Box>
 
         {/* Hidden file input */}

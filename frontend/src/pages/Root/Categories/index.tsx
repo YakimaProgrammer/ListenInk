@@ -304,7 +304,7 @@ function CategoryRow({ category, total, index }: CategoryRowProps) {
         <ListItemButton
           onClick={() => setOpen(!isOpen)}
           onContextMenu={(e) => handleContextMenu(e, "category", category.id)}
-          onDoubleClick={handleCatDoubleClick}
+          // onDoubleClick={handleCatDoubleClick}
           className={styles.categoryLabel}
           disableRipple
           sx={{
@@ -313,9 +313,15 @@ function CategoryRow({ category, total, index }: CategoryRowProps) {
           }}
         >
           {isOpen ? (
-            <FolderOpen className={styles.categoryIcon} />
+            <FolderOpen
+              className={styles.categoryIcon}
+              style={{ marginRight: "10px" }}
+            />
           ) : (
-            <Folder className={styles.categoryIcon} />
+            <Folder
+              className={styles.categoryIcon}
+              style={{ marginRight: "10px" }}
+            />
           )}
 
           {editingCat ? (
@@ -356,23 +362,32 @@ function CategoryRow({ category, total, index }: CategoryRowProps) {
         {category.documents.map((doc, docIndex) => (
           <Box
             key={doc.id}
-            className={`${styles.documentItem} ${
-              doc.id === docId ? styles.active : ""
-            } ${styles.animated}`}
+            className={`${styles.documentItem} ${styles.animated}`}
             style={{ animationDelay: `${docIndex * 0.03 + 0.1}s` }}
           >
             <ListItemButton
-              selected={doc.id === docId}
               onClick={() => navigate(urlFor("docs", doc.id))}
               onContextMenu={(e) => handleContextMenu(e, "document", doc.id)}
-              onDoubleClick={() => handleDocDoubleClick(doc)}
+              // onDoubleClick={() => handleDocDoubleClick(doc)}
               disableRipple
+              className={doc.id === docId ? styles.active : ""}
               sx={{
                 padding: "4px 6px",
                 borderRadius: "4px",
+                color: "rgba(255, 255, 255, 0.7)",
+                "& .MuiListItemIcon-root": {
+                  minWidth: "30px", // Reduce icon width to remove spacing
+                },
+                "& .MuiTouchRipple-root": {
+                  display: "none", // Remove ripple effect
+                },
               }}
             >
-              <Description className={styles.docIcon} fontSize="small" />
+              <Description
+                className={styles.docIcon}
+                fontSize="small"
+                sx={{ color: "rgba(255, 255, 255, 0.7)" }}
+              />
 
               {editingDocId === doc.id ? (
                 <TextField
@@ -400,32 +415,12 @@ function CategoryRow({ category, total, index }: CategoryRowProps) {
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
                     flex: 1,
+                    color: "rgba(255, 255, 255, 0.7)",
                   }}
                 >
                   {doc.name}
                 </Typography>
               )}
-
-              <Tooltip title="Drag to move">
-                <button
-                  className={styles.dragHandle}
-                  style={{
-                    marginLeft: "auto",
-                    cursor: "grab",
-                    background: "transparent",
-                    border: "none",
-                    display: "flex",
-                    alignItems: "center",
-                  }}
-                  draggable
-                  onDragStart={(ev) => handleDragStart(ev, doc)}
-                >
-                  <DragIndicator
-                    fontSize="small"
-                    sx={{ color: "#999", fontSize: "16px" }}
-                  />
-                </button>
-              </Tooltip>
             </ListItemButton>
           </Box>
         ))}

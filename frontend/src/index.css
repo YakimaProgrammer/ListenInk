@@ -1,3 +1,41 @@
 html, body {
     margin: 0;
-}
+    padding: 0;
+    background-color: #121212;
+    color: white;
+    font-family: 'Roboto', 'Segoe UI', 'Helvetica Neue', sans-serif;
+    height: 100%;
+  }
+  
+  #root {
+    height: 100%;
+  }
+  
+  /* Add styling for MUI components globally */
+  .MuiButton-contained {
+    background: linear-gradient(135deg, #6c63ff, #5046e5) !important;
+    box-shadow: 0 4px 10px rgba(108, 99, 255, 0.3) !important;
+    transition: all 0.3s ease !important;
+  }
+  
+  .MuiButton-contained:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 12px rgba(108, 99, 255, 0.4) !important;
+  }
+  
+  .MuiPaper-root {
+    background-color: #1a1a2e !important;
+    color: white !important;
+  }
+  
+  .MuiMenuItem-root {
+    color: rgba(255, 255, 255, 0.85) !important;
+  }
+  
+  .MuiMenuItem-root:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+  }
+  
+  .MuiListItemButton-root.Mui-selected {
+    background-color: rgba(108, 99, 255, 0.15) !important;
+  }

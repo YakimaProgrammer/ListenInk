@@ -6,10 +6,12 @@
   justify-content: center;
   align-items: center;
   flex-grow: 1;
-  padding: 0; /* Changed from 24px to 0 */
+  padding: 0;
   transition: margin 0.3s ease-out;
   margin-left: -(#{drawer.$drawer-width});
   position: relative;
+  background: linear-gradient(135deg, #151515, #1f1f35);
+  color: white;
 }
 
 .mainOpen {
@@ -22,11 +24,12 @@
 .pdfViewerContainer {
   position: relative;
   width: 100%;
-  height: 100vh; /* Changed from calc(100vh - 120px) to 100vh */
+  height: 100vh;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  background-color: rgba(20, 20, 30, 0.7);
 }
 
 // We can remove or simplify these since AudioControls is now positioned absolutely
@@ -38,4 +41,24 @@
 // AudioControls has its own positioning now
 .audioControlPosition {
   position: relative; // This is fine since AudioControls now has absolute positioning
+}
+
+.emptyStateMessage {
+  text-align: center;
+  margin-top: 2rem;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 1.1rem;
+  line-height: 1.6;
+  max-width: 500px;
+  padding: 20px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  
+  svg {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    opacity: 0.8;
+  }
 }
