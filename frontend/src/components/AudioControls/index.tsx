@@ -99,7 +99,25 @@ class AudioControlsComponent extends Component<
       audio.currentTime = this.props.playbackPos;
       audio.volume = this.state.volume;
     }
+
+    this.checkBackgroundColor();
   }
+
+  checkBackgroundColor = () => {
+    // This is a simplified approach - for a full implementation you would need to analyze
+    // the actual pixels of the PDF under the controls
+    const controls = document.querySelector(
+      `.${styles.audioControls}`
+    ) as HTMLElement;
+
+    if (controls) {
+      // For now we'll just set a darker theme by default
+      controls.style.backgroundColor = "rgba(60, 60, 70, 0.85)";
+
+      // A more advanced implementation would use a library like color-thief
+      // to analyze the PDF content beneath the controls and adapt accordingly
+    }
+  };
 
   componentDidUpdate(prevProps: PropsFromRedux) {
     const audio = this.audioRef.current;

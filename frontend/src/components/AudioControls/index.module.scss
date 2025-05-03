@@ -11,12 +11,13 @@ $medium-blue: #457b9d;
   transform: translateX(-50%);
   width: 80%;
   max-width: 800px;
-  padding: 6px 15px; // Reduced from 10px to 6px
-  background-color: rgba($pale, 0.92);
-  backdrop-filter: blur(10px);
+  padding: 8px 18px;
+  background-color: rgba(60, 60, 70, 0.85); // Darker, more opaque background
+  backdrop-filter: blur(15px);
   border-radius: 30px;
   z-index: 20;
-  box-shadow: 0 4px 12px rgba($dark-blue, 0.2);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.18); // Subtle border
 }
 
 .controlPanel {
@@ -42,19 +43,19 @@ $medium-blue: #457b9d;
 
 .progressBar {
   flex-grow: 1;
-  height: 4px; // Thinner progress bar
-  background: rgba($light-blue, 0.5);
+  height: 6px; // Slightly taller
+  background: rgba(255, 255, 255, 0.25); // Lighter background for contrast
   margin: 0 15px;
   position: relative;
-  border-radius: 2px;
+  border-radius: 3px;
   cursor: pointer;
   overflow: hidden;
 }
 
 .progress {
   height: 100%;
-  background: $medium-blue;
-  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.9); // Bright white progress
+  border-radius: 3px;
   
   &::after {
     content: '';
@@ -62,11 +63,11 @@ $medium-blue: #457b9d;
     right: 0;
     top: 50%;
     transform: translateY(-50%);
-    width: 10px;
-    height: 10px;
-    background-color: $dark-blue;
+    width: 12px;
+    height: 12px;
+    background-color: white;
     border-radius: 50%;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.5); // Glow effect
   }
 }
 
@@ -74,31 +75,47 @@ $medium-blue: #457b9d;
   font-family: 'Roboto', sans-serif;
   font-size: 12px;
   font-weight: 500;
-  color: $dark-blue;
+  color: rgba(255, 255, 255, 0.9); // Bright white text
   min-width: 40px;
 }
 
 .playPauseButton {
-  background-color: $medium-blue !important;
-  color: $pale !important;
-  width: 36px !important; // Reduced from 40px
-  height: 36px !important; // Reduced from 40px
-  min-width: 36px !important; // Add this to prevent stretching
-  padding: 6px !important; // Add explicit padding to control inner content
+  background-color: rgba(255, 255, 255, 0.9) !important; // White button
+  color: rgba(60, 60, 70, 0.9) !important; // Dark icon for contrast
+  width: 40px !important; // Slightly larger
+  height: 40px !important;
+  min-width: 40px !important;
+  padding: 6px !important;
   border-radius: 50% !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
   
   &:hover {
-    background-color: $dark-blue !important;
+    background-color: white !important;
+    transform: scale(1.05) !important;
   }
 }
 
 .controlButton {
-  color: $dark-blue;
+  color: rgba(255, 255, 255, 0.8); // Light colored controls
+  transition: all 0.2s ease;
   
   &:hover {
-    color: $medium-blue;
+    color: white;
+    transform: scale(1.1);
   }
+}
+
+:global(.MuiSelect-select), :global(.MuiInputBase-root) {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+:global(.MuiOutlinedInput-notchedOutline) {
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+:global(.MuiSelect-icon) {
+  color: rgba(255, 255, 255, 0.7) !important;
 }
