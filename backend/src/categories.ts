@@ -1,7 +1,8 @@
-import { Router, Request, Response } from "express";
+import { Router } from "express";
 import { PrismaClient, Prisma } from '@prisma/client';
-import { Category, CategorySchema, Err } from "./types";
+import { Category, CategorySchema } from "./types";
 import { APIError } from "./error";
+import { withAuth } from "./auth";
 
 const prisma = new PrismaClient();
 
@@ -15,34 +16,34 @@ async function maxCategoryOrder(tx: Prisma.TransactionClient, userId: string): P
 
 
 export const router = Router();
-router.get("/", async (req: Request, res: Response<Category[]>) => {
+router.get("/", withAuth<Category[]>(async (req, res) => {
   const categories: Category[] = await prisma.category.findMany({
     where: {
-      userId: req.cookies.userId,
+      userId: req.user.id,
     },
     orderBy: { order: "asc" }
   });
   
-  res.status(200).send(categories);
-});
+  res.status(200).send({ success: true, data: categories });
+}));
 
-router.post("/", async (req: Request, res: Response<Category | Err>) => {
+router.post("/", withAuth<Category>(async (req, res) => {
   try {
     const category: Category = await prisma.$transaction(async (tx) => {
-      const userId = req.cookies.userId;
+      const userId = req.user.id;
       const maxOrder = await maxCategoryOrder(tx, userId);
       if (maxOrder === null) {
 	throw new Error(`Unable to get the maximum order value for user ${userId}`);
       }
       const partial = CategorySchema.omit({ id: true, userId: true }).partial({ order: true }).safeParse(req.body);
       if (!partial.success) {
-	throw new APIError({ err: partial.error.message });
+	throw new APIError(partial.error.message);
       }
       const newOrder = partial.data.order;
       if (newOrder !== undefined) {
 	// +1 because the user could be *very* explicit about wanting to append
 	if (newOrder > maxOrder + 1) {
-	  throw new APIError({ err: "Tried to create a new category out of bounds!" });
+	  throw new APIError("Tried to create a new category out of bounds!");
 	}
 
 	await tx.category.updateMany({
@@ -60,28 +61,28 @@ router.post("/", async (req: Request, res: Response<Category | Err>) => {
       });
     });
 
-    res.status(200).send(category);
+    res.status(200).send({ success: true, data: category });
   } catch (e: unknown) {
     if (e instanceof APIError) {
       res.status(400).send(e.details);
     } else {
-      res.status(500).send({ err: "An unknown error occured!" });
+      res.status(500).send({ success: false, err: "An unknown error occured!" });
     }
   }
-});
+}));
 
-router.patch("/:catid", async (req: Request, res: Response<Category | Err>) => {
+router.patch("/:catid", withAuth<Category>(async (req, res) => {
   try {
     const category: Category = await prisma.$transaction(async (tx) => {
-      const userId = req.cookies.userId;
+      const userId = req.user.id;
       const id = req.params.catid;
       const category = await prisma.category.findUnique({ where: { id } });
       if (category === null || category.userId !== userId) {
-	throw new APIError({ err: "Not found!" });
+	throw new APIError("Not found!");
       }
       const partial = CategorySchema.omit({ id: true, userId: true }).partial().safeParse(req.body);
       if (!partial.success) {
-	throw new APIError({ err: partial.error.message });
+	throw new APIError(partial.error.message);
       }
       const newOrder = partial.data.order;
       const oldOrder = category.order;
@@ -91,7 +92,7 @@ router.patch("/:catid", async (req: Request, res: Response<Category | Err>) => {
 	  throw new Error(`Unable to get the maximum order value for user ${userId}`);
 	}
 	if (newOrder > maxOrder) {
-	  throw new APIError({ err: "Cannot move a category out of bounds!" });
+	  throw new APIError("Cannot move a category out of bounds!");
 	}
 	if (newOrder > oldOrder) {
 	  await tx.category.updateMany({
@@ -111,24 +112,24 @@ router.patch("/:catid", async (req: Request, res: Response<Category | Err>) => {
       });
     });
 
-    res.status(200).send(category);
+    res.status(200).send({ success: true, data: category });
   } catch (e: unknown) {
     if (e instanceof APIError) {
       res.status(400).send(e.details);
     } else {
-      res.status(500).send({ err: "An unknown error occured!" });
+      res.status(500).send({ success: false, err: "An unknown error occured!" });
     }
   }
-});
+}));
 
-router.delete("/:catid", async (req: Request, res: Response<Err>) => {
+router.delete("/:catid", withAuth<void>(async (req, res) => {
   try {
     await prisma.$transaction(async (tx) => {
       const id = req.params.catid;
-      const userId = req.cookies.userId;
+      const userId = req.user.id;
       const category = await tx.category.findUnique({ where: { id } });
       if (category === null || category.userId !== userId) {
-	throw new APIError({ err: "Not found!" });
+	throw new APIError("Not found!");
       }
       await tx.category.updateMany({
 	where: { userId, order: { gt: category.order } },
@@ -143,7 +144,7 @@ router.delete("/:catid", async (req: Request, res: Response<Err>) => {
     if (e instanceof APIError) {
       res.status(400).send(e.details);
     } else {
-      res.status(500).send({ err: "An unknown error occured!" });
+      res.status(500).send({ success: false, err: "An unknown error occured!" });
     }
   }
-});
+}));

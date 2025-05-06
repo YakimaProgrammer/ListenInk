@@ -1,13 +1,24 @@
 import passport from "passport";
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import { Router, Request, Response, NextFunction } from "express";
+import { Router, Request, Response, NextFunction, RequestHandler } from "express";
 import { PrismaClient } from '@prisma/client';
-import { Err, LoginResult, User } from "./types";
+import { ApiResponse, User, UserOrError } from "./types";
 import { GOOGLE_SECRETS } from "./secrets.json";
 
 const prisma = new PrismaClient();
 
 export const router = Router();
+
+// It turns out Request and AuthenticatedRequest are two very different things
+export function withAuth<T>(handler: (req: Request & Express.AuthenticatedRequest, res: Response<ApiResponse<T>>, next: NextFunction) => unknown): RequestHandler {
+  return function (req: Request, res: Response<ApiResponse<T>>, next: NextFunction) {
+    if (req.isAuthenticated()) {
+      handler(req, res, next);
+    } else {
+      res.status(401).json({ success: false, err: 'Unauthorized' });
+    }
+  };
+}
 
 passport.use(new GoogleStrategy({
     clientID: GOOGLE_SECRETS.web.client_id,
@@ -67,20 +78,9 @@ passport.deserializeUser(async (id, done) => {
   }
 });
 
-export function ensureAuthenticated(req: Request, res: Response, next: NextFunction) {
-  if (req.isAuthenticated()) {
-    return next();
-  }
-  res.status(401).json({ error: 'Unauthorized' });
-}
-
-router.get("/", ensureAuthenticated, (req, res: Response<User | Err>) => {
-  if (req.user !== undefined) {
-    res.send(req.user);
-  } else {
-    res.send({ err: "Unauthorized" });
-  }
-});
+router.get("/", withAuth<User>((req, res) => {
+  res.send({ success: true, data: req.user });
+}));
 
 router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 
@@ -99,23 +99,16 @@ router.post('/logout', (req, res, next) => {
   });
 });
 
-router.get("/login/success", (req, res: Response<LoginResult>) => {
-  if(req.user) {
-    res.status(200).json({
-      success: true,
-      user: req.user
-    });
-  } else {
-    res.status(500).json({
-      success: false,
-      message: "Server error: user should be logged in by now",
-    });
-  }
-});
+router.get("/login/success", withAuth<User>((req, res) => {
+  res.status(200).json({
+    success: true,
+    data: req.user
+  });
+}));
 
-router.get("/login/failed", (_, res: Response<LoginResult>) => {
+router.get("/login/failed", (_, res: Response<UserOrError>) => {
   res.status(401).json({
     success: false,
-    message: "failure",
+    err: "failure",
   });
 });

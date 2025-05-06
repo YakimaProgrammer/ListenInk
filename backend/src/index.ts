@@ -18,15 +18,21 @@ api.use("/categories", category);
 const app: Express = express();
 // Register middlewares to extend express: json body parsing, session cookies, and Google SSO
 app.use(express.json())
+app.set('trust proxy', 1);
 app.use(session({
   secret: SESSION_SECRETS,
   resave: false,
   saveUninitialized: false,
-  // TODO: cookie: { secure: true }
+  cookie: {
+    secure: true,
+    httpOnly: true,
+    sameSite: 'strict',
+    maxAge: 2 * 60 * 60 * 1000 // Sessions are valid for two hours
+  },
   store: new PrismaSessionStore(
     new PrismaClient(),
     {
-      checkPeriod: 2 * 60 * 1000,  //ms
+      checkPeriod: 2 * 60 * 1000,  // Check for expired sessions every 2 minutes
       dbRecordIdIsSessionId: true,
       dbRecordIdFunction: undefined,
     }

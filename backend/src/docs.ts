@@ -1,8 +1,9 @@
 import { Router, Request, Response } from "express";
-import { Bookmark, BookmarkSchema, DocId, Document, DocumentSchema, Err, NaturalNumber } from "./types";
+import { Bookmark, BookmarkSchema, DocId, Document, DocumentSchema, NaturalNumber } from "./types";
 import { PrismaClient, Prisma } from '@prisma/client';
 import { Readable } from "stream";
 import { APIError } from "./error";
+import { withAuth } from "./auth";
 
 const prisma = new PrismaClient();
 
@@ -25,15 +26,15 @@ async function maxBookmarkOrder(tx: Prisma.TransactionClient, documentId: string
 // I'm using a router primarily to skip having to type
 // all of that again and again.
 export const router = Router();
-router.post("/", (_req: Request, res: Response<DocId>) => { // `POST /api/v1/docs`
-  res.status(200).send({"document_id": "c9663ed1fc2373ca8cb16ce8bcb4faae781ae8e1e1976803b7a756f81f309b60" });
-});
+router.post("/", withAuth<DocId>((_req, res) => { // `POST /api/v1/docs`
+  res.status(200).send({success: true, data: {"document_id": "c9663ed1fc2373ca8cb16ce8bcb4faae781ae8e1e1976803b7a756f81f309b60"}});
+}));
 
-router.get("/", async (req: Request, res: Response<Document[]>) => {
+router.get("/", withAuth<Document[]>(async (req, res) => {
   const docs: Document[] = await prisma.document.findMany({
     where: {
       category: {
-        userId: req.cookies.userId,
+        userId: req.user.id,
       },
     },
     include: {
@@ -43,14 +44,14 @@ router.get("/", async (req: Request, res: Response<Document[]>) => {
     orderBy: { order: "asc" }
   });
 
-  res.status(200).send(docs);
-});
+  res.status(200).send({ success: true, data: docs });
+}));
 
 router.get("/:docid/stream", (_req: Request, res: Response<string>) => { // `POST /api/v1/docs`
   res.status(200).send("todo...");
 });
 
-router.patch("/:docid", async (req: Request, res: Response<Document | Err>) => { // `PATCH /api/v1/docs/<docid>`
+router.patch("/:docid", withAuth<Document>(async (req, res) => { // `PATCH /api/v1/docs/<docid>`
   try {
     const ret: Document = await prisma.$transaction(async (tx) => {
       const docId = req.params.docId;
@@ -61,14 +62,14 @@ router.patch("/:docid", async (req: Request, res: Response<Document | Err>) => {
 	include: { category: true },
       });
 
-      if (doc === null || doc.category.userId !== req.cookies.userId) {
-	throw new APIError({err: "Not found!"});
+      if (doc === null || doc.category.userId !== req.user.id) {
+	throw new APIError("Not found!");
       }
 
       // Parse the request from the user
       const partial = DocumentSchema.omit({ id: true, numpages: true, s3key: true, bookmarks: true, completed: true }).partial().safeParse(req.body);
       if (!partial.success) {
-	throw new APIError({ err: partial.error.message });
+	throw new APIError(partial.error.message);
       }
     
       const oldCategoryId = doc.categoryId;
@@ -83,7 +84,7 @@ router.patch("/:docid", async (req: Request, res: Response<Document | Err>) => {
 	if (res.success) {
 	  newPosition = res.data;
 	} else {
-	  throw new APIError({err: "`order` must be a natural number!"});
+	  throw new APIError("`order` must be a natural number!");
 	}
       };
       
@@ -96,7 +97,7 @@ router.patch("/:docid", async (req: Request, res: Response<Document | Err>) => {
 	}
 	// newPosition comes from partial.data.order which cannot be less than zero by the schema
 	if (newPosition !== undefined && newPosition > max) {
-	  throw new APIError({ err: "Tried to move a Document out of bounds!" });
+	  throw new APIError("Tried to move a Document out of bounds!");
 	}
 	
 	// 1. In the old category, decrement order for all docs with order > oldOrder.
@@ -135,7 +136,7 @@ router.patch("/:docid", async (req: Request, res: Response<Document | Err>) => {
 	}
 	// newPosition comes from partial.data.order which cannot be less than zero by the schema
 	if (newPosition !== undefined && newPosition > max) {
-	  throw new APIError({ err: "Tried to move a Document out of bounds!" });
+	  throw new APIError("Tried to move a Document out of bounds!");
 	}
 	
 	if (newPosition === undefined) {
@@ -170,17 +171,17 @@ router.patch("/:docid", async (req: Request, res: Response<Document | Err>) => {
 	});
       }
     });
-    res.status(200).send(ret)
+    res.status(200).send({ success: true, data: ret })
   } catch (e: unknown) {
     if (e instanceof APIError) {
       res.status(400).send(e.details);
     } else {
-      res.status(500).send({err: "An unknown error occured!"});
+      res.status(500).send({success: false, err: "An unknown error occured!"});
     }
   }
-});
+}));
 
-router.patch("/:docid/bookmarks/:id", async (req: Request, res: Response<Bookmark | Err>) => {
+router.patch("/:docid/bookmarks/:id", withAuth<Bookmark>(async (req, res) => {
   try {
     const bookmark: Bookmark = await prisma.$transaction(async (tx) => {
       const id = req.params.id;
@@ -201,26 +202,26 @@ router.patch("/:docid/bookmarks/:id", async (req: Request, res: Response<Bookmar
 	  category: true
 	}
       });
-      if (doc === null || doc.category.userId !== req.cookies.userId) {
-	throw new APIError({ err: "Not found!" });
+      if (doc === null || doc.category.userId !== req.user.id) {
+	throw new APIError("Not found!");
       }
       const oldBookmark = doc.bookmarks.find(b => b.id === id);
       if (oldBookmark === undefined) {
-	throw new APIError({ err: "Tried to update a Bookmark that does not exist!" });
+	throw new APIError("Tried to update a Bookmark that does not exist!");
       }
       
       const partial = BookmarkSchema.omit({ id: true, documentId: true }).partial().safeParse(req.body);
       if (!partial.success) {
-	throw new APIError({ err: partial.error.message });
+	throw new APIError(partial.error.message);
       }
       if (partial.data.page !== undefined) {
 	if (partial.data.page > doc.numpages) {
-	  throw new APIError({ err: "Cannot create a bookmark the points beyond the number of pages in the document!" });
+	  throw new APIError("Cannot create a bookmark the points beyond the number of pages in the document!");
 	}
       }
       if (partial.data.order !== undefined) {
 	if (partial.data.order > maxOrder) {
-	  throw new APIError({ err: "Cannot move a bookmark out of bounds! " });
+	  throw new APIError("Cannot move a bookmark out of bounds! ");
 	}
 	newOrder = partial.data.order;
       }
@@ -252,18 +253,18 @@ router.patch("/:docid/bookmarks/:id", async (req: Request, res: Response<Bookmar
       });
     });
 
-    res.status(200).send(bookmark);
+    res.status(200).send({ success: true, data: bookmark });
   } catch (e: unknown) {
     if (e instanceof APIError) {
       res.status(400).send(e.details);
     } else {
       console.error(e);
-      res.status(500).send({ err: "An unknown error occured!" })
+      res.status(500).send({ success: false, err: "An unknown error occured!" })
     }
   }
-});
+}));
 
-router.post("/:docid/bookmarks", async (req: Request, res: Response<Bookmark | Err>) => {
+router.post("/:docid/bookmarks", withAuth<Bookmark>(async (req, res) => {
   try {
     const bookmark: Bookmark = await prisma.$transaction(async (tx) => {
       const docId = req.params.docid;
@@ -276,8 +277,8 @@ router.post("/:docid/bookmarks", async (req: Request, res: Response<Bookmark | E
 	  category: true
 	}
       });
-      if (doc === null || doc.category.userId !== req.cookies.userId) {
-	throw new APIError({ err: "Not found!" });
+      if (doc === null || doc.category.userId !== req.user.id) {
+	throw new APIError("Not found!");
       }
       const maxOrder = await maxBookmarkOrder(tx, docId);
       if (maxOrder === null) {
@@ -285,11 +286,11 @@ router.post("/:docid/bookmarks", async (req: Request, res: Response<Bookmark | E
       }
       const partial = BookmarkSchema.omit({ id: true, documentId: true }).partial({ order: true }).safeParse(req.body);
       if (!partial.success) {
-	throw new APIError({ err: partial.error.message });
+	throw new APIError(partial.error.message);
       }
       if (partial.data.order !== undefined) {
 	if (partial.data.order > maxOrder + 1) {
-	  throw new APIError({ err: "Cannot create a bookmark out of bounds! "});
+	  throw new APIError("Cannot create a bookmark out of bounds!");
 	}
 	if (partial.data.order < maxOrder + 1) {
 	  await tx.bookmark.updateMany({
@@ -311,17 +312,17 @@ router.post("/:docid/bookmarks", async (req: Request, res: Response<Bookmark | E
       });
     });
 
-    res.status(200).send(bookmark);
+    res.status(200).send({ data: bookmark, success: true });
   } catch (e: unknown) {
     if (e instanceof APIError) {
       res.status(400).send(e.details);
     } else {
-      res.status(500).send({ err: "An unexpected error occured!" });
+      res.status(500).send({ err: "An unexpected error occured!", success: false });
     }
   }
-});
+}));
 
-router.delete("/:docid/bookmarks/:id", async (req: Request, res: Response<Err | undefined>) => {
+router.delete("/:docid/bookmarks/:id", withAuth<void>(async (req, res) => {
   try {
     await prisma.$transaction(async (tx) => {
       const docId = req.params.docid;
@@ -335,12 +336,12 @@ router.delete("/:docid/bookmarks/:id", async (req: Request, res: Response<Err | 
 	  category: true
 	}
       });
-      if (doc === null || doc.category.userId !== req.cookies.userId) {
-	throw new APIError({ err: "Not found!" });
+      if (doc === null || doc.category.userId !== req.user.id) {
+	throw new APIError("Not found!");
       }
       const oldBookmark = doc.bookmarks.find(b => b.id === id);
       if (oldBookmark === undefined) {
-	throw new APIError({ err: `No such bookmark with id ${id} exists on document ${docId}!`});
+	throw new APIError(`No such bookmark with id ${id} exists on document ${docId}!`);
       }
       await tx.bookmark.delete({
 	where: { id }
@@ -359,12 +360,12 @@ router.delete("/:docid/bookmarks/:id", async (req: Request, res: Response<Err | 
     if (e instanceof APIError) {
       res.status(400).send(e.details);
     } else {
-      res.status(500).send({ err: "An unexpected error occured!" });
+      res.status(500).send({ err: "An unexpected error occured!", success: false });
     }
   }
-});
+}));
 
-router.delete("/:docid", async (req: Request, res: Response<Document | Err>) => {
+router.delete("/:docid", withAuth<Document>(async (req, res) => {
   try {
     await prisma.$transaction(async (tx) => {
       const docId = req.params.docid;
@@ -377,8 +378,8 @@ router.delete("/:docid", async (req: Request, res: Response<Document | Err>) => 
 	  category: true
 	}
       });
-      if (doc === null || doc.category.userId !== req.cookies.userId) {
-	throw new APIError({ err: "Not found!" });
+      if (doc === null || doc.category.userId !== req.user.id) {
+	throw new APIError("Not found!");
       }
       await tx.document.delete({
 	where: { id: docId }
@@ -397,12 +398,12 @@ router.delete("/:docid", async (req: Request, res: Response<Document | Err>) => 
     if (e instanceof APIError) {
       res.status(400).send(e.details);
     } else {
-      res.status(500).send({ err: "An unexpected error occured!" });
+      res.status(500).send({ err: "An unexpected error occured!", success: false });
     }
   }
-});
+}));
 
-router.get("/:docid", async (req: Request, res: Response<Document | Err>) => { // `GET /api/v1/docs/<id>`
+router.get("/:docid", withAuth<Document>(async (req, res) => { // `GET /api/v1/docs/<id>`
   const doc = await prisma.document.findUnique({
     where: {
       id: req.params.docid
@@ -413,16 +414,16 @@ router.get("/:docid", async (req: Request, res: Response<Document | Err>) => { /
     }
   });
 
-  if (doc === null || doc.category.userId !== req.cookies.userId) {
-    res.status(404).send({err: "Not found!"});
+  if (doc === null || doc.category.userId !== req.user.id) {
+    res.status(404).send({ err: "Not found!", success: false });
   } else {
-    res.status(200).send(doc);
+    res.status(200).send({ data: doc, success: true });
   }
-});
+}));
 
 // `GET /api/v1/docs/<docid>/pages/<pagenum>/image`
 // for example: `http://localhost:8080/api/v1/docs/48723/pages/0/image`
-router.get("/:docid/pages/:pagenum/image", async (req: Request, res: Response) => {
+router.get("/:docid/pages/:pagenum/image", withAuth<void>(async (req, res) => {
   const doc = await prisma.document.findUnique({
     where: {
       id: req.params.docid
@@ -432,8 +433,8 @@ router.get("/:docid/pages/:pagenum/image", async (req: Request, res: Response) =
     }
   });
 
-  if (doc === null || doc.category.userId !== req.cookies.userId) {
-    res.status(404).send({err: "Not found!"});
+  if (doc === null || doc.category.userId !== req.user.id) {
+    res.status(404).send({err: "Not found!", success: false});
   } else {
     const response = await fetch(`https://s3.magnusfulton.com/com.listenink/${doc.s3key}/${req.params.pagenum}.jpg`);
     res.setHeader('Content-Type', response.headers.get('content-type') ?? "image/jpeg");
@@ -444,9 +445,9 @@ router.get("/:docid/pages/:pagenum/image", async (req: Request, res: Response) =
       Readable.fromWeb(response.body).pipe(res);
     }
   }
-});
+}));
 
-router.get("/:docid/pages/:pagenum/audio", async (req: Request, res: Response) => {
+router.get("/:docid/pages/:pagenum/audio", withAuth<void>(async (req, res) => {
   const doc = await prisma.document.findUnique({
     where: {
       id: req.params.docid
@@ -456,8 +457,8 @@ router.get("/:docid/pages/:pagenum/audio", async (req: Request, res: Response) =
     }
   });
 
-  if (doc === null || doc.category.userId !== req.cookies.userId) {
-    res.status(404).send({err: "Not found!"});
+  if (doc === null || doc.category.userId !== req.user.id) {
+    res.status(404).send({err: "Not found!", success: false});
   } else {
     const response = await fetch(`https://s3.magnusfulton.com/com.listenink/${doc.s3key}/${req.params.pagenum}.mp3`);
     res.setHeader('Content-Type', response.headers.get('content-type') ?? "audio/mpeg");
@@ -468,9 +469,9 @@ router.get("/:docid/pages/:pagenum/audio", async (req: Request, res: Response) =
       Readable.fromWeb(response.body).pipe(res);
     }
   }
-});
+}));
 
-router.get("/:docid/pages/:pagenum/text", async (req: Request, res: Response) => {
+router.get("/:docid/pages/:pagenum/text", withAuth<void>(async (req, res) => {
   const doc = await prisma.document.findUnique({
     where: {
       id: req.params.docid
@@ -480,8 +481,8 @@ router.get("/:docid/pages/:pagenum/text", async (req: Request, res: Response) =>
     }
   });
 
-  if (doc === null || doc.category.userId !== req.cookies.userId) {
-    res.status(404).send({err: "Not found!"});
+  if (doc === null || doc.category.userId !== req.user.id) {
+    res.status(404).send({err: "Not found!", success: false});
   } else {
     const response = await fetch(`https://s3.magnusfulton.com/com.listenink/${doc.s3key}/${req.params.pagenum}.hocr`);
     res.setHeader('Content-Type', response.headers.get('content-type') ?? "text/vnd.hocr+html");
@@ -492,5 +493,5 @@ router.get("/:docid/pages/:pagenum/text", async (req: Request, res: Response) =>
       Readable.fromWeb(response.body).pipe(res);
     }
   }
-});
+}));
 

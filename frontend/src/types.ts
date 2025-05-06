@@ -1,4 +1,24 @@
-import { z } from "zod";
+import { z, ZodTypeAny } from "zod";
+
+function toDiscriminatedError<
+  T extends ZodTypeAny
+>(data: T) {
+  return z.discriminatedUnion('success', [
+    z.object({
+      success: z.literal(true),
+      data,
+    }),
+    z.object({
+      success: z.literal(false),
+      err: z.string(),
+    }),
+  ]);
+}
+
+// For a while, I considered deriving this from `toDiscriminatedError`, but there is little point
+export type ApiResponse<T> =
+  | { success: true; data: T }
+  | { success: false; err: string };
 
 export const NaturalNumber = z.number().finite().min(0).multipleOf(1);
 const id = z.string().nanoid();
@@ -7,6 +27,8 @@ export const DocIdSchema = z.object({
   document_id: id,
 });
 export type DocId = z.infer<typeof DocIdSchema>;
+export const DocIdOrErrSchema = toDiscriminatedError(DocIdSchema);
+export type DocIdOrErr = z.infer<typeof DocIdOrErrSchema>;
 
 export const CategorySchema = z.object({
   userId: id,
@@ -38,10 +60,6 @@ export const DocumentSchema = z.object({
 })
 export type Document = z.infer<typeof DocumentSchema>;
 
-export const ErrSchema = z.object({
-  err: z.string(),
-});
-export type Err = z.infer<typeof ErrSchema>;
 
 export const UserSchema = z.object({
   name: z.string(),
@@ -51,15 +69,5 @@ export const UserSchema = z.object({
   
 });
 export type User = z.infer<typeof UserSchema>;
-
-export const LoginResult = z.discriminatedUnion("success", [
-  z.object({
-    success: z.literal(true),
-    user: UserSchema,
-  }),
-  z.object({
-    success: z.literal(false),
-    message: z.string()
-  }),
-]);
-export type LoginResult = z.infer<typeof LoginResult>;
+export const UserOrErrSchema = toDiscriminatedError(UserSchema);
+export type UserOrError = z.infer<typeof UserOrErrSchema>;
