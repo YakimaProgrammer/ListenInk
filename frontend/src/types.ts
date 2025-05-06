@@ -38,6 +38,10 @@ export const CategorySchema = z.object({
   order: NaturalNumber
 });
 export type Category = z.infer<typeof CategorySchema>;
+export const CategoryOrErrorSchema = toDiscriminatedError(CategorySchema);
+export type CategoryOrError = z.infer<typeof CategoryOrErrorSchema>;
+export const CategoriesOrErrorSchema = toDiscriminatedError(z.array(CategorySchema));
+export type CategoriesOrError = z.infer<typeof CategoriesOrErrorSchema>;
 
 export const BookmarkSchema = z.object({
   id: id,
@@ -47,6 +51,8 @@ export const BookmarkSchema = z.object({
   order: NaturalNumber
 });
 export type Bookmark = z.infer<typeof BookmarkSchema>;
+export const BookmarkOrErrorSchema = toDiscriminatedError(BookmarkSchema);
+export type BookmarkOrError = z.infer<typeof BookmarkOrErrorSchema>;
 
 export const DocumentSchema = z.object({
   name: z.string(),
@@ -59,14 +65,16 @@ export const DocumentSchema = z.object({
   order: NaturalNumber
 })
 export type Document = z.infer<typeof DocumentSchema>;
-
+export const DocumentOrErrorSchema = toDiscriminatedError(DocumentSchema);
+export type DocumentOrError = z.infer<typeof DocumentOrErrorSchema>;
+export const DocumentsOrErrorSchema = toDiscriminatedError(z.array(DocumentSchema));
+export type DocumentsOrError = z.infer<typeof DocumentsOrErrorSchema>;
 
 export const UserSchema = z.object({
   name: z.string(),
   id: z.string(), // Kludge - for users, an id is either a nanoid for a local user or a prefixed external id for identity providers. I really don't wanna deal with multiple tables just to map user ids when there is no clear benefit.
   email: z.string().email(),
   profile_picture: z.string().url()
-  
 });
 export type User = z.infer<typeof UserSchema>;
 export const UserOrErrSchema = toDiscriminatedError(UserSchema);

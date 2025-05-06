@@ -1,7 +1,6 @@
 // frontend/src/store/slices/auth.ts
-import { z } from "zod";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { User, UserSchema, ErrSchema } from "@/types";
+import { User, UserOrErrSchema } from "@/types";
 import { PromiseState } from "../helper-types";
 
 type AuthState = PromiseState<User>;
@@ -35,7 +34,6 @@ export const authSlice = createSlice({
   },
 });
 
-const UserOrErrSchema = z.union([UserSchema, ErrSchema]);
 export const fetchProfile = createAsyncThunk<
   User,
   void,
@@ -43,18 +41,17 @@ export const fetchProfile = createAsyncThunk<
 >("data/fetchCreds", async (_, { rejectWithValue }) => {
   try {
     const req = await fetch("/api/v1/auth");
-    const resp = UserOrErrSchema.safeParse(await req.json());
+    const parseResult = UserOrErrSchema.safeParse(await req.json());
 
-    if (resp.success) {
-      if ("err" in resp.data){
-        // The user is not signed in. They'll need to go to `/login` and choose a method there.
-	return rejectWithValue("The user is not logged in.")
+    if (parseResult.success) {
+      if (parseResult.data.success) {
+        return parseResult.data.data;
       } else {
-        return resp.data;
+	return rejectWithValue(parseResult.data.err);
       }
     } else {
-      console.error(resp.error.message);
-      return rejectWithValue("Could not parse user profile info!");
+      console.error(parseResult.error.message);
+      return rejectWithValue(parseResult.error.message);
     }
   } catch (err) {
     console.error(err);

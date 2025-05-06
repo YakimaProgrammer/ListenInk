@@ -1,6 +1,5 @@
-import { z } from "zod";
 import { createSlice, createAsyncThunk, PayloadAction, createSelector } from '@reduxjs/toolkit';
-import { Bookmark, BookmarkSchema, Category, CategorySchema, Document, DocumentSchema, ErrSchema } from '@/types';
+import { Bookmark, BookmarkOrErrorSchema, CategoriesOrErrorSchema, Category, CategoryOrErrorSchema, Document, DocumentOrErrorSchema, DocumentsOrErrorSchema } from '@/types';
 import { PromiseState } from '../helper-types';
 import { RootState } from "..";
 
@@ -169,11 +168,8 @@ export const categoriesSlice = createSlice({
   }
 });
 
-const DocumentsOrErrSchema = z.union([z.array(DocumentSchema), ErrSchema]);
-const CategoriesOrErrSchema = z.union([z.array(CategorySchema), ErrSchema]);
-
 /** An async thunk that fetches all the documents and category data from the server.
- * Intended to run once on page load, but can be could again to resync with the server in an evil way
+ * Intended to run once on page load, but could be run again to resync with the server in an evil way
  */  
 export const fetchDocuments = createAsyncThunk<
   CategoriesSuccessState,
@@ -184,32 +180,32 @@ export const fetchDocuments = createAsyncThunk<
   async (_, { rejectWithValue }) => {
     try {
       const docsReq = await fetch("/api/v1/docs");
-      const docsResp = DocumentsOrErrSchema.safeParse(await docsReq.json());
+      const docsResp = DocumentsOrErrorSchema.safeParse(await docsReq.json());
 
       const catsReq = await fetch("/api/v1/categories");
-      const catsResp = CategoriesOrErrSchema.safeParse(await catsReq.json());
+      const catsResp = CategoriesOrErrorSchema.safeParse(await catsReq.json());
 
       if (!docsResp.success) {
 	console.error(docsResp.error.message);
 	return rejectWithValue("Could not parse document info!");
       }
-      if ("err" in docsResp.data) {
+      if (!docsResp.data.success) {
 	return rejectWithValue(docsResp.data.err);
       }
 
       if (!catsResp.success) {
 	return rejectWithValue("Could not parse categories info!");
       }
-      if ("err" in catsResp.data) {
+      if (!catsResp.data.success) {
 	return rejectWithValue(catsResp.data.err);
       }
 
       return {
-	documents: docsResp.data.reduce<Record<string, EnhancedDocument>>((acc, doc) => {
+	documents: docsResp.data.data.reduce<Record<string, EnhancedDocument>>((acc, doc) => {
 	  acc[doc.id] = { ...doc, isPlaying: false, playbackSpeed: "1" };
 	  return acc;
 	}, {}),
-	categories: catsResp.data.reduce<Record<string, Category>>((acc, cat) => {
+	categories: catsResp.data.data.reduce<Record<string, Category>>((acc, cat) => {
 	  acc[cat.id] = cat;
 	  return acc;
 	}, {})
@@ -226,7 +222,7 @@ interface UpdateBookmarkProps {
   page?: number;
   bookmarkId?: number | string;
 }
-const BookmarkOrErrSchema = z.union([BookmarkSchema, ErrSchema]);
+
 /** An async thunk that handles a lot of work surrounding bookmarks and page-resumption.
  *
  * @param docId - required; which document to do bookmark things on. Returns an error if the document does not exist.
@@ -271,12 +267,12 @@ export const upsertBookmark = createAsyncThunk<
 	});
 
 	// ... and let the server decide if that change is a good idea or not
-	const resp = BookmarkOrErrSchema.safeParse(await req.json());
+	const resp = BookmarkOrErrorSchema.safeParse(await req.json());
 	if (resp.success) {
-	  if ("err" in resp.data) {
-	    return rejectWithValue(resp.data.err);
+	  if (resp.data.success) {
+	    return resp.data.data;
 	  } else {
-	    return resp.data;
+	    return rejectWithValue(resp.data.err);
 	  }
 	} else {
 	  return rejectWithValue(resp.error.message);
@@ -294,7 +290,6 @@ interface UpdateDocumentProps {
   categoryId?: string;
   order?: number;
 }
-const DocumentOrErrSchema = z.union([DocumentSchema, ErrSchema]);
 
 /** An async thunk for modifying document properties
  *
@@ -323,12 +318,12 @@ export const updateDocument = createAsyncThunk<
 	order
       })
     });
-    const res = DocumentOrErrSchema.safeParse(await req.json());
+    const res = DocumentOrErrorSchema.safeParse(await req.json());
     if (res.success) {
-      if ("err" in res.data) {
-	return rejectWithValue(res.data.err);
+      if (res.data.success) {
+	return res.data.data;
       } else {
-	return res.data;
+	return rejectWithValue(res.data.err);
       }
     } else {
       return rejectWithValue(res.error.message);
@@ -428,7 +423,6 @@ interface UpsertCategoryProps {
   order?: number
 }
 
-const CategoryOrErrSchema = z.union([CategorySchema, ErrSchema]);
 /** An async thunk for modifying categories
  *
  * @param categoryId - optional; which Category to modify. Returns an error if the id is provided and the associated category does not exist. If omitted, a new category is created.
@@ -456,12 +450,12 @@ export const upsertCategory = createAsyncThunk<
 	order
       })
     });
-    const res = CategoryOrErrSchema.safeParse(await req.json());
+    const res = CategoryOrErrorSchema.safeParse(await req.json());
     if (res.success) {
-      if ("err" in res.data) {
-	return rejectWithValue(res.data.err);
+      if (res.data.success) {
+	return res.data.data;
       } else {
-	return res.data;
+	return rejectWithValue(res.data.err);
       }
     } else {
       return rejectWithValue(res.error.message);
@@ -485,12 +479,8 @@ export const deleteCategory = createAsyncThunk<
       method: "DELETE"
     });
     if (req.status !== 204) {
-      const res = ErrSchema.safeParse(await req.json());
-      if (res.success) {
-	return rejectWithValue(res.data.err);
-      } else {
-	return rejectWithValue(res.error.message);
-      }
+      const err = await req.text();
+      return rejectWithValue(err);
     } else {
       return id;
     }
@@ -513,12 +503,8 @@ export const deleteDocument = createAsyncThunk<
       method: "DELETE"
     });
     if (req.status !== 204) {
-      const res = ErrSchema.safeParse(await req.json());
-      if (res.success) {
-	return rejectWithValue(res.data.err);
-      } else {
-	return rejectWithValue(res.error.message);
-      }
+      const err = await req.text();
+      return rejectWithValue(err);
     } else {
       return id;
     }
