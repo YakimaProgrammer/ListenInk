@@ -67,7 +67,7 @@ router.patch("/:docid", withAuth<Document>(async (req, res) => { // `PATCH /api/
       }
 
       // Parse the request from the user
-      const partial = DocumentSchema.omit({ id: true, numpages: true, s3key: true, bookmarks: true, completed: true }).partial().safeParse(req.body);
+      const partial = DocumentSchema.pick({ order: true, name: true, categoryId: true }).partial().safeParse(req.body);
       if (!partial.success) {
 	throw new APIError(partial.error.message);
       }
@@ -210,7 +210,7 @@ router.patch("/:docid/bookmarks/:id", withAuth<Bookmark>(async (req, res) => {
 	throw new APIError("Tried to update a Bookmark that does not exist!");
       }
       
-      const partial = BookmarkSchema.omit({ id: true, documentId: true }).partial().safeParse(req.body);
+      const partial = BookmarkSchema.pick({ order: true, page: true, audiotime: true }).partial().safeParse(req.body);
       if (!partial.success) {
 	throw new APIError(partial.error.message);
       }
@@ -284,7 +284,7 @@ router.post("/:docid/bookmarks", withAuth<Bookmark>(async (req, res) => {
       if (maxOrder === null) {
 	throw new Error(`Unable to get the maximum order value for bookmarks associated with Document ${docId}`);
       }
-      const partial = BookmarkSchema.omit({ id: true, documentId: true }).partial({ order: true }).safeParse(req.body);
+      const partial = BookmarkSchema.pick({ order: true, page: true, audiotime: true }).partial({ order: true }).safeParse(req.body);
       if (!partial.success) {
 	throw new APIError(partial.error.message);
       }

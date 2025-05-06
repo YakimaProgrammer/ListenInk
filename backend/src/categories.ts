@@ -35,7 +35,7 @@ router.post("/", withAuth<Category>(async (req, res) => {
       if (maxOrder === null) {
 	throw new Error(`Unable to get the maximum order value for user ${userId}`);
       }
-      const partial = CategorySchema.omit({ id: true, userId: true }).partial({ order: true }).safeParse(req.body);
+      const partial = CategorySchema.pick({ name: true, color: true, order: true }).partial({ order: true }).safeParse(req.body);
       if (!partial.success) {
 	throw new APIError(partial.error.message);
       }
@@ -80,7 +80,7 @@ router.patch("/:catid", withAuth<Category>(async (req, res) => {
       if (category === null || category.userId !== userId) {
 	throw new APIError("Not found!");
       }
-      const partial = CategorySchema.omit({ id: true, userId: true }).partial().safeParse(req.body);
+      const partial = CategorySchema.pick({ name: true, color: true, order: true }).partial().safeParse(req.body);
       if (!partial.success) {
 	throw new APIError(partial.error.message);
       }
