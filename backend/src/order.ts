@@ -1,4 +1,6 @@
 import { Prisma } from "@prisma/client";
+import { NaturalNumber } from "./types";
+import { APIError } from "./error";
 
 type OrderAction = 
   | { type: 'insert'; position?: number }
@@ -34,9 +36,14 @@ export async function reorderItems({
   });
 
   const max: number = maxOrder._max.order ?? -1;
-
+  
+  const numberSchema = NaturalNumber.max(max);
+  
   if (action.type === 'insert') {
     const position = action.position ?? max + 1;
+    if (!numberSchema.safeParse(position).success) {
+      throw new APIError(`Position ${position} is out of bounds!`);
+    }
 
     if (position < max + 1) {
       // @ts-ignore
@@ -54,6 +61,12 @@ export async function reorderItems({
 
   if (action.type === 'move') {
     const { oldPosition, newPosition } = action;
+    if (!numberSchema.safeParse(oldPosition).success) {
+      throw new APIError(`Source position ${oldPosition} is out of bounds!`);
+    }
+    if (!numberSchema.safeParse(newPosition).success) {
+      throw new APIError(`Destination position ${newPosition} is out of bounds!`);
+    }
 
     if (newPosition === oldPosition) return oldPosition;
 
@@ -81,16 +94,22 @@ export async function reorderItems({
   }
 
   if (action.type === 'delete') {
+    const position = action.position;
+    
+    if (!numberSchema.safeParse(position).success) {
+      throw new APIError(`Position ${position} is out of bounds!`);
+    }
+    
     // @ts-ignore
     await tx[table].updateMany({
       where: {
         [groupField]: groupId,
-        order: { gt: action.position }
+        order: { gt: position }
       },
       data: { order: { decrement: 1 } }
     });
 
-    return action.position;
+    return position;
   }
 
   throw new Error("Unknown reorder action");

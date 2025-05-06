@@ -1,19 +1,11 @@
 import { Router } from "express";
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { Category, CategorySchema } from "./types";
 import { APIError } from "./error";
 import { withAuth } from "./auth";
+import { reorderItems } from "./order";
 
 const prisma = new PrismaClient();
-
-async function maxCategoryOrder(tx: Prisma.TransactionClient, userId: string): Promise<number | null> {
-  const result = await tx.category.aggregate({
-    where: { userId },
-    _max: { order: true },
-  });
-  return result._max.order;
-}
-
 
 export const router = Router();
 router.get("/", withAuth<Category[]>(async (req, res) => {
@@ -31,32 +23,18 @@ router.post("/", withAuth<Category>(async (req, res) => {
   try {
     const category: Category = await prisma.$transaction(async (tx) => {
       const userId = req.user.id;
-      const maxOrder = await maxCategoryOrder(tx, userId);
-      if (maxOrder === null) {
-	throw new Error(`Unable to get the maximum order value for user ${userId}`);
-      }
+      
       const partial = CategorySchema.pick({ name: true, color: true, order: true }).partial({ order: true }).safeParse(req.body);
       if (!partial.success) {
 	throw new APIError(partial.error.message);
       }
-      const newOrder = partial.data.order;
-      if (newOrder !== undefined) {
-	// +1 because the user could be *very* explicit about wanting to append
-	if (newOrder > maxOrder + 1) {
-	  throw new APIError("Tried to create a new category out of bounds!");
-	}
-
-	await tx.category.updateMany({
-	  where: { userId, order: { gte: newOrder }},
-	  data: { order: { increment: 1 }}
-	});
-      }
+      let order = await reorderItems({tx, table: "category", groupField: "userId", groupId: userId, action: { type: "insert", position: partial.data.order }});
 
       return await tx.category.create({
 	data: {
 	  ...partial.data,
 	  userId,
-	  order: newOrder ?? (maxOrder + 1)
+	  order
 	}
       });
     });
@@ -84,31 +62,16 @@ router.patch("/:catid", withAuth<Category>(async (req, res) => {
       if (!partial.success) {
 	throw new APIError(partial.error.message);
       }
-      const newOrder = partial.data.order;
-      const oldOrder = category.order;
-      if (newOrder !== undefined) {
-	const maxOrder = await maxCategoryOrder(tx, userId);
-	if (maxOrder === null) {
-	  throw new Error(`Unable to get the maximum order value for user ${userId}`);
-	}
-	if (newOrder > maxOrder) {
-	  throw new APIError("Cannot move a category out of bounds!");
-	}
-	if (newOrder > oldOrder) {
-	  await tx.category.updateMany({
-	    where: { userId, order: { gt: oldOrder, lte: newOrder } },
-	    data: { order: { decrement: 1} }
-	  });
-	} else if (newOrder < oldOrder) {
-	  await tx.category.updateMany({
-	    where: { userId, order: { lt: oldOrder, gte: newOrder } },
-	    data: { order: { increment: 1} }
-	  });
-	} // else newOrder === oldOrder: do nothing 
+      let order: number;
+      if (partial.data.order !== undefined) {
+	order = await reorderItems({ tx, table: "category", groupField: "userId", groupId: userId, action: { type: "move", oldPosition: category.order, newPosition: partial.data.order }});
+      } else {
+	order = category.order;
       }
+      
       return await tx.category.update({
 	where: { id },
-	data: partial.data
+	data: { ...partial.data, order }
       });
     });
 
@@ -131,10 +94,9 @@ router.delete("/:catid", withAuth<void>(async (req, res) => {
       if (category === null || category.userId !== userId) {
 	throw new APIError("Not found!");
       }
-      await tx.category.updateMany({
-	where: { userId, order: { gt: category.order } },
-	data: { order: { decrement: 1 } }
-      });
+
+      await reorderItems({ tx, table: "category", groupField: "userId", groupId: userId, action: { type: "delete", position: category.order }});
+      
       await tx.category.delete({
 	where: { id }
       });
