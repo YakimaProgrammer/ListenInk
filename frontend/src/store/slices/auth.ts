@@ -42,18 +42,13 @@ export const fetchProfile = createAsyncThunk<
   { rejectValue: string }
 >("data/fetchCreds", async (_, { rejectWithValue }) => {
   try {
-    const hasCookie = document.cookie.includes("userId");
-    const req = await fetch("/api/v1/auth", {
-      method: hasCookie ? "GET" : "POST",
-    });
+    const req = await fetch("/api/v1/auth");
     const resp = UserOrErrSchema.safeParse(await req.json());
 
     if (resp.success) {
-      if ("err" in resp.data) {
-        console.warn("[AUTH] Session expired. Attempting re-authentication.");
-        document.cookie =
-          "userId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"; // Clear invalid cookies
-        return await reAuthenticate();
+      if ("err" in resp.data){
+        // The user is not signed in. They'll need to go to `/login` and choose a method there.
+	return rejectWithValue("The user is not logged in.")
       } else {
         return resp.data;
       }
@@ -66,21 +61,5 @@ export const fetchProfile = createAsyncThunk<
     return rejectWithValue("Error retrieving user profile info!");
   }
 });
-
-async function reAuthenticate(): Promise<User> {
-  const req = await fetch("/api/v1/auth", { method: "POST" }); // Force a new session
-  const resp = UserOrErrSchema.safeParse(await req.json());
-
-  if (resp.success) {
-    if ("err" in resp.data) {
-      throw new Error("[AUTH] Failed to re-authenticate: " + resp.data.err);
-    } else {
-      console.log("[AUTH] Successfully re-authenticated.");
-      return resp.data;
-    }
-  } else {
-    throw new Error("[AUTH] Re-authentication failed.");
-  }
-}
 
 export default authSlice.reducer;
