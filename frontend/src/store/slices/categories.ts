@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction, createSelector } from '@reduxjs/toolkit';
-import { Bookmark, BookmarkOrErrorSchema, CategoriesOrErrorSchema, Category, CategoryOrErrorSchema, Document, DocumentOrErrorSchema, DocumentsOrErrorSchema } from '@/types';
+import { Bookmark, BookmarkOrErrorSchema, CategoriesOrErrorSchema, Category, CategoryOrErrorSchema, DocIdOrErrSchema, Document, DocumentOrErrorSchema, DocumentsOrErrorSchema } from '@/types';
 import { PromiseState } from '../helper-types';
 import { RootState } from "..";
 
@@ -352,67 +352,53 @@ export const createDocument = createAsyncThunk<
   { rejectValue: string, state: RootState }
 >(
   'data/createDocument',
-  async ({ file: _1, name: _2, categoryId: _3, order: _4 }, { rejectWithValue, getState }) => {
+  async ({ file, name, categoryId, order }, { rejectWithValue, getState }) => {
     const state = getState();
     if (state.categories.status === "success") {
-      return {
-	id: "NOT-A-NANOID",
-	name: 'Bee Movie',
-	numpages: 1, 
-	completed: true,
-	s3key: 'ec05b36a4a68b40d3b4f8195907d2a64201672fd14d96a4502c679813288bcb8',
-	bookmarks: [
-	  {
-	    id: "NOT-A-NANOID-BOOKMARK",
-	    page: 0,
-            audiotime: 0,
-            order: 0,
-	    documentId: "NOT-A-NANOID"
-	  }
-	],
-	order: 0,
-	isPlaying: false,
-	playbackSpeed: "1",
-	categoryId: Object.keys(state.categories.categories)[0]
+      const formData = new FormData();
+
+      // I wasn't sure how to write this API in a sane way, so we get to deal with the consequences of that now.
+      // I'm using multipart form data to handle the file bits and also the JSON metadata
+      formData.append("pdf", file);
+      if (name) {
+	formData.append("name", name);
+      } else if (file.name) {
+	formData.append("name", file.name);
       }
+      
+      if (categoryId) formData.append("categoryId", categoryId);
+      if (order) formData.append("order", order.toString());
+      
+      const response = await fetch("/api/v1/docs", {
+	method: "POST",
+	body: formData
+      });
+      const parsedDocId = DocIdOrErrSchema.safeParse(await response.json());
+      if (parsedDocId.success) {
+	if (parsedDocId.data.success) {
+	  const docId = parsedDocId.data.data.document_id;
+
+	  const docResp = await fetch(`/api/v1/docs/${docId}`);
+	  const parsedDoc = DocumentOrErrorSchema.safeParse(await docResp.json());
+	  if (parsedDoc.success) {
+	    if (parsedDoc.data.success) {
+	      return { ...parsedDoc.data.data, isPlaying: false, playbackSpeed: '1' };
+	    } else {
+	      return rejectWithValue(parsedDoc.data.err);
+	    }
+	  } else {
+	    return rejectWithValue(parsedDoc.error.message);
+	  }
+	} else {
+	  return rejectWithValue(parsedDocId.data.err);
+	}
+      } else {
+	return rejectWithValue(parsedDocId.error.message);
+      }
+
     } else {
       return rejectWithValue("Cannot create a document while the documents list is still pending!");
-    }
-    
-    /*
-    const state = getState();
-    if (name === undefined) {
-      name = file.name.replace(/\.pdf$/, "");
-    }
-    if (categoryId === undefined) {
-      if (state.categories.status === "success") {
-	categoryId = Object.values(state.categories.categories).find(c => c?.order === 0)?.id;
-      }
-    }
-
-    const req = await fetch(`/api/v1/docs`, {
-      method: "POST",
-      headers: {
-	'Content-Type': 'application/json',
-      },
-      // The server is the ultimate arbiter of what changes are allowed and which changes aren't
-      body: JSON.stringify({
-	name,
-	categoryId,
-	order
-      })
-    });
-    const res = DocumentOrErrSchema.safeParse(await req.json());
-    if (res.success) {
-      if ("err" in res.data) {
-	return rejectWithValue(res.data.err);
-      } else {
-	return res.data;
-      }
-    } else {
-      return rejectWithValue(res.error.message);
-    }
-    */
+    }    
   }
 );
 

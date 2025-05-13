@@ -18,51 +18,84 @@ const uploadMiddleware = multer({ storage: multer.memoryStorage() });
 export const router = Router();
 router.post("/", uploadMiddleware.fields([
   { name: 'pdf', maxCount: 1 }
-]), async (req: Request, res: Response<DocId | Err>) => { // `POST /api/v1/docs`
-  const doc = await prisma.$transaction(async (tx) => {
-    const pdfFile = Array.isArray(req.files) ? req.files[0] : undefined;
+]), withAuth<DocId>(async (req, res) => { // `POST /api/v1/docs`
+  try {
+    const doc = await prisma.$transaction(async (tx) => {
+      const userId = req.user.id;
+    
+      const pdfFile = Array.isArray(req.files) ? req.files[0] : req.files?.pdf.at(0);
 
-    if (pdfFile === undefined) {
-      res.status(400).send({ err: 'Missing PDF!' });
-      return;
-    }
+      if (pdfFile === undefined) {
+	throw new APIError("Missing PDF!");
+      }
 
-    const key = createHash("sha256").update(pdfFile.buffer).digest("hex");
+      const key = createHash("sha256").update(pdfFile.buffer).digest("hex");
 
-    const partial = DocumentSchema.omit({ id: true, numpages: true, s3key: true, bookmarks: true, completed: true }).partial({ order: true, categoryId: true }).safeParse(req.body);
-    const categories = await tx.category.findMany({
-      where: { userId: req.cookies.userId }
-    });
-
-    if (partial.success) {
-      const numpages = await pdfPipeline(key, pdfFile.buffer);
-      const categoryId =  categories[0].id;
-      
-      return await tx.document.create({
-	data: {
-	  categoryId,
-	  ...partial.data,
-	  s3key: key,
-	  completed: true,
-	  numpages,
-	  order: (await maxDocOrder(tx, categoryId) ?? 0) + 1,
-	  bookmarks: {
-	    create: {
-              page: 0,
-              audiotime: 0,
-              order: 0
-            }
-	  }
-	}
+      const partial = DocumentSchema.pick({ categoryId: true, order: true, name: true }).partial().safeParse(req.body);
+      const categories = await tx.category.findMany({
+	where: { userId }
       });
+
+      if (partial.success) {
+	// Deduplicate - each User "owns" a Document, but those Documents can share a pointer to the underlying, immutable S3 files. 
+	let numpages: number;
+	let completed: boolean;
+	const mirror = await tx.document.findFirst({ where: { s3key: key } });
+	if (mirror !== null) {
+	  numpages = mirror.numpages;
+	  completed = true;
+	} else {
+	  numpages = 0;
+	  completed = false;
+	}
+	
+	let categoryId: string;
+	if (partial.data.categoryId !== undefined && categories.some(c => c.id === partial.data.categoryId)) {
+	  categoryId = partial.data.categoryId;
+	} else if (categories.length !== 0) {
+	  categoryId = categories[0].id;
+	} else {
+	  const cat = await tx.category.create({
+	    data: {
+	      userId,
+	      name: "Recent Uploads",
+	      color: "0xFFFFFF",
+	      order: await reorderItems({ tx, table: "category", groupField: "userId", groupId: userId,  action: { type: "insert" } })
+	    }
+	  });
+	  categoryId = cat.id;
+	}
+
+	const doc = await tx.document.create({
+	  data: {
+	    categoryId,
+	    s3key: key,
+	    completed,
+	    numpages,
+	    name: partial.data.name ?? "New Document",
+	    order:  await reorderItems({ tx, table: "document", groupField: "categoryId", groupId: categoryId, action: { type: "insert" } }),
+	    bookmarks: {
+	      create: {
+		page: 0,
+		audiotime: 0,
+		order: 0
+	      } 
+	    }
+	  }
+	});
+
+	return doc;
+      } else {
+	throw new APIError("Could not parse!" );
+      }
+    });
+    res.status(200).send({ data: { document_id: doc.id }, success: true });
+  } catch (e: unknown) {
+    if (e instanceof APIError) {
+      res.status(400).send(e.details);
     } else {
-      throw new APIError({ err: "Could not parse!" });
-    }
-  });
-  if (doc !== undefined) {
-    res.status(200).send({ document_id: doc.id });
-  } else {
-    res.status(500).send({ err: "So many things went wrong. Sorry "});
+      console.error(e);
+      res.status(500).send({success: false, err: "An unknown error occured!"});
   }
 });
 

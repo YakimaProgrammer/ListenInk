@@ -24,9 +24,16 @@ export async function pdfPipeline(id: string, pdf: Buffer): Promise<number> {
   const uploadTask = putToBucket(BUCKET, `${id}/src.pdf`, pdf, "application/pdf");
 
   // Wait for pages to be rasterized
-  const pages = await pdfToPng(pdf, { disableFontFace: false });
+  const pages = await pdfToPng(pdf, { viewportScale: 4.0 });
 
-  await Promise.all(pages.map((p, i) => processPage(p, i, id)));
+  //await Promise.all(pages.map((p, i) => processPage(p, i, id)));
+  // Process pages sequentially so OpenAI & Co. don't ratelimit me
+  for (let i = 0; i < pages.length; i++) {
+    console.log(`Starting page ${i} for doc ${id}.`);
+    await processPage(pages[i], i, id);
+    console.log("Done with that page!");
+  }
+  
   await uploadTask;
 
   return pages.length;
@@ -53,9 +60,9 @@ async function ocrPage(png: Buffer): Promise<string> {
         "role": "user",
         "content": [
           {
-            "type": "input_file",
-            "filename": "page.png",
-            "file_data": png.toString("base64")
+            "type": "input_image",
+            "image_url": "data:image/png;base64," + png.toString("base64"),
+	    "detail": "high"
           }
         ]
       }
