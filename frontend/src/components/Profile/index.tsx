@@ -1,11 +1,28 @@
 import React, { FC, MouseEvent, useState } from "react";
 import { IconButton, Menu, MenuItem, Avatar } from "@mui/material";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, logout, RootState } from "@/store";
+
+import personCircle from "./person-circle.svg"; // As a fallback image. Normally, we'd import as an SVG
+import { useNavigate } from "react-router";
+import { urlFor } from "@/pages/urlfor";
 
 /**
  * Profile component with a clickable avatar.
  * Clicking opens a dropdown; includes "Log Out".
  */
 export const Profile: FC = () => {
+  const pfp = useSelector((state: RootState) => {
+    if (state.auth.status === "success") {
+      return state.auth.profile_picture;
+    } else {
+      // Should be impossible
+      return personCircle; 
+    }
+  });
+  const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
+  
   // MUI menu anchor element (null when closed).
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
@@ -21,7 +38,8 @@ export const Profile: FC = () => {
 
   /** Example logout action */
   const handleLogout = () => {
-    alert("Logged out");
+    navigate(urlFor("login"));
+    dispatch(logout())
     handleMenuClose(); // also close the menu
   };
 

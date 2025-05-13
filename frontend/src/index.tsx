@@ -5,6 +5,7 @@ import { StyledEngineProvider } from "@mui/material/styles";
 import { Provider } from "react-redux";
 import { store } from "./store";
 import { urlFor } from "./pages/urlfor";
+import { PageInitializer } from "./PageInitializer";
 
 // Components
 import { Root } from "./pages/Root";
@@ -17,14 +18,22 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 let router = createBrowserRouter([
   {
     path: "/",
-    Component: Root
+    Component: () => (
+      <PageInitializer>
+	<Root />
+      </PageInitializer>
+    )
   },
   {
     path: urlFor("docs", ":docId"),
-    Component: Root
+    Component: () => (
+      <PageInitializer>
+	<Root />
+      </PageInitializer>
+    )
   },
   {
-    path: "/login",
+    path: urlFor("login"),
     Component: Login,
   },
 ]);

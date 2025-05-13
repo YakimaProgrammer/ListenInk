@@ -24,7 +24,7 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: true,
+    secure: process.env.NODE_ENV !== "development",
     httpOnly: true,
     sameSite: 'strict',
     maxAge: 2 * 60 * 60 * 1000 // Sessions are valid for two hours

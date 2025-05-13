@@ -31,6 +31,23 @@ export const authSlice = createSlice({
           };
         }
       );
+
+    builder
+      .addCase(logout.fulfilled, () => {
+        return {
+          status: "failure",
+          message: "Logged out!"
+        };
+      })
+      .addCase(
+        logout.rejected,
+        (_, action: PayloadAction<string | undefined>) => {
+          return {
+            status: "failure",
+            message: action.payload ?? "An unknown error occured!",
+          };
+        }
+      );
   },
 });
 
@@ -53,6 +70,20 @@ export const fetchProfile = createAsyncThunk<
       console.error(parseResult.error.message);
       return rejectWithValue(parseResult.error.message);
     }
+  } catch (err) {
+    console.error(err);
+    return rejectWithValue("Error retrieving user profile info!");
+  }
+});
+
+export const logout = createAsyncThunk<
+  void,
+  void,
+  { rejectValue: string }
+>("data/logout", async (_, { rejectWithValue }) => {
+  try {
+    await fetch("/api/v1/auth/logout", { method: "POST" });
+    return;
   } catch (err) {
     console.error(err);
     return rejectWithValue("Error retrieving user profile info!");
