@@ -46,14 +46,13 @@ function SearchDialogComponent({
   const navigate = useNavigate();
 
   // Add doc.text search
+ 
   const hits = docs
-    .filter((d: EnhancedDocument) => {
-      const titleMatch = d.name.toLowerCase().includes(query.toLowerCase());
-      // @TODO
-      const textMatch = true // d.text?.toLowerCase().includes(query.toLowerCase()) ?? false;
-      return titleMatch || textMatch;
-    })
-    .slice(0, NUM_RESULTS);
+  .filter((d) =>
+    d.name.toLowerCase().includes(query.toLowerCase())
+  )
+  .slice(0, NUM_RESULTS);
+
 
   const results: JSX.Element[] = [];
   for (let i = 0; i < NUM_RESULTS; i++) {
