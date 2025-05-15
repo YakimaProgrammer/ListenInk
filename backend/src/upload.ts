@@ -1,5 +1,6 @@
 // The following code is a kludge for showcase. In production, I would likely recompute progress from S3 based on which database entries are still pending for the scale we are currently operating at
 import { OpenAI } from "openai";
+
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { pdfToPng, PngPageOutput } from "pdf-to-png-converter";
 
@@ -18,25 +19,103 @@ const s3 = new S3Client({
 
 const BUCKET = "com.listenink";
 
+export type UploadEvents = {
+  "start": {},
+  "pdf-split": { numpages: number },
+  "page-start": { page: number },
+  "page-retry": { page: number, "try": number },
+  "page-done": { page: number },
+  "done": { success: boolean },
+  "failure": { err: string }
+};
+
+export type UploadEventTuple = { [K in keyof UploadEvents]: [K, UploadEvents[K]] }[keyof UploadEvents];
+
+export class UploadEventEmitter {
+  private listeners: {
+    [K in keyof UploadEvents]?: Array<(payload: UploadEvents[K]) => void>
+  } = {};
+  
+  private omnilisteners: Array<(payload: UploadEventTuple) => void> = [];
+  
+  private eventLog: UploadEventTuple[] = [];
+  
+  on<K extends keyof UploadEvents>(
+    type: K,
+    listener: (ev: UploadEvents[K]) => void
+  ): void {
+    // Typedancing... 
+    if (this.listeners[type] === undefined) {
+      this.listeners[type] = [];
+    }
+    this.listeners[type].push(listener);
+  }
+
+  onAny(listener: (ev: UploadEventTuple) => void) {
+    this.omnilisteners.push(listener);
+  }
+
+  dispatch<K extends keyof UploadEvents>(type: K, detail: UploadEvents[K]) {
+    for (let l of (this.listeners[type] ?? [])) {
+      l(detail);
+    }
+    const tuple = [type, detail] as UploadEventTuple;
+    // I'm tired of typedancing
+    for (let l of this.omnilisteners) {
+      l(tuple);
+    }
+    this.eventLog.push(tuple);
+  }
+
+  // At the time of writing, this code was mostly used in two trusted areas, so I chose a `readonly` modifier as a general reminder to not be a dumbass
+  getEventLog(): readonly UploadEventTuple[] {
+    return this.eventLog;
+  }
+}
+
+async function retrying(pngpage: PngPageOutput, page: number, id: string, events: UploadEventEmitter): Promise<boolean> {
+  for (let t = 0; t < 3; t++) {
+    try {
+      await processPage(pngpage, page, id);
+      return true;
+    } catch {
+      events.dispatch("page-retry", { page, "try": t });
+    }
+  }
+  return false;
+}
+
 // Does everything entirely in memory. This should horrify you
-export async function pdfPipeline(id: string, pdf: Buffer): Promise<number> {
+export async function pdfPipeline(id: string, pdf: Buffer, events: UploadEventEmitter): Promise<void> {
+  events.dispatch("start", {});
   // Run this at the same time as everything else
   const uploadTask = putToBucket(BUCKET, `${id}/src.pdf`, pdf, "application/pdf");
 
   // Wait for pages to be rasterized
   const pages = await pdfToPng(pdf, { viewportScale: 4.0 });
+  events.dispatch("pdf-split", { numpages: pages.length });
 
-  //await Promise.all(pages.map((p, i) => processPage(p, i, id)));
+  // await Promise.all(pages.map((p, i) => processPage(p, i, id)));
   // Process pages sequentially so OpenAI & Co. don't ratelimit me
+  // The document upload endpoint relies on this assumption on monotonicity
   for (let i = 0; i < pages.length; i++) {
-    console.log(`Starting page ${i} for doc ${id}.`);
-    await processPage(pages[i], i, id);
-    console.log("Done with that page!");
+    events.dispatch("page-start", { page: i });
+    if (process.env.NODE_ENV === "development") {
+      await new Promise(resolve => setTimeout(resolve, 1_500));
+    } else {
+      if (!(await retrying(pages[i], i, id, events))) {
+	events.dispatch("failure", { err: "Maximum number of retries exceeded. Aborting..." });
+	events.dispatch("done", { success: false });
+	return;
+      }
+    }
+    events.dispatch("page-done", { page: i });
   }
   
   await uploadTask;
 
-  return pages.length;
+  events.dispatch("done", { success: true });
+  return;
 }
 
 async function processPage(page: PngPageOutput, pageNum: number, id: string) {

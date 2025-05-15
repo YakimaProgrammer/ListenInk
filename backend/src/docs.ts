@@ -8,9 +8,13 @@ import { APIError } from "./error";
 import { withAuth } from "./auth";
 import { reorderItems } from "./order";
 import { pdfPipeline } from "./upload";
+import { getFromBucket, pdfPipeline, UploadEventEmitter, UploadEvents, UploadEventTuple } from "./upload";
+import { S3_BUCKET } from "./secrets.json";
 
 const prisma = new PrismaClient();
 const uploadMiddleware = multer({ storage: multer.memoryStorage() });
+
+const uploadEmitters: Record<string, UploadEventEmitter> = {};
 
 // This router holds all of the /api/v1/docs routes.
 // I'm using a router primarily to skip having to type
@@ -84,6 +88,34 @@ router.post("/", uploadMiddleware.fields([
 	  }
 	});
 
+	const events = new UploadEventEmitter();
+	uploadEmitters[doc.id] = events;
+	// Start an async watcher
+	pdfPipeline(doc.id, pdfFile.buffer, events).catch(err => console.error(err));
+	events.onAny(([t, d]) => console.log(`DEBUG: Upload for ${doc.id}. Event: ${t}. Data: ${JSON.stringify(d)}`));
+	events.on("done", async (ev) => {
+	  delete uploadEmitters[doc.id];
+	  if (ev.success) {
+	    await prisma.document.update({
+	      where: { id: doc.id },
+	      data: {
+		completed: true
+	      }
+	    });
+	  }
+	});
+	events.on("failure", async () => {
+	  await prisma.document.delete({ where: { id: doc.id } });
+	});
+	events.on("page-done", async (ev) => {
+	  await prisma.document.update({
+	      where: { id: doc.id },
+	      data: {
+		numpages: ev.page
+	      }
+	    });
+	});
+	
 	return doc;
       } else {
 	throw new APIError("Could not parse!" );
@@ -116,9 +148,61 @@ router.get("/", withAuth<Document[]>(async (req, res) => {
   res.status(200).send({ success: true, data: docs });
 }));
 
-router.get("/:docid/stream", (_req: Request, res: Response<string>) => { // `POST /api/v1/docs`
-  res.status(200).send("todo...");
-});
+function formatSSE(event: string, data: any) {
+  return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+}
+
+router.get("/:docid/stream", withAuth<void>(async (req, res) => {
+  const docId = req.params.docId;
+      
+  // Fetch the document along with its current category.
+  const doc = await prisma.document.findUnique({
+    where: { id: docId },
+    include: { category: true },
+  });
+
+  if (doc === null || doc.category.userId !== req.user.id) {
+    res.status(404).send({ success: false, err: "Not found!" });
+    return;
+  }
+
+  const emitter = uploadEmitters[docId];
+
+  if (!(emitter instanceof UploadEventEmitter)) {
+    res.status(404).send({ success: false, err: "Not found!" });
+  }
+  
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
+  res.write(formatSSE("partial", doc));
+  
+  if (doc.completed) {
+    res.write(formatSSE("done", {}));
+  }
+  
+  // Send a keep-alive ping every 10 seconds
+  const ping = setInterval(() => {
+    res.write(":\n\n");
+  }, 10_000);
+
+  // Pipe in new events as they come
+  emitter.onAny(([type, payload]) => {
+    if (!res.writableEnded && res.writable) {
+      res.write(formatSSE(type, payload));
+    }
+  });
+
+  // Replay past events
+  for (const [type, payload] of emitter.getEventLog()) {
+    res.write(formatSSE(type, payload));
+  }
+
+  req.on("close", () => {
+    clearInterval(ping);
+  });
+}));
 
 router.patch("/:docid", withAuth<Document>(async (req, res) => { // `PATCH /api/v1/docs/<docid>`
   try {
