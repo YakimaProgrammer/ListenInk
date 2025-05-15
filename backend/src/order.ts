@@ -35,12 +35,12 @@ export async function reorderItems({
     _max: { order: true }
   });
 
-  const max: number = maxOrder._max.order ?? -1;
+  const max: number = maxOrder._max.order ?? 0;
   
   const numberSchema = NaturalNumber.max(max);
   
   if (action.type === 'insert') {
-    const position = action.position ?? max + 1;
+    const position = action.position ?? max;
     if (!numberSchema.safeParse(position).success) {
       throw new APIError(`Position ${position} is out of bounds!`);
     }

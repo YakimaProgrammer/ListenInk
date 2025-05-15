@@ -1,0 +1,1 @@
+{"root":["./src/auth.ts","./src/categories.ts","./src/docs.ts","./src/error.ts","./src/index.ts","./src/order.ts","./src/overrides.d.ts","./src/types.ts","./src/upload.ts"],"version":"5.8.3"}

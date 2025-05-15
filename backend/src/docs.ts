@@ -1,4 +1,4 @@
-import { Router, Request, Response } from "express";
+import { Router } from "express";
 import { Bookmark, BookmarkSchema, DocId, Document, DocumentSchema } from "./types";
 import { PrismaClient } from '@prisma/client';
 import { Readable } from "stream";
@@ -115,7 +115,7 @@ router.post("/", uploadMiddleware.fields([
 	      }
 	    });
 	});
-	
+
 	return doc;
       } else {
 	throw new APIError("Could not parse!" );
@@ -123,6 +123,7 @@ router.post("/", uploadMiddleware.fields([
     });
     res.status(200).send({ data: { document_id: doc.id }, success: true });
   } catch (e: unknown) {
+    console.error(e);
     if (e instanceof APIError) {
       res.status(400).send(e.details);
     } else {
@@ -153,12 +154,12 @@ function formatSSE(event: string, data: any) {
 }
 
 router.get("/:docid/stream", withAuth<void>(async (req, res) => {
-  const docId = req.params.docId;
+  const docId = req.params.docid;
       
   // Fetch the document along with its current category.
   const doc = await prisma.document.findUnique({
     where: { id: docId },
-    include: { category: true },
+    include: { category: true, bookmarks: true },
   });
 
   if (doc === null || doc.category.userId !== req.user.id) {
@@ -170,12 +171,15 @@ router.get("/:docid/stream", withAuth<void>(async (req, res) => {
 
   if (!(emitter instanceof UploadEventEmitter)) {
     res.status(404).send({ success: false, err: "Not found!" });
+    return;
   }
   
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
 
+  res.flushHeaders();
+  
   res.write(formatSSE("partial", doc));
   
   if (doc.completed) {
@@ -207,7 +211,7 @@ router.get("/:docid/stream", withAuth<void>(async (req, res) => {
 router.patch("/:docid", withAuth<Document>(async (req, res) => { // `PATCH /api/v1/docs/<docid>`
   try {
     const ret: Document = await prisma.$transaction(async (tx) => {
-      const docId = req.params.docId;
+      const docId = req.params.docid;
       
       // Fetch the document along with its current category.
       const doc = await tx.document.findUnique({
@@ -253,6 +257,7 @@ router.patch("/:docid", withAuth<Document>(async (req, res) => { // `PATCH /api/
     if (e instanceof APIError) {
       res.status(400).send(e.details);
     } else {
+      console.error(e);
       res.status(500).send({success: false, err: "An unknown error occured!"});
     }
   }

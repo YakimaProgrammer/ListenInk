@@ -87,7 +87,7 @@ router.get("/google", passport.authenticate("google", { scope: ["profile", "emai
 router.get(
   "/google/callback", 
   passport.authenticate("google",{
-    successRedirect: process.env.NODE_ENV === "development" ? "http://localhost:3000/" : "/",
+    successRedirect: process.env.NODE_ENV === "development" ? "http://localhost:3000/" : "",
     failureRedirect: "/api/v1/auth/login/failed",
   })
 );

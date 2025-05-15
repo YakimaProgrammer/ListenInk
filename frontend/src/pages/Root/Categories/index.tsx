@@ -7,25 +7,20 @@
 import {
   List,
   ListItemButton,
-  ListItemText,
   Collapse,
   TextField,
   Menu,
   MenuItem,
   Box,
-  Tooltip,
   Typography,
 } from "@mui/material";
 import {
-  KeyboardArrowRight,
-  KeyboardArrowDown,
   Edit,
   Delete,
   Palette,
   Description,
   Folder,
   FolderOpen,
-  DragIndicator,
 } from "@mui/icons-material";
 import { connect, ConnectedProps, useDispatch } from "react-redux";
 import { useNavigate, useParams } from "react-router";
@@ -159,6 +154,7 @@ function CategoryRow({ category, total, index }: CategoryRowProps) {
   }, []);
 
   // DRAG & DROP with a custom drag preview
+  /*
   const handleDragStart = (
     e: DragEvent<HTMLButtonElement>,
     doc: EnhancedDocument
@@ -187,6 +183,7 @@ function CategoryRow({ category, total, index }: CategoryRowProps) {
       document.body.removeChild(dragIcon);
     });
   };
+   */
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -278,15 +275,17 @@ function CategoryRow({ category, total, index }: CategoryRowProps) {
   };
 
   // Double-click rename logic (same as context-rename):
+  /*
   const handleCatDoubleClick = () => {
     setEditingCat(true);
     setCatName(category.name);
   };
-
+   
   const handleDocDoubleClick = (doc: EnhancedDocument) => {
     setEditingDocId(doc.id);
     setDocName(doc.name);
   };
+   */
 
   return (
     <div
@@ -366,6 +365,7 @@ function CategoryRow({ category, total, index }: CategoryRowProps) {
             style={{ animationDelay: `${docIndex * 0.03 + 0.1}s` }}
           >
             <ListItemButton
+	      disabled={!doc.completed}
               onClick={() => navigate(urlFor("docs", doc.id))}
               onContextMenu={(e) => handleContextMenu(e, "document", doc.id)}
               // onDoubleClick={() => handleDocDoubleClick(doc)}

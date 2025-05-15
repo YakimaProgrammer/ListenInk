@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction, createSelector } from '@reduxjs/toolkit';
-import { Bookmark, BookmarkOrErrorSchema, CategoriesOrErrorSchema, Category, CategoryOrErrorSchema, DocIdOrErrSchema, Document, DocumentOrErrorSchema, DocumentsOrErrorSchema } from '@/types';
+import { Bookmark, BookmarkOrErrorSchema, CategoriesOrErrorSchema, Category, CategoryOrErrorSchema, DocIdOrErrSchema, Document, DocumentOrErrorSchema, DocumentSchema, DocumentsOrErrorSchema, NumPagesSchema, PageUpdateSchema } from '@/types';
 import { PromiseState } from '../helper-types';
 import { RootState } from "..";
 
@@ -44,6 +44,37 @@ export const categoriesSlice = createSlice({
 	const doc = state.documents[action.payload.id];
 	if (doc !== undefined) {
 	  doc.playbackSpeed = action.payload.playbackSpeed;
+	}
+      }
+    },
+    putDoc: (state, action: PayloadAction<EnhancedDocument>) => {
+      if (state.status === "success") {
+	state.documents[action.payload.id] = action.payload;
+      }
+    },
+    putCategory: (state, action: PayloadAction<Category>) => {
+      if (state.status === "success") {
+	state.categories[action.payload.id] = action.payload;
+      }
+    },
+    setDocCompleted: (state, action: PayloadAction<StateChange<"completed", boolean>>) => {
+      if (state.status === "success") {
+	const doc = state.documents[action.payload.id];
+	if (doc !== undefined) {
+	  doc.completed = action.payload.completed;
+	}
+      }
+    },
+    unlinkDoc: (state, action: PayloadAction<{ id: string }>) => {
+      if (state.status === "success") {
+	delete state.documents[action.payload.id];
+      }
+    },
+    updateProcessedPages: (state, action: PayloadAction<StateChange<"numpages", number>>) => {
+      if (state.status === "success") {
+	const doc = state.documents[action.payload.id];
+	if (doc !== undefined) {
+	  doc.numpages = action.payload.numpages;
 	}
       }
     }
@@ -194,7 +225,7 @@ export const fetchDocuments = createAsyncThunk<
       }
 
       if (!catsResp.success) {
-	return rejectWithValue("Could not parse categories info!");
+	return rejectWithValue(`Could not parse categories info!\n${catsResp.error.message}`);
       }
       if (!catsResp.data.success) {
 	return rejectWithValue(catsResp.data.err);
@@ -352,7 +383,7 @@ export const createDocument = createAsyncThunk<
   { rejectValue: string, state: RootState }
 >(
   'data/createDocument',
-  async ({ file, name, categoryId, order }, { rejectWithValue, getState }) => {
+  async ({ file, name, categoryId, order }, { rejectWithValue, getState, dispatch }) => {
     const state = getState();
     if (state.categories.status === "success") {
       const formData = new FormData();
@@ -377,18 +408,57 @@ export const createDocument = createAsyncThunk<
       if (parsedDocId.success) {
 	if (parsedDocId.data.success) {
 	  const docId = parsedDocId.data.data.document_id;
+	  const evtSource = new EventSource(`${process.env.NODE_ENV === "development" ? 'http://localhost:8080' : ''}/api/v1/docs/${docId}/stream`, { withCredentials: true });
+	  evtSource.addEventListener("partial", async ({ data }) => {
+	    const doc = DocumentSchema.safeParse(JSON.parse(data));
+	    if (doc.success) {
+	      dispatch(categoriesSlice.actions.putDoc({ ...doc.data, playbackSpeed: '1', isPlaying: false }));
 
-	  const docResp = await fetch(`/api/v1/docs/${docId}`);
-	  const parsedDoc = DocumentOrErrorSchema.safeParse(await docResp.json());
-	  if (parsedDoc.success) {
-	    if (parsedDoc.data.success) {
-	      return { ...parsedDoc.data.data, isPlaying: false, playbackSpeed: '1' };
+	      const catReq = await fetch(`/api/v1/categories/${doc.data.categoryId}`);
+	      const catResp = CategoryOrErrorSchema.safeParse(await catReq.json());
+	      if (catResp.success) {
+		if (catResp.data.success) {
+		  dispatch(categoriesSlice.actions.putCategory(catResp.data.data));
+		} else {
+		  console.error(catResp.data.err);
+		}
+	      } else {
+		console.error(catResp.error.message);
+	      }
 	    } else {
-	      return rejectWithValue(parsedDoc.data.err);
+	      console.error(doc.error.message);
 	    }
-	  } else {
-	    return rejectWithValue(parsedDoc.error.message);
-	  }
+	  });
+	  
+	  evtSource.addEventListener("failure", () => {
+	    dispatch(categoriesSlice.actions.unlinkDoc({ id: docId }));
+	  });
+
+	  evtSource.addEventListener("pdf-split", ({ data }) => {
+	    const numpages = NumPagesSchema.safeParse(JSON.parse(data));
+	    if (numpages.success) {
+	      // Do something
+	    }
+	  });
+
+	  evtSource.addEventListener("page-done", ({ data }) => {
+	    const page = PageUpdateSchema.safeParse(JSON.parse(data));
+	    if (page.success) {
+	      dispatch(categoriesSlice.actions.updateProcessedPages({ id: docId, numpages: page.data.page }));
+	    }
+	  });
+
+	  // Wait until the document is fully processed to return
+	  await new Promise((resolve) => evtSource.addEventListener("done", resolve));
+	  dispatch(categoriesSlice.actions.setDocCompleted({ id: docId, completed: true }));
+	  const state = getState();
+	  if (state.categories.status === "success") {
+	    const doc = state.categories.documents[docId];
+	    if (doc !== undefined) {
+	      return doc;
+	    }
+	  } 
+	  throw new Error("Impossible!");
 	} else {
 	  return rejectWithValue(parsedDocId.data.err);
 	}

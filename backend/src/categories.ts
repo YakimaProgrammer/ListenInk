@@ -19,6 +19,20 @@ router.get("/", withAuth<Category[]>(async (req, res) => {
   res.status(200).send({ success: true, data: categories });
 }));
 
+router.get("/:catid", withAuth<Category>(async (req, res) => {
+  const category = await prisma.category.findUnique({
+    where: {
+      id: req.params.catid
+    }
+  });
+
+  if (category !== null && category.userId === req.user.id) {
+    res.status(200).send({ success: true, data: category });
+  } else {
+    res.status(404).send({ success: false, err: "Not found!" });
+  }
+}));
+
 router.post("/", withAuth<Category>(async (req, res) => {
   try {
     const category: Category = await prisma.$transaction(async (tx) => {

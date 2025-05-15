@@ -1,7 +1,6 @@
 // The following code is a kludge for showcase. In production, I would likely recompute progress from S3 based on which database entries are still pending for the scale we are currently operating at
 import { OpenAI } from "openai";
-
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { pdfToPng, PngPageOutput } from "pdf-to-png-converter";
 
 import { openaiKey } from "./secrets/openai.json";
@@ -100,7 +99,7 @@ export async function pdfPipeline(id: string, pdf: Buffer, events: UploadEventEm
   // The document upload endpoint relies on this assumption on monotonicity
   for (let i = 0; i < pages.length; i++) {
     events.dispatch("page-start", { page: i });
-    if (process.env.NODE_ENV === "development") {
+    if (false) {//(process.env.NODE_ENV === "development") {
       await new Promise(resolve => setTimeout(resolve, 1_500));
     } else {
       if (!(await retrying(pages[i], i, id, events))) {
