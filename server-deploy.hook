@@ -10,18 +10,4 @@ fi
 cd /opt/ListenInk
 git pull
 
-cd frontend
-npm i
-npm run build
-cd build
-rm -rf /var/www/listenink.app/*
-mv * /var/www/listenink.app
-cd ..
-rmdir build
-
-cd ..
-
-cd backend
-npm i
-
 sudo systemctl restart listenink-backend

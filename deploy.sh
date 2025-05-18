@@ -6,7 +6,7 @@
 set -e
 
 REMOTE=ubuntu@listenink.app
-REMOTEHOOK=/opt/Listenink/server-deploy.hook
+REMOTEHOOK=/opt/ListenInk/server-deploy.hook
 
 # Save the directory where the script was called from
 ORIGINAL_DIR=$(pwd)
@@ -34,7 +34,14 @@ fi
 
 # Step 3: Deploy the changes
 echo "Deploying to production server..."
-ssh $REMOTE -C $REMOTEHOOk
+
+cd frontend
+rm -rf build
+npm run build
+cd build
+ssh $REMOTE 'rm -rf /var/www/listenink.app/*'
+scp -r * $REMOTE:/var/www/listenink.app
+ssh $REMOTE $REMOTEHOOK
 echo "Deployment completed."
 
 # Return to original directory
