@@ -1,17 +1,16 @@
 import { Router } from "express";
 import { Bookmark, BookmarkSchema, DocId, Document, DocumentSchema } from "./types";
 import { PrismaClient } from '@prisma/client';
-import { Readable } from "stream";
 import multer from "multer";
 import { createHash } from "crypto";
 import { APIError } from "./error";
 import { withAuth } from "./auth";
 import { reorderItems } from "./order";
-import { pdfPipeline } from "./upload";
-import { getFromBucket, pdfPipeline, UploadEventEmitter, UploadEvents, UploadEventTuple } from "./upload";
+import { getFromBucket, pdfPipeline, UploadEventEmitter } from "./upload";
 import { S3_BUCKET } from "./secrets.json";
 
 const prisma = new PrismaClient();
+
 const uploadMiddleware = multer({ storage: multer.memoryStorage() });
 
 const uploadEmitters: Record<string, UploadEventEmitter> = {};
@@ -129,8 +128,9 @@ router.post("/", uploadMiddleware.fields([
     } else {
       console.error(e);
       res.status(500).send({success: false, err: "An unknown error occured!"});
+    }
   }
-});
+}));
 
 router.get("/", withAuth<Document[]>(async (req, res) => {
   const docs: Document[] = await prisma.document.findMany({
@@ -450,53 +450,65 @@ router.get("/:docid", withAuth<Document>(async (req, res) => { // `GET /api/v1/d
   }
 }));
 
-// `GET /api/v1/docs/<docid>/pages/<pagenum>/image`
-// for example: `http://localhost:8080/api/v1/docs/48723/pages/0/image`
 router.get("/:docid/pages/:pagenum/image", withAuth<void>(async (req, res) => {
-  const doc = await prisma.document.findUnique({
-    where: {
-      id: req.params.docid
-    },
-    include: {
-      category: true
-    }
-  });
+  try {
+    const doc = await prisma.document.findUnique({
+      where: {
+	id: req.params.docid
+      },
+      include: {
+	category: true
+      }
+    });
 
-  if (doc === null || doc.category.userId !== req.user.id) {
-    res.status(404).send({err: "Not found!", success: false});
-  } else {
-    const response = await fetch(`https://s3.magnusfulton.com/com.listenink/${doc.s3key}/${req.params.pagenum}.jpg`);
-    res.setHeader('Content-Type', response.headers.get('content-type') ?? "image/jpeg");
-    res.status(200);
-    if (response.body === null) {
-      res.send();
+    if (doc === null || doc.category.userId !== req.user.id) {
+      res.status(404).send({ err: "Not found!", success: false });
     } else {
-      Readable.fromWeb(response.body).pipe(res);
+      const { stream, contentType, contentLength, contentDisposition } = await getFromBucket(S3_BUCKET, `documents/${doc.id}/${req.params.pagenum}.png`);
+
+      if (contentType) res.setHeader('Content-Type', contentType);
+      if (contentLength) res.setHeader('Content-Length', contentLength);
+      if (contentDisposition) res.setHeader('Content-Disposition', contentDisposition);
+      if (stream !== undefined && "pipe" in stream) {
+	stream.pipe(res);
+      } else {
+	res.status(404).send({ success: false, err: "Not found!"});
+      }
     }
+  } catch (err) {
+    console.error('Error fetching file:', err);
+    res.status(500).send({ success: false, err: 'Error fetching file'});
   }
 }));
 
 router.get("/:docid/pages/:pagenum/audio", withAuth<void>(async (req, res) => {
-  const doc = await prisma.document.findUnique({
-    where: {
-      id: req.params.docid
-    },
-    include: {
-      category: true
-    }
-  });
+  try {
+    const doc = await prisma.document.findUnique({
+      where: {
+	id: req.params.docid
+      },
+      include: {
+	category: true
+      }
+    });
 
-  if (doc === null || doc.category.userId !== req.user.id) {
-    res.status(404).send({err: "Not found!", success: false});
-  } else {
-    const response = await fetch(`https://s3.magnusfulton.com/com.listenink/${doc.s3key}/${req.params.pagenum}.mp3`);
-    res.setHeader('Content-Type', response.headers.get('content-type') ?? "audio/mpeg");
-    res.status(200);
-    if (response.body === null) {
-      res.send();
+    if (doc === null || doc.category.userId !== req.user.id) {
+      res.status(404).send({ err: "Not found!", success: false });
     } else {
-      Readable.fromWeb(response.body).pipe(res);
+      const { stream, contentType, contentLength, contentDisposition } = await getFromBucket(S3_BUCKET, `documents/${doc.id}/${req.params.pagenum}.mp3`);
+
+      if (contentType) res.setHeader('Content-Type', contentType);
+      if (contentLength) res.setHeader('Content-Length', contentLength);
+      if (contentDisposition) res.setHeader('Content-Disposition', contentDisposition);
+      if (stream !== undefined && "pipe" in stream) {
+	stream.pipe(res);
+      } else {
+	res.status(404).send({ success: false, err: "Not found!"});
+      }
     }
+  } catch (err) {
+    console.error('Error fetching file:', err);
+    res.status(500).send({ success: false, err: 'Error fetching file'});
   }
 }));
 

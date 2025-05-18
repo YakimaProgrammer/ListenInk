@@ -52,7 +52,6 @@ function SearchDialogComponent({
   const navigate = useNavigate();
 
   // Add doc.text search
- 
   const hits = docs
     .filter((d: EnhancedDocument) => {
       const titleMatch = d.name.toLowerCase().includes(query.toLowerCase());

@@ -1,9 +1,7 @@
 import React, { FC, MouseEvent, useState } from "react";
 import { IconButton, Menu, MenuItem, Avatar } from "@mui/material";
-import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch, logout, RootState } from "@/store";
-
-import personCircle from "./person-circle.svg"; // As a fallback image. Normally, we'd import as an SVG
+import { useDispatch } from "react-redux";
+import { AppDispatch, logout } from "@/store";
 import { useNavigate } from "react-router";
 import { urlFor } from "@/pages/urlfor";
 
@@ -12,14 +10,6 @@ import { urlFor } from "@/pages/urlfor";
  * Clicking opens a dropdown; includes "Log Out".
  */
 export const Profile: FC = () => {
-  const pfp = useSelector((state: RootState) => {
-    if (state.auth.status === "success") {
-      return state.auth.profile_picture;
-    } else {
-      // Should be impossible
-      return personCircle; 
-    }
-  });
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   
@@ -63,18 +53,18 @@ export const Profile: FC = () => {
         }}
       >
         <Avatar
-          sx={{
-            width: 40,
+          src="/api/v1/auth/profile_picture/@me"
+          alt="Profile"
+	  sx={{
+	    width: 40,
             height: 40,
-            backgroundColor: "rgba(30, 30, 45, 0.9)", // Dark background instead of purple
+            backgroundColor: "rgba(30, 30, 45, 0.9)",
             color: "white",
             fontWeight: "bold",
             fontSize: "18px",
             border: "2px solid rgba(255, 255, 255, 0.2)",
-          }}
-        >
-          {/* Use first initial of the user or a custom icon */}U
-        </Avatar>
+	  }}
+        />
       </IconButton>
 
       {/* Dropdown Menu */}

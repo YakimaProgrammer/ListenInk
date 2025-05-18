@@ -24,7 +24,7 @@ export function PageInitializer({ children }: PageInitializerProps) {
     };
 
     loadData();
-  }, [dispatch]);
+  }, [dispatch, navigate]);
 
   return <>{ children }</>;
 };

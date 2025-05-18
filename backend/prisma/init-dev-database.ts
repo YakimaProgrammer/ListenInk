@@ -9,7 +9,6 @@ async function main() {
     data: {
       name: 'Barry B. Benson',
       email: 'doyoulike@jazz.com',
-      profile_picture: 'https://example.com/some/profile.jpg', 
       categories: {
         create: {
           name: 'Films',

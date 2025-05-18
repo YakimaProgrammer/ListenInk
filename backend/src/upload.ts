@@ -3,20 +3,18 @@ import { OpenAI } from "openai";
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { pdfToPng, PngPageOutput } from "pdf-to-png-converter";
 
-import { openaiKey } from "./secrets/openai.json";
-import { accessKey, secretKey } from "./secrets/s3credentials.json";
+import { OPENAI_API_KEY, S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY, S3_SECRET_KEY } from "./secrets.json";
 
-const openai = new OpenAI({ apiKey: openaiKey });
+const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
+
 const s3 = new S3Client({
-  region: 'us-east-1', // Replace with your region
+  region: "auto",
   credentials: {
-    accessKeyId: accessKey,
-    secretAccessKey: secretKey
+    accessKeyId: S3_ACCESS_KEY,
+    secretAccessKey: S3_SECRET_KEY
   },
-  endpoint: "https://s3.magnusfulton.com/"
+  endpoint: S3_ENDPOINT
 });
-
-const BUCKET = "com.listenink";
 
 export type UploadEvents = {
   "start": {},
@@ -88,7 +86,7 @@ async function retrying(pngpage: PngPageOutput, page: number, id: string, events
 export async function pdfPipeline(id: string, pdf: Buffer, events: UploadEventEmitter): Promise<void> {
   events.dispatch("start", {});
   // Run this at the same time as everything else
-  const uploadTask = putToBucket(BUCKET, `${id}/src.pdf`, pdf, "application/pdf");
+  const uploadTask = putToBucket(S3_BUCKET, `documents/${id}/src.pdf`, pdf, "application/pdf");
 
   // Wait for pages to be rasterized
   const pages = await pdfToPng(pdf, { viewportScale: 4.0 });
@@ -119,12 +117,12 @@ export async function pdfPipeline(id: string, pdf: Buffer, events: UploadEventEm
 
 async function processPage(page: PngPageOutput, pageNum: number, id: string) {
   // Concurrently with everything else
-  const uploadPngTask = putToBucket(BUCKET, `${id}/${pageNum}.png`, page.content, "image/png");
+  const uploadPngTask = putToBucket(S3_BUCKET, `documents/${id}/${pageNum}.png`, page.content, "image/png");
   const content = await ocrPage(page.content);
   // Concurrently with tts generation
-  const uploadContentTask = putToBucket(BUCKET, `${id}/${pageNum}.txt`, Buffer.from(content), "text/plain");
+  const uploadContentTask = putToBucket(S3_BUCKET, `documents/${id}/${pageNum}.txt`, Buffer.from(content), "text/plain");
   const mp3 = await tts(content);
-  await putToBucket(BUCKET, `${id}/${pageNum}.mp3`, mp3, "audio/mpeg");
+  await putToBucket(S3_BUCKET, `documents/${id}/${pageNum}.mp3`, mp3, "audio/mpeg");
   await uploadContentTask;
   await uploadPngTask;
 }
@@ -160,7 +158,7 @@ async function tts(content: string): Promise<Buffer<ArrayBufferLike>> {
   return Buffer.from(await resp.arrayBuffer());
 }
 
-async function putToBucket(bucketName: string, key: string, buffer: Buffer, contentType: string) {
+export async function putToBucket(bucketName: string, key: string, buffer: Buffer, contentType: string) {
   const command = new PutObjectCommand({
     Bucket: bucketName,
     Key: key,
@@ -168,5 +166,19 @@ async function putToBucket(bucketName: string, key: string, buffer: Buffer, cont
     ContentType: contentType
   });
 
-  await s3.send(command);   
+  await s3.send(command);
+}
+
+export async function getFromBucket(bucketName: string, key: string) {
+  const command = new GetObjectCommand({
+    Bucket: bucketName,
+    Key: key
+  });
+  const resp = await s3.send(command);
+  return {
+    stream: resp.Body,
+    contentType: resp.ContentType,
+    contentLength: resp.ContentLength,
+    contentDisposition: resp.ContentDisposition,
+  };
 }
