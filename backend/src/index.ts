@@ -27,14 +27,15 @@ app.use(session({
     secure: process.env.NODE_ENV !== "development",
     httpOnly: true,
     sameSite: 'strict',
-    maxAge: 2 * 60 * 60 * 1000 // Sessions are valid for two hours
+    maxAge: 2 * 60 * 60 * 1000, // Sessions are valid for two hours
+    domain: process.env.NODE_ENV === "production" ? "listenink.app" : "localhost"
   },
   store: new PrismaSessionStore(
     new PrismaClient(),
     {
       checkPeriod: 2 * 60 * 1000,  // Check for expired sessions every 2 minutes
       dbRecordIdIsSessionId: true,
-      dbRecordIdFunction: undefined,
+      dbRecordIdFunction: undefined
     }
   )
 }));

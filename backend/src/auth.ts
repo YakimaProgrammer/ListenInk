@@ -21,10 +21,12 @@ export function withAuth<T>(handler: (req: Request & Express.AuthenticatedReques
   };
 }
 
+const callbackURL = (process.env.NODE_ENV === "production" ? "https://listenink.app" : "http://localhost:8080") + "/api/v1/auth/google/callback";
+
 passport.use(new GoogleStrategy({
     clientID: GOOGLE_SECRETS.web.client_id,
     clientSecret: GOOGLE_SECRETS.web.client_secret,
-    callbackURL: new URL(GOOGLE_SECRETS.web.redirect_uris[0]).pathname
+    callbackURL
   },
   async (_accessToken, _refreshToken, profile, cb) => {
     const mappedId: string = `google:${profile.id}`;
@@ -108,8 +110,8 @@ router.get("/google", passport.authenticate("google", { scope: ["profile", "emai
 
 router.get(
   "/google/callback", 
-  passport.authenticate("google",{
-    successRedirect: process.env.NODE_ENV === "development" ? "http://localhost:3000/" : "",
+  passport.authenticate("google", {
+    successRedirect: process.env.NODE_ENV === "development" ? "http://localhost:3000/" : "/",
     failureRedirect: "/api/v1/auth/login/failed",
   })
 );
