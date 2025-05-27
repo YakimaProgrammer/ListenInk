@@ -87,33 +87,35 @@ router.post("/", uploadMiddleware.fields([
 	  }
 	});
 
-	const events = new UploadEventEmitter();
-	uploadEmitters[doc.id] = events;
-	// Start an async watcher
-	pdfPipeline(doc.s3key, pdfFile.buffer, events).catch(err => console.error(err));
-	events.onAny(([t, d]) => console.log(`DEBUG: Upload for ${doc.id}. Event: ${t}. Data: ${JSON.stringify(d)}`));
-	events.on("done", async (ev) => {
-	  delete uploadEmitters[doc.id];
-	  if (ev.success) {
+	if (!completed) {
+	  const events = new UploadEventEmitter();
+	  uploadEmitters[doc.id] = events;
+	  // Start an async watcher
+	  pdfPipeline(doc.s3key, pdfFile.buffer, events).catch(err => console.error(err));
+	  events.onAny(([t, d]) => console.log(`DEBUG: Upload for ${doc.id}. Event: ${t}. Data: ${JSON.stringify(d)}`));
+	  events.on("done", async (ev) => {
+	    delete uploadEmitters[doc.id];
+	    if (ev.success) {
+	      await prisma.document.update({
+		where: { id: doc.id },
+		data: {
+		  completed: true
+		}
+	      });
+	    }
+	  });
+	  events.on("failure", async () => {
+	    await prisma.document.delete({ where: { id: doc.id } });
+	  });
+	  events.on("page-done", async (ev) => {
 	    await prisma.document.update({
-	      where: { id: doc.id },
-	      data: {
-		completed: true
-	      }
-	    });
-	  }
-	});
-	events.on("failure", async () => {
-	  await prisma.document.delete({ where: { id: doc.id } });
-	});
-	events.on("page-done", async (ev) => {
-	  await prisma.document.update({
 	      where: { id: doc.id },
 	      data: {
 		numpages: ev.page + 1
 	      }
 	    });
-	});
+	  });
+	}
 
 	return doc;
       } else {
@@ -168,11 +170,6 @@ router.get("/:docid/stream", withAuth<void>(async (req, res) => {
   }
 
   const emitter = uploadEmitters[docId];
-
-  if (!(emitter instanceof UploadEventEmitter)) {
-    res.status(404).send({ success: false, err: "Not found!" });
-    return;
-  }
   
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -181,11 +178,15 @@ router.get("/:docid/stream", withAuth<void>(async (req, res) => {
   res.flushHeaders();
   
   res.write(formatSSE("partial", doc));
-  
+
   if (doc.completed) {
     res.write(formatSSE("done", {}));
   }
-  
+
+  if (!(emitter instanceof UploadEventEmitter)) {
+    return;
+  }
+
   // Send a keep-alive ping every 10 seconds
   const ping = setInterval(() => {
     res.write(":\n\n");
