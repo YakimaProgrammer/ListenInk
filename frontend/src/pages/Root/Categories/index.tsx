@@ -46,6 +46,7 @@ import {
   upsertCategory,
 } from "@/store/slices/categories";
 import styles from "../Sidebar/index.module.scss";
+import { LinearProgressWithLabel } from "@/components/LabeledProgressBar";
 
 /** The palette for changing category colors. */
 const categoryColors = [
@@ -381,6 +382,7 @@ function CategoryRow({ category, total, index }: CategoryRowProps) {
                 "& .MuiTouchRipple-root": {
                   display: "none", // Remove ripple effect
                 },
+		flexWrap: "wrap"
               }}
             >
               <Description
@@ -421,6 +423,11 @@ function CategoryRow({ category, total, index }: CategoryRowProps) {
                   {doc.name}
                 </Typography>
               )}
+	      {doc.completed ? null : <>
+					<div style={{ flexGrow: 1, width: '100%' }} />
+					<div style={{ width: '100%' }}><LinearProgressWithLabel page={doc.numpages} maxPages={doc.maxPages} /></div>
+				      </>}
+
             </ListItemButton>
           </Box>
         ))}

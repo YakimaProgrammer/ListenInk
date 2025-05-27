@@ -1,5 +1,25 @@
-import { createSlice, createAsyncThunk, PayloadAction, createSelector } from '@reduxjs/toolkit';
-import { Bookmark, BookmarkOrErrorSchema, CategoriesOrErrorSchema, Category, CategoryOrErrorSchema, DocIdOrErrSchema, Document, DocumentOrErrorSchema, DocumentSchema, DocumentsOrErrorSchema, NumPagesSchema, PageUpdateSchema } from '@/types';
+import {
+  createSlice,
+  createAsyncThunk,
+  PayloadAction,
+  createSelector,
+  ThunkDispatch,
+  UnknownAction
+} from '@reduxjs/toolkit';
+import {
+  Bookmark,
+  BookmarkOrErrorSchema,
+  CategoriesOrErrorSchema,
+  Category,
+  CategoryOrErrorSchema,
+  DocIdOrErrSchema,
+  Document,
+  DocumentOrErrorSchema,
+  DocumentSchema,
+  DocumentsOrErrorSchema,
+  NumPagesSchema,
+  PageUpdateSchema
+} from '@/types';
 import { PromiseState } from '../helper-types';
 import { RootState } from "..";
 
@@ -9,7 +29,7 @@ export interface AudioPlayback {
   playbackSpeed: PlaybackSpeed;
 }
 
-export type EnhancedDocument = Document & AudioPlayback;
+export type EnhancedDocument = Omit<Document, "completed"> & AudioPlayback & ({ completed: true } | { completed: false, maxPages: number | null });
 interface CategoriesSuccessState {
   categories: Record<string, Category | undefined>,
   documents: Record<string, EnhancedDocument | undefined>
@@ -77,6 +97,14 @@ export const categoriesSlice = createSlice({
 	  doc.numpages = action.payload.numpages;
 	}
       }
+    },
+    setMaxPages: (state, action: PayloadAction<StateChange<"maxPages", number>>) => {
+      if (state.status === "success") {
+	const doc = state.documents[action.payload.id];
+	if (doc !== undefined && ! doc.completed) {
+	  doc.maxPages = action.payload.maxPages;
+	} 
+      }
     }
   },
   extraReducers: (builder) => {
@@ -131,7 +159,7 @@ export const categoriesSlice = createSlice({
 	  if (doc === undefined) {
 	    console.error("[ERROR] The server accepted modifications to a Document that does not exist on the client!");
 	  } else {
-	    state.documents[action.payload.id] = {...doc, ...action.payload};
+	    state.documents[action.payload.id] = { maxPages: null, ...doc, ...action.payload };
 	  }
 	} else {
 	  // Either fetchDocuments() is still processing or an error occured while it was processing
@@ -205,10 +233,10 @@ export const categoriesSlice = createSlice({
 export const fetchDocuments = createAsyncThunk<
   CategoriesSuccessState,
   void,
-  { rejectValue: string }
+  { rejectValue: string, state: RootState }
 >(
   'data/fetchDocuments',
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, dispatch }) => {
     try {
       const docsReq = await fetch("/api/v1/docs");
       const docsResp = DocumentsOrErrorSchema.safeParse(await docsReq.json());
@@ -231,9 +259,20 @@ export const fetchDocuments = createAsyncThunk<
 	return rejectWithValue(catsResp.data.err);
       }
 
+      // Handle page reloads and such
+      docsResp.data.data.forEach(d => {
+	if (!d.completed) {
+	  subscribeToDocumentUpdates(d.id, dispatch).catch(console.error);
+	}
+      });
+
       return {
 	documents: docsResp.data.data.reduce<Record<string, EnhancedDocument>>((acc, doc) => {
-	  acc[doc.id] = { ...doc, isPlaying: false, playbackSpeed: "1" };
+	  if (doc.completed) {
+	    acc[doc.id] = { ...doc, completed: true, isPlaying: false, playbackSpeed: "1" };
+	  } else {
+	    acc[doc.id] = { ...doc, completed: false, maxPages: null, isPlaying: false, playbackSpeed: "1" };
+	  }
 	  return acc;
 	}, {}),
 	categories: catsResp.data.data.reduce<Record<string, Category>>((acc, cat) => {
@@ -369,6 +408,53 @@ interface CreateDocumentProps {
   categoryId?: string;
   order?: number
 }
+
+async function subscribeToDocumentUpdates(docId: string, dispatch: ThunkDispatch<RootState, unknown, UnknownAction>) {
+  const evtSource = new EventSource(`${process.env.NODE_ENV === "development" ? 'http://localhost:8080' : ''}/api/v1/docs/${docId}/stream`, { withCredentials: true });
+  evtSource.addEventListener("partial", async ({ data }) => {
+    const doc = DocumentSchema.safeParse(JSON.parse(data));
+    if (doc.success) {
+      dispatch(categoriesSlice.actions.putDoc({ ...doc.data, playbackSpeed: '1', isPlaying: false, maxPages: null }));
+
+      const catReq = await fetch(`/api/v1/categories/${doc.data.categoryId}`);
+      const catResp = CategoryOrErrorSchema.safeParse(await catReq.json());
+      if (catResp.success) {
+	if (catResp.data.success) {
+	  dispatch(categoriesSlice.actions.putCategory(catResp.data.data));
+	} else {
+	  console.error(catResp.data.err);
+	}
+      } else {
+	console.error(catResp.error.message);
+      }
+    } else {
+      console.error(doc.error.message);
+    }
+  });
+	  
+  evtSource.addEventListener("failure", () => {
+    dispatch(categoriesSlice.actions.unlinkDoc({ id: docId }));
+  });
+
+  evtSource.addEventListener("pdf-split", ({ data }) => {
+    const numpages = NumPagesSchema.safeParse(JSON.parse(data));
+    if (numpages.success) {
+      dispatch(categoriesSlice.actions.setMaxPages({ id: docId, maxPages: numpages.data.numpages }));
+    }
+  });
+
+  evtSource.addEventListener("page-done", ({ data }) => {
+    const page = PageUpdateSchema.safeParse(JSON.parse(data));
+    if (page.success) {
+      dispatch(categoriesSlice.actions.updateProcessedPages({ id: docId, numpages: page.data.page }));
+    }
+  });
+
+  // Wait until the document is fully processed to return
+  await new Promise((resolve) => evtSource.addEventListener("done", resolve));
+  dispatch(categoriesSlice.actions.setDocCompleted({ id: docId, completed: true }));
+}
+
 /** An async thunk for creating a new Document
  *
  * @param file - required; the backing PDF to send to the server
@@ -408,49 +494,7 @@ export const createDocument = createAsyncThunk<
       if (parsedDocId.success) {
 	if (parsedDocId.data.success) {
 	  const docId = parsedDocId.data.data.document_id;
-	  const evtSource = new EventSource(`${process.env.NODE_ENV === "development" ? 'http://localhost:8080' : ''}/api/v1/docs/${docId}/stream`, { withCredentials: true });
-	  evtSource.addEventListener("partial", async ({ data }) => {
-	    const doc = DocumentSchema.safeParse(JSON.parse(data));
-	    if (doc.success) {
-	      dispatch(categoriesSlice.actions.putDoc({ ...doc.data, playbackSpeed: '1', isPlaying: false }));
-
-	      const catReq = await fetch(`/api/v1/categories/${doc.data.categoryId}`);
-	      const catResp = CategoryOrErrorSchema.safeParse(await catReq.json());
-	      if (catResp.success) {
-		if (catResp.data.success) {
-		  dispatch(categoriesSlice.actions.putCategory(catResp.data.data));
-		} else {
-		  console.error(catResp.data.err);
-		}
-	      } else {
-		console.error(catResp.error.message);
-	      }
-	    } else {
-	      console.error(doc.error.message);
-	    }
-	  });
-	  
-	  evtSource.addEventListener("failure", () => {
-	    dispatch(categoriesSlice.actions.unlinkDoc({ id: docId }));
-	  });
-
-	  evtSource.addEventListener("pdf-split", ({ data }) => {
-	    const numpages = NumPagesSchema.safeParse(JSON.parse(data));
-	    if (numpages.success) {
-	      // Do something
-	    }
-	  });
-
-	  evtSource.addEventListener("page-done", ({ data }) => {
-	    const page = PageUpdateSchema.safeParse(JSON.parse(data));
-	    if (page.success) {
-	      dispatch(categoriesSlice.actions.updateProcessedPages({ id: docId, numpages: page.data.page }));
-	    }
-	  });
-
-	  // Wait until the document is fully processed to return
-	  await new Promise((resolve) => evtSource.addEventListener("done", resolve));
-	  dispatch(categoriesSlice.actions.setDocCompleted({ id: docId, completed: true }));
+	  await subscribeToDocumentUpdates(docId, dispatch);
 	  const state = getState();
 	  if (state.categories.status === "success") {
 	    const doc = state.categories.documents[docId];
