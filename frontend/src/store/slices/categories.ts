@@ -20,7 +20,7 @@ import {
   NumPagesSchema,
   PageUpdateSchema
 } from '@/types';
-import { PromiseState } from '../helper-types';
+import { PromiseState, StateChange } from '../helper-types';
 import { RootState } from "..";
 
 export type PlaybackSpeed = "0.25" | "0.5" | "1" | "1.25" | "1.5" | "2";
@@ -40,12 +40,6 @@ export type CategoriesState = PromiseState<CategoriesSuccessState>;
 const initialState = { status: "pending" } as CategoriesState;
 
 // TODO: setIsPlaying, setPlaybackPos, setPlaybackSpeed, setPlaybackEnd
-
-// This is me being evil in TypeScript.
-// This lets me dynamically create types like: {id: string, open: boolean}
-// This is useful for writing single-purpose reducer actions without
-// writing a massive amount of similar interfaces.
-type StateChange<K extends string, T> = { id: string } & { [P in K]: T };
 
 export const categoriesSlice = createSlice({
   name: 'categories',

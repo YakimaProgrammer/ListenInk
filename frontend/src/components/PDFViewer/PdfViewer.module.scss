@@ -68,6 +68,14 @@ $pdfViewerHeight: calc(100vh - 50px);
   box-shadow: 0 2px 4px rgba($dark-blue, 0.2);
 }
 
+.currentPage {
+  background-color: lightgray;
+}
+
+.noncurrentPage {
+  background-color: rgba(26, 26, 46, 0.85);
+}
+
 // Optional scroll indicator
 .scrollIndicator {
   position: absolute;

@@ -9,7 +9,6 @@ const mapDispatchToProps = (
   dispatch: AppDispatch,
   ownProps: InjectedProps
 ) => ({
-  openSearchDialog: () => dispatch(setSearchDialog(true)),
   //I'm going to say that the playback time should be inferred to be set to the start if you change pages imo
   setPage: (page: number) =>
     dispatch(upsertBookmark({ docId: ownProps.docId, page, time: 0 })),
@@ -19,7 +18,6 @@ const connector = connect(null, mapDispatchToProps);
 type PropsFromRedux = ConnectedProps<typeof connector> & InjectedProps;
 
 function PDFViewerComponent({
-  openSearchDialog,
   doc,
   setPage,
   docId,

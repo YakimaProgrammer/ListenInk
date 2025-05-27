@@ -19,7 +19,45 @@ export function PdfViewer({
   onPageChange,
 }: PdfViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const imageRefs = useRef<(HTMLImageElement | null)[]>([]);
 
+
+  useEffect(() => {
+    imageRefs.current = imageRefs.current.slice(0, totalPages);
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        let maxRatio = 0;
+        let visibleIndex: number | null = null;
+
+        entries.forEach((entry) => {
+	  if (entry.isIntersecting) {
+            if (entry.intersectionRatio > maxRatio) {
+	      if (entry.target instanceof HTMLImageElement) {
+		if (entry.target.dataset.index !== undefined) {
+		  maxRatio = entry.intersectionRatio;
+		  visibleIndex = Number(entry.target.dataset.index);
+		}
+	      }
+            }
+	  }
+        });
+
+        if (visibleIndex !== null && currentPage !== visibleIndex && maxRatio > 0.4) {
+          onPageChange(visibleIndex);
+        }
+      },
+      {
+        root: containerRef.current,
+        threshold: Array.from({ length: 6 }, (_, i) => i / 5), // granularity
+      }
+    );
+
+    imageRefs.current.forEach((el) => el && observer.observe(el));
+
+    return () => observer.disconnect();
+  }, [docId, totalPages]);
+  
   // Create array of all pages
   const allPages = Array.from({ length: totalPages }, (_, i) => i);
 
@@ -30,9 +68,7 @@ export function PdfViewer({
           {allPages.map((pageNum) => (
             <div
               key={pageNum}
-              className={`${styles.pdfPage} ${
-                pageNum === currentPage ? styles.currentPage : ""
-              }`}
+              className={styles.pdfPage}
               id={`page-${pageNum}`}
             >
               <img
@@ -45,10 +81,13 @@ export function PdfViewer({
                 }}
                 alt={`PDF page ${pageNum + 1}`}
                 loading="lazy"
+		ref={(el) => { imageRefs.current[pageNum] = el }}
+		data-index={pageNum}
               />
               <div
-                className={styles.pageNumber}
-                style={{ backgroundColor: "rgba(26, 26, 46, 0.85)" }}
+                className={`${styles.pageNumber} ${
+                  pageNum === currentPage ? styles.currentPage : styles.noncurrentPage
+              }`}
               >
                 {pageNum + 1}
               </div>
