@@ -1,6 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit'
-import categoriesReducer from "./slices/categories";
-import authReducer from "./slices/auth";
+import { urlFor } from '@/pages/urlfor';
+import categoriesReducer, { fetchDocuments } from "./slices/categories";
+import authReducer, { fetchProfile } from "./slices/auth";
 import uiReducer from "./slices/ui";
 
 export const store = configureStore({
@@ -41,3 +42,14 @@ export {
   deleteCategory,
   deleteDocument
 } from "./slices/categories";
+
+document.addEventListener("DOMContentLoaded", async () => {
+  if (window.location.pathname !== urlFor("login")) {
+    try {
+      await store.dispatch(fetchProfile()).unwrap();
+      await store.dispatch(fetchDocuments()).unwrap();
+    } catch {
+      window.location.pathname = urlFor("login");
+    }
+  }
+});
