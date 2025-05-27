@@ -90,7 +90,7 @@ router.post("/", uploadMiddleware.fields([
 	const events = new UploadEventEmitter();
 	uploadEmitters[doc.id] = events;
 	// Start an async watcher
-	pdfPipeline(doc.id, pdfFile.buffer, events).catch(err => console.error(err));
+	pdfPipeline(doc.s3key, pdfFile.buffer, events).catch(err => console.error(err));
 	events.onAny(([t, d]) => console.log(`DEBUG: Upload for ${doc.id}. Event: ${t}. Data: ${JSON.stringify(d)}`));
 	events.on("done", async (ev) => {
 	  delete uploadEmitters[doc.id];
@@ -110,7 +110,7 @@ router.post("/", uploadMiddleware.fields([
 	  await prisma.document.update({
 	      where: { id: doc.id },
 	      data: {
-		numpages: ev.page
+		numpages: ev.page + 1
 	      }
 	    });
 	});
@@ -464,7 +464,7 @@ router.get("/:docid/pages/:pagenum/image", withAuth<void>(async (req, res) => {
     if (doc === null || doc.category.userId !== req.user.id) {
       res.status(404).send({ err: "Not found!", success: false });
     } else {
-      const { stream, contentType, contentLength, contentDisposition } = await getFromBucket(S3_BUCKET, `documents/${doc.id}/${req.params.pagenum}.png`);
+      const { stream, contentType, contentLength, contentDisposition } = await getFromBucket(S3_BUCKET, `documents/${doc.s3key}/${req.params.pagenum}.png`);
 
       if (contentType) res.setHeader('Content-Type', contentType);
       if (contentLength) res.setHeader('Content-Length', contentLength);
@@ -495,7 +495,7 @@ router.get("/:docid/pages/:pagenum/audio", withAuth<void>(async (req, res) => {
     if (doc === null || doc.category.userId !== req.user.id) {
       res.status(404).send({ err: "Not found!", success: false });
     } else {
-      const { stream, contentType, contentLength, contentDisposition } = await getFromBucket(S3_BUCKET, `documents/${doc.id}/${req.params.pagenum}.mp3`);
+      const { stream, contentType, contentLength, contentDisposition } = await getFromBucket(S3_BUCKET, `documents/${doc.s3key}/${req.params.pagenum}.mp3`);
 
       if (contentType) res.setHeader('Content-Type', contentType);
       if (contentLength) res.setHeader('Content-Length', contentLength);

@@ -25,7 +25,6 @@ function PDFViewerComponent({
   docId,
 }: PropsFromRedux) {
   const page = doc.bookmarks.at(0)?.page ?? 0;
-
   return (
     <div className={styles.mainPdf}>
       <PdfViewer
